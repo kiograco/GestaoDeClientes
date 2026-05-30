@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import isAPIAuth from "../middleware/isAPIAuth";
 import uploadConfig from "../config/upload";
+import rateLimit from "../middleware/rateLimit";
 
 import * as APIExternalController from "../controllers/APIExternalController";
 
@@ -20,9 +21,11 @@ const upload = multer({
   //   console.log(cb);
   // }
 });
+const externalApiRateLimit = rateLimit({ windowMs: 60 * 1000, max: 120 });
 
 apiExternalRoute.post(
   "/v1/api/external/:apiId",
+  externalApiRateLimit,
   isAPIAuth,
   upload.single("media"),
   APIExternalController.sendMessageAPI
@@ -30,6 +33,7 @@ apiExternalRoute.post(
 
 apiExternalRoute.post(
   "/v1/api/external/:apiId/start-session",
+  externalApiRateLimit,
   isAPIAuth,
   APIExternalController.startSession
 );

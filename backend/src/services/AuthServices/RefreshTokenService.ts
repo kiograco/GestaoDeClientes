@@ -1,6 +1,6 @@
 import { verify } from "jsonwebtoken";
 import AppError from "../../errors/AppError";
-import ShowUserService from "../UserServices/ShowUserService";
+import User from "../../models/User";
 import authConfig from "../../config/auth";
 import {
   createAccessToken,
@@ -28,9 +28,9 @@ export const RefreshTokenService = async (token: string): Promise<Response> => {
 
   const { id, tokenVersion } = decoded as RefreshTokenPayload;
 
-  const user = await ShowUserService(id, 1);
+  const user = await User.findByPk(id);
 
-  if (user.tokenVersion !== tokenVersion) {
+  if (!user || user.tokenVersion !== tokenVersion) {
     throw new AppError("ERR_SESSION_EXPIRED", 401);
   }
 

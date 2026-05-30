@@ -7,6 +7,7 @@ import AppError from "../errors/AppError";
 import UpdateApiConfigService from "../services/ApiConfigServices/UpdateApiConfigService";
 import DeleteApiConfigService from "../services/ApiConfigServices/DeleteApiConfigService";
 import RenewApiConfigTokenService from "../services/ApiConfigServices/RenewApiConfigTokenService";
+import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
 
 interface ApiData {
   name: string;
@@ -47,6 +48,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   } catch (error) {
     throw new AppError(error.message);
   }
+  await ShowWhatsAppService({ id: newApi.sessionId, tenantId });
 
   const api = await CreateApiConfigService(newApi);
 
@@ -89,6 +91,7 @@ export const update = async (
   } catch (error) {
     throw new AppError(error.message);
   }
+  await ShowWhatsAppService({ id: apiData.sessionId, tenantId });
 
   const api = await UpdateApiConfigService({
     apiData,
@@ -137,6 +140,7 @@ export const renewTokenApi = async (
   } catch (error) {
     throw new AppError(error.message);
   }
+  await ShowWhatsAppService({ id: api.sessionId, tenantId });
 
   const newApi = await RenewApiConfigTokenService({
     apiId,

@@ -43,6 +43,39 @@ npx quasar dev
 
 A interface estará disponível em `http://localhost:8080`.
 
+## Seguranca
+
+- Use segredos aleatorios exclusivos para `JWT_SECRET`, `JWT_REFRESH_SECRET`,
+  `POSTGRES_PASSWORD` e credenciais do RabbitMQ.
+- Mantenha `backend/.env` fora do Git. Use `backend/.env.example` somente como
+  referencia.
+- Em producao, publique apenas a API por meio de proxy reverso HTTPS. PostgreSQL,
+  Redis e RabbitMQ devem permanecer em rede privada.
+- Renove tokens da API externa apos atualizacoes de seguranca ou suspeita de
+  vazamento.
+
+## Backups
+
+O backup PostgreSQL e salvo em `backend/.data/backups`, que permanece fora do
+Git. Para gerar um dump compactado e remover dumps locais com mais de 14 dias:
+
+```powershell
+cd backend
+.\scripts\backup-postgres.ps1
+```
+
+Para restaurar um dump, pare o uso da aplicacao e confirme explicitamente a
+substituicao dos dados:
+
+```powershell
+cd backend
+.\scripts\restore-postgres.ps1 -BackupFile .\.data\backups\ncprogrammers-AAAAMMDD-HHMMSS.dump -ConfirmRestore
+```
+
+Agende `backup-postgres.ps1` diariamente e copie os dumps para armazenamento
+externo criptografado. Teste a restauracao periodicamente em um ambiente
+separado.
+
 ## Avisos
 
 Alguns canais utilizam bibliotecas não oficiais para comunicação com serviços

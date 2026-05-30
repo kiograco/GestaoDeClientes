@@ -18,7 +18,7 @@ const RenewApiConfigTokenService = async ({
 }: Request): Promise<ApiInstance> => {
   const { secret } = authConfig;
 
-  const api = await ApiInstance.findByPk(apiId);
+  const api = await ApiInstance.findOne({ where: { id: apiId, tenantId } });
 
   if (!api) {
     throw new AppError("ERR_API_CONFIG_NOT_FOUND", 404);
@@ -26,8 +26,9 @@ const RenewApiConfigTokenService = async ({
 
   const token = sign(
     {
+      apiId: api.id,
       tenantId,
-      profile: "admin",
+      purpose: "external-api",
       sessionId
     },
     secret,
@@ -36,8 +37,8 @@ const RenewApiConfigTokenService = async ({
     }
   );
 
-  api.update({ token });
-  api.reload();
+  await api.update({ token });
+  await api.reload();
 
   return api;
 };

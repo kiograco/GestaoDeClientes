@@ -56,7 +56,7 @@ export default async function modules(app): Promise<void> {
     }
 
     logger.error(err);
-    return res.status(500).json({ error: `Internal server error: ${err}` });
+    return res.status(500).json({ error: "Internal server error" });
   });
 
   logger.info("modules routes already in server!");

@@ -1,4 +1,5 @@
 import * as Yup from "yup";
+import { Op } from "sequelize";
 
 import AppError from "../../errors/AppError";
 import Queue from "../../models/Queue";
@@ -61,11 +62,18 @@ const UpdateUserService = async ({
   }
 
   if (queues) {
+    const queueIds = queues.map((queue: any) => queue?.id || queue);
+    const tenantQueues = await Queue.findAll({
+      where: { id: { [Op.in]: queueIds }, tenantId },
+      attributes: ["id"]
+    });
+    if (tenantQueues.length !== queueIds.length) {
+      throw new AppError("ERR_QUEUE_NOT_FOUND", 404);
+    }
+
     await UsersQueues.destroy({ where: { userId } });
     await Promise.all(
-      queues.map(async (queue: any) => {
-        const queueId: number = queue?.id || queue;
-        // const { id: queueId } = queue;
+      queueIds.map(async (queueId: number) => {
         await UsersQueues.upsert({ queueId, userId });
       })
     );

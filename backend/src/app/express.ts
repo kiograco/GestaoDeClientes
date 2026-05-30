@@ -45,8 +45,7 @@ export default async function express(app: Application): Promise<void> {
     );
     app.use(
       helmet({
-        crossOriginResourcePolicy: { policy: "cross-origin" },
-        crossOriginEmbedderPolicy: { policy: "credentialless" }
+        crossOriginResourcePolicy: { policy: "cross-origin" }
       } as any)
     );
   }

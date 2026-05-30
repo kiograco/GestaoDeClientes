@@ -178,8 +178,10 @@ const SpawnOpenChatWindows = (socket: Socket) => {
 
 const spawnChatWindow = (socket: Socket) => {
   socket.on("spawnChatWindow", async (userId: number) => {
+    const { tenantId } = socket.handshake.auth.user;
     // Get user
-    const user = await User.findByPk(userId, {
+    const user = await User.findOne({
+      where: { id: userId, tenantId },
       attributes: ["id", "name", "email", "profile"]
     });
     sendToSelf(socket, "spawnChatWindow", user);
@@ -370,7 +372,9 @@ const saveChatWindow = (socket: Socket) => {
     const { userId } = data;
     // const { convoId } = data;
     const { remove } = data;
-    const userSchema = await User.findByPk(userId);
+    const userSchema = await User.findOne({
+      where: { id: userId, tenantId: socket.handshake.auth.user.tenantId }
+    });
     if (userSchema) {
       if (remove) {
         // remover o chat do usuário
@@ -423,7 +427,9 @@ const onDisconnect = (socket: Socket) => {
     }
 
     // Save lastOnline Time
-    const instance = await User.findByPk(user.id);
+    const instance = await User.findOne({
+      where: { id: user.id, tenantId }
+    });
     instance?.update({ status: "offline", lastOnline: new Date() });
     UpdateOnlineBubbles(socket);
 

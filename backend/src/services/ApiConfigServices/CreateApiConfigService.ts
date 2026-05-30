@@ -24,10 +24,21 @@ const CreateApiConfigService = async ({
 }: Request): Promise<ApiConfig> => {
   const { secret } = authConfig;
 
+  const api = await ApiConfig.create({
+    name,
+    sessionId,
+    authToken,
+    urlServiceStatus,
+    urlMessageStatus,
+    userId,
+    tenantId
+  });
+
   const token = sign(
     {
+      apiId: api.id,
       tenantId,
-      profile: "admin",
+      purpose: "external-api",
       sessionId
     },
     secret,
@@ -36,16 +47,7 @@ const CreateApiConfigService = async ({
     }
   );
 
-  const api = await ApiConfig.create({
-    name,
-    sessionId,
-    token,
-    authToken,
-    urlServiceStatus,
-    urlMessageStatus,
-    userId,
-    tenantId
-  });
+  await api.update({ token });
 
   return api;
 };

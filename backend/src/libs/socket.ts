@@ -12,7 +12,8 @@ let io: SocketIO;
 export const initIO = (httpServer: Server): SocketIO => {
   io = new SocketIO(httpServer, {
     cors: {
-      origin: "*"
+      origin: process.env.FRONTEND_URL || "http://localhost:8080",
+      credentials: true
     },
     pingTimeout: 180000,
     pingInterval: 60000
@@ -54,8 +55,17 @@ export const initIO = (httpServer: Server): SocketIO => {
             "lastOnline"
           ]
         });
+        if (
+          !user ||
+          String(user.tenantId) !== String(verify.data.tenantId) ||
+          user.profile !== verify.data.profile
+        ) {
+          next(new Error("authentication error"));
+          return;
+        }
         socket.handshake.auth.user = user;
         next();
+        return;
       }
       next(new Error("authentication error"));
     } catch (error) {

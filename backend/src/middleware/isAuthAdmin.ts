@@ -18,7 +18,7 @@
     const authHeader = req.headers.authorization;
     const adminDomain = process.env.ADMIN_DOMAIN;
   
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       throw new AppError("Token was not provided.", 403);
     }
     if (!adminDomain) {
@@ -31,14 +31,19 @@
       const decoded = verify(token, authConfig.secret);
       const { id, profile, tenantId } = decoded as TokenPayload;
       const user = await User.findByPk(id);
-      if (!user || user.email.indexOf(adminDomain) === 1) {
+      const normalizedDomain = adminDomain.toLowerCase().replace(/^@/, "");
+      if (
+        !user ||
+        user.profile !== "admin" ||
+        !user.email.toLowerCase().endsWith(`@${normalizedDomain}`)
+      ) {
         throw new AppError("Not admin permission", 403);
       }
   
       req.user = {
         id,
-        profile,
-        tenantId
+        profile: user.profile,
+        tenantId: user.tenantId
       };
     } catch (err) {
       throw new AppError("Invalid token or not Admin", 403);

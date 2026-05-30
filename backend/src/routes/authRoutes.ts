@@ -1,14 +1,15 @@
 import { Router } from "express";
 import * as SessionController from "../controllers/SessionController";
-import * as UserController from "../controllers/UserController";
+import isAuth from "../middleware/isAuth";
+import rateLimit from "../middleware/rateLimit";
 
 const authRoutes = Router();
 
-authRoutes.post("/signup", UserController.store);
+const authRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
 
-authRoutes.post("/login", SessionController.store);
-authRoutes.post("/logout", SessionController.logout);
+authRoutes.post("/login", authRateLimit, SessionController.store);
+authRoutes.post("/logout", isAuth, SessionController.logout);
 
-authRoutes.post("/refresh_token", SessionController.update);
+authRoutes.post("/refresh_token", authRateLimit, SessionController.update);
 
 export default authRoutes;

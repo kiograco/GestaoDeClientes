@@ -68,10 +68,7 @@ export const logout = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { userId } = req.body;
-  if (!userId) {
-    throw new AppError("ERR_USER_NOT_FOUND", 404);
-  }
+  const userId = req.user.id;
   const io = getIO();
 
   const userLogout = await User.findByPk(userId);
@@ -90,7 +87,11 @@ export const logout = async (
     }
   });
 
-  // SendRefreshToken(res, refreshToken);
+  res.clearCookie("jrt", {
+    httpOnly: true,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production"
+  });
 
   return res.json({ message: "USER_LOGOUT" });
 };
