@@ -76,6 +76,25 @@ Agende `backup-postgres.ps1` diariamente e copie os dumps para armazenamento
 externo criptografado. Teste a restauracao periodicamente em um ambiente
 separado.
 
+## Instagram Oficial
+
+O canal `Instagram Oficial` usa OAuth e a API oficial da Meta. Senhas da conta
+do Instagram nao sao armazenadas. A integracao aceita contas profissionais
+Business ou Creator.
+
+No painel Meta for Developers:
+
+1. Adicione o produto Instagram com Instagram Login ao aplicativo.
+2. Cadastre `INSTAGRAM_REDIRECT_URI` como OAuth Redirect URI valido.
+3. Cadastre `https://api.example.com/instagram/webhook` como Callback URL do
+   webhook e use o mesmo valor de `INSTAGRAM_WEBHOOK_VERIFY_TOKEN`.
+4. Assine os campos `messages`, `messaging_postbacks` e `messaging_seen`.
+5. Solicite acesso aos escopos `instagram_business_basic` e
+   `instagram_business_manage_messages`.
+
+Configure as variaveis `INSTAGRAM_*` conforme `backend/.env.example`. O callback
+e o webhook precisam ser publicados por HTTPS para uso fora do ambiente local.
+
 ## Avisos
 
 Alguns canais utilizam bibliotecas não oficiais para comunicação com serviços

@@ -22,6 +22,10 @@ const store = async (req: Request, res: Response): Promise<Response> => {
     isInternal: true
   });
 
+  if (whatsapp.type === "instagram_oauth") {
+    throw new AppError("ERR_INSTAGRAM_USE_OAUTH", 400);
+  }
+
   StartWhatsAppSession(whatsapp).catch(error =>
     logger.error(`Erro ao iniciar conexão ${whatsapp.id}: ${error}`)
   );
@@ -83,6 +87,14 @@ const remove = async (req: Request, res: Response): Promise<Response> => {
       const instaBot = getInstaBot(channel.id);
       await instaBot.destroy();
       removeInstaBot(channel);
+    }
+
+    if (channel.type === "instagram_oauth") {
+      await channel.update({
+        instagramOAuthToken: null,
+        instagramOAuthExpiresAt: null,
+        status: "DISCONNECTED"
+      });
     }
 
     await channel.update({

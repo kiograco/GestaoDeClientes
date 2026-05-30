@@ -7,6 +7,16 @@ const ListWhatsAppsService = async (
     where: {
       tenantId
       // type: "w"
+    },
+    attributes: {
+      exclude: [
+        "session",
+        "tokenTelegram",
+        "instagramKey",
+        "instagramOAuthToken",
+        "tokenAPI",
+        "tokenHook"
+      ]
     }
   });
 

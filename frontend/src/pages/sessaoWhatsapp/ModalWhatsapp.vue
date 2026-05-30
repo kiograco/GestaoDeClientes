@@ -14,7 +14,7 @@
           <q-icon
             size="50px"
             class="q-mr-md"
-            :name="whatsapp.type ? `img:${whatsapp.type}-logo.png` : 'mdi-alert'"
+            :name="whatsapp.type ? `img:${whatsapp.type === 'instagram_oauth' ? 'instagram' : whatsapp.type}-logo.png` : 'mdi-alert'"
           /> {{ whatsapp.id ? 'Editar' :
               'Adicionar'
             }}
@@ -58,6 +58,15 @@
               label="Token Telegram"
               v-model="whatsapp.tokenTelegram"
             />
+          </div>
+          <div
+            class="q-mt-md row full-width justify-center"
+            v-if="whatsapp.type === 'instagram_oauth'"
+          >
+            <q-banner class="bg-blue-1 text-primary rounded-borders">
+              A conta sera conectada pela autorizacao oficial da Meta apos
+              salvar o canal. Nao informe sua senha do Instagram neste sistema.
+            </q-banner>
           </div>
           <div
             class="q-mt-md row full-width justify-center"
@@ -262,7 +271,7 @@ export default {
       optionsWhatsappsTypes: [
         { label: 'Whatsapp', value: 'whatsapp' },
         { label: 'Telegram', value: 'telegram' },
-        { label: 'Instagram', value: 'instagram' }
+        { label: 'Instagram Oficial', value: 'instagram_oauth' }
       ],
       variaveis: [
         { label: 'Nome', value: '{{name}}' },

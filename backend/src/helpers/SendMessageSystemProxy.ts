@@ -4,6 +4,7 @@ import InstagramSendMessagesSystem from "../services/InstagramBotServices/Instag
 import TelegramSendMessagesSystem from "../services/TbotServices/TelegramSendMessagesSystem";
 import SendWhatsAppMedia from "../services/WbotServices/SendWhatsAppMedia";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
+import { sendInstagramOAuthMessage } from "../services/InstagramOAuthServices/InstagramOAuthMessageService";
 
 type Payload = {
   ticket: any;
@@ -30,6 +31,13 @@ const SendMessageSystemProxy = async ({
         );
         break;
 
+      case "instagram_oauth":
+        message = await sendInstagramOAuthMessage(ticket, {
+          ...messageData,
+          media
+        });
+        break;
+
       case "telegram":
         message = await TelegramSendMessagesSystem(
           getTbot(ticket.whatsappId),
@@ -52,6 +60,10 @@ const SendMessageSystemProxy = async ({
           ticket,
           messageData
         );
+        break;
+
+      case "instagram_oauth":
+        message = await sendInstagramOAuthMessage(ticket, messageData);
         break;
 
       case "telegram":

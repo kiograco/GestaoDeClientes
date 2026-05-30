@@ -53,7 +53,14 @@ export default async function express(app: Application): Promise<void> {
   console.info("cors domain ======>>>>", process.env.FRONTEND_URL);
 
   app.use(cookieParser());
-  app.use(json({ limit: "50MB" }));
+  app.use(
+    json({
+      limit: "50MB",
+      verify: (req: any, _res, buf) => {
+        req.rawBody = Buffer.from(buf);
+      }
+    })
+  );
   app.use(
     urlencoded({ extended: true, limit: "50MB", parameterLimit: 200000 })
   );

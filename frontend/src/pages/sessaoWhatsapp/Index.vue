@@ -32,7 +32,7 @@
               <q-avatar>
                 <q-icon
                   size="40px"
-                  :name="`img:${item.type}-logo.png`"
+                  :name="`img:${item.type === 'instagram_oauth' ? 'instagram' : item.type}-logo.png`"
                 />
               </q-avatar>
             </q-item-section>
@@ -103,7 +103,7 @@
                   rounded
                   color="positive"
                   label="Conectar"
-                  @click="handleStartWhatsAppSession(item.id)"
+                  @click="handleConnectChannel(item)"
                 />
                 <q-btn
                   rounded
@@ -181,7 +181,7 @@
 
 <script>
 
-import { DeletarWhatsapp, DeleteWhatsappSession, StartWhatsappSession, ListarWhatsapps, RequestNewQrCode, UpdateWhatsapp } from 'src/service/sessoesWhatsapp'
+import { DeletarWhatsapp, DeleteWhatsappSession, GetInstagramOAuthUrl, StartWhatsappSession, ListarWhatsapps, RequestNewQrCode, UpdateWhatsapp } from 'src/service/sessoesWhatsapp'
 import { format, parseISO } from 'date-fns'
 import pt from 'date-fns/locale/pt-BR/index'
 import ModalQrCode from './ModalQrCode'
@@ -334,6 +334,28 @@ export default {
         console.error(error)
       }
       this.loading = false
+    },
+    async handleConnectChannel (channel) {
+      if (channel.type !== 'instagram_oauth') {
+        return this.handleStartWhatsAppSession(channel.id)
+      }
+      try {
+        const { data } = await GetInstagramOAuthUrl(channel.id)
+        window.open(data.url, 'instagram-oauth', 'width=720,height=760')
+        for (let attempt = 0; attempt < 90; attempt++) {
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          const response = await ListarWhatsapps()
+          this.$store.commit('LOAD_WHATSAPPS', response.data)
+          const updated = response.data.find(item => item.id === channel.id)
+          if (updated && updated.status === 'CONNECTED') {
+            this.$notificarSucesso('Instagram conectado pela API oficial.')
+            return
+          }
+        }
+      } catch (error) {
+        console.error(error)
+        this.$notificarErro('Nao foi possivel iniciar a autorizacao oficial do Instagram.')
+      }
     },
     async pollQrCode (channelId) {
       for (let attempt = 0; attempt < 45; attempt++) {

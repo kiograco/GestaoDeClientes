@@ -37,6 +37,13 @@ export function ConfirmInstagramTwoFactor (whatsAppId, verificationCode) {
   })
 }
 
+export function GetInstagramOAuthUrl (whatsAppId) {
+  return request({
+    url: `/instagram/oauth/${whatsAppId}`,
+    method: 'get'
+  })
+}
+
 export function GetWhatSession (whatsAppId) {
   return request({
     url: `/whatsapp/${whatsAppId}`,

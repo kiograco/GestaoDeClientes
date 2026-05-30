@@ -15,7 +15,13 @@ export const StartAllWhatsAppsSessions = async (): Promise<void> => {
         {
           [Op.and]: {
             type: {
-              [Op.in]: ["instagram", "telegram", "waba", "messenger"]
+              [Op.in]: [
+                "instagram",
+                "instagram_oauth",
+                "telegram",
+                "waba",
+                "messenger"
+              ]
             },
             status: {
               [Op.notIn]: ["DISCONNECTED"]

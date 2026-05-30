@@ -93,6 +93,21 @@ class Whatsapp extends Model<Whatsapp> {
   @Default(null)
   @AllowNull
   @Column
+  instagramOAuthUserId: string;
+
+  @Default(null)
+  @AllowNull
+  @Column(DataType.TEXT)
+  instagramOAuthToken: string;
+
+  @Default(null)
+  @AllowNull
+  @Column(DataType.DATE)
+  instagramOAuthExpiresAt: Date;
+
+  @Default(null)
+  @AllowNull
+  @Column
   fbPageId: string;
 
   @Default(null)
@@ -102,7 +117,15 @@ class Whatsapp extends Model<Whatsapp> {
   fbObject: object;
 
   @Default("whatsapp")
-  @Column(DataType.ENUM("whatsapp", "telegram", "instagram", "messenger"))
+  @Column(
+    DataType.ENUM(
+      "whatsapp",
+      "telegram",
+      "instagram",
+      "instagram_oauth",
+      "messenger"
+    )
+  )
   type: string;
 
   @CreatedAt
