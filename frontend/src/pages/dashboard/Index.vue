@@ -300,9 +300,7 @@ export default {
           offsetX: 0,
           offsetY: 0,
           style: {
-            color: undefined,
-            fontSize: '14px',
-            fontFamily: undefined
+            fontSize: '14px'
           }
         },
         series: [],
@@ -378,9 +376,7 @@ export default {
           offsetX: 0,
           offsetY: 0,
           style: {
-            color: undefined,
-            fontSize: '14px',
-            fontFamily: undefined
+            fontSize: '14px'
           }
         },
         series: [],
@@ -428,7 +424,7 @@ export default {
               zoomin: false,
               zoomout: false,
               pan: false,
-              reset: false | '<img src="/static/icons/reset.png" width="20">'
+              reset: false
             }
 
           }
@@ -530,7 +526,7 @@ export default {
               zoomin: false,
               zoomout: false,
               pan: false,
-              reset: false | '<img src="/static/icons/reset.png" width="20">'
+              reset: false
             }
 
           }

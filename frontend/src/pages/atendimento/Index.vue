@@ -304,7 +304,7 @@
           <div class="flex flex-inline q-pt-xs">
             <q-scroll-area
               horizontal
-              style="heigth: 40px; width: 300px;"
+          style="height: 40px; width: 300px;"
             >
               <template v-for="item in whatsapps">
                 <q-btn

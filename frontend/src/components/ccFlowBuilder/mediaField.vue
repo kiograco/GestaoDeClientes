@@ -61,13 +61,13 @@
             :src="cMediaUrl"
             controls
             class="q-mt-md"
-            style="objectFit: cover;
+            style="object-fit: cover;
                   width: 330px;
                   height: 150px;
-                  borderTopLeftRadius: 8px;
-                  borderTopRightRadius: 8px;
-                  borderBottomLeftRadius: 8px;
-                  borderBottomRightRadius: 8px;"
+                  border-top-left-radius: 8px;
+                  border-top-right-radius: 8px;
+                  border-bottom-left-radius: 8px;
+                  border-bottom-right-radius: 8px;"
             type="video/mp4"
           >
           </video>

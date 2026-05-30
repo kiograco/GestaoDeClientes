@@ -28,19 +28,19 @@
         <div
           v-if="isGroupLabel(mensagem)"
           class="q-mb-sm"
-          style="display: flex; color: rgb(59 23 251); fontWeight: 500;"
+          style="display: flex; color: rgb(59, 23, 251); font-weight: 500;"
         >
           {{ isGroupLabel(mensagem) }}
         </div>
         <div
           v-if="!isGroupLabel(mensagem) && !mensagem.fromMe"
           class="q-mb-sm"
-          style="display: flex; color: rgb(59 23 251); fontWeight: 500;"
+          style="display: flex; color: rgb(59, 23, 251); font-weight: 500;"
         >
           {{ mensagem.contact && mensagem.contact.name }}
         </div>
         <template v-if="mensagem.mediaType === 'audio'">
-          <div style="width: 200px; heigth: 300px">
+          <div style="width: 200px; height: 300px">
             <audio
               style="max-width: 200px;"
               class="full-width"
@@ -88,13 +88,13 @@
           <video
             :src="mensagem.mediaUrl"
             controls
-            style="objectFit: cover;
+            style="object-fit: cover;
                   width: 130px;
                   height: 60px;
-                  borderTopLeftRadius: 8px;
-                  borderTopRightRadius: 8px;
-                  borderBottomLeftRadius: 8px;
-                  borderBottomRightRadius: 8px;
+                  border-top-left-radius: 8px;
+                  border-top-right-radius: 8px;
+                  border-bottom-left-radius: 8px;
+                  border-bottom-right-radius: 8px;
                 "
             >
           </video>

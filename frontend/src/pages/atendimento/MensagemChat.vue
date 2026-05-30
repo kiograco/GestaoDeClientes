@@ -18,7 +18,7 @@
             :key="`ref-${mensagem.createdAt}`"
             ref="lastMessageRef"
             id="lastMessageRef"
-            style="float: 'left', background: 'black', clear: 'both'"
+            style="float: left; background: black; clear: both"
           />
         </template>
         <div
@@ -102,7 +102,7 @@
             <div
               v-if="isGroupLabel(mensagem)"
               class="q-mb-sm"
-              style="display: flex; color: rgb(59 23 251); fontWeight: 500;"
+              style="display: flex; color: rgb(59, 23, 251); font-weight: 500;"
             >
               {{ isGroupLabel(mensagem) }}
             </div>
@@ -186,7 +186,7 @@
               :color=" mensagem.ack >= 3 ? 'blue-12' : '' "
             />
             <template v-if=" mensagem.mediaType === 'audio' ">
-              <div style="width: 330px; heigth: 300px">
+              <div style="width: 330px; height: 300px">
                 <audio
                   class="q-mt-md full-width"
                   controls
@@ -237,13 +237,13 @@
                 :src=" mensagem.mediaUrl "
                 controls
                 class="q-mt-md"
-                style="objectFit: cover;
+                style="object-fit: cover;
                   width: 330px;
                   height: 150px;
-                  borderTopLeftRadius: 8px;
-                  borderTopRightRadius: 8px;
-                  borderBottomLeftRadius: 8px;
-                  borderBottomRightRadius: 8px;
+                  border-top-left-radius: 8px;
+                  border-top-right-radius: 8px;
+                  border-bottom-left-radius: 8px;
+                  border-bottom-right-radius: 8px;
                 "
               >
               </video>
