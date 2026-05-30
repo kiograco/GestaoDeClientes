@@ -1,0 +1,64 @@
+version: "3"
+
+services:
+  redis:
+    container_name: "redis"
+    image: "redis:alpine"
+    restart: always
+    command: redis-server --appendonly yes --replica-read-only no
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "6379:6379"
+    env_file:
+      - ./.env
+    volumes:
+      - ".data/redis:/data"
+
+  postgres:
+    image: "postgres:14"
+    restart: always
+    container_name: "pg"
+    env_file:
+      - ./.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ".data/pg:/var/lib/postgresql/data"
+    ports:
+      - "5432:5432"
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: rabbitmq
+    container_name: "rabbitmq"
+    restart: always
+    env_file:
+      - ./.env
+    volumes:
+      - .data/rabbitmq/data/:/var/lib/rabbitmq/
+      - .data/rabbitmq/logs/:/var/log/rabbitmq/log
+    ports:
+      - 5672:5672
+      - 15672:15672
+
+  api:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    restart: always
+    container_name: "api"
+    env_file:
+      - ./.env
+    stdin_open: true
+    tty: true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - redis
+      - postgres
+      - rabbitmq
+    ports:
+      - "3100:3100"
+    volumes:
+      - .data/.wwebjs_auth:/app/.wwebjs_auth
+      - .data/medias:/app/public
