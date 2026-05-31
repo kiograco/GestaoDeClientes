@@ -3,6 +3,7 @@ import { logger } from "../../utils/logger";
 import Ticket from "../../models/Ticket";
 import Message from "../../models/Message";
 import socketEmit from "../../helpers/socketEmit";
+import Queue from "../../libs/Queue";
 
 interface MessageData {
   ticketId: number;
@@ -122,6 +123,11 @@ const BuildSendMessageService = async ({
         type: "chat:create",
         payload: messageCreated
       });
+
+      await Queue.add("SendMessages", {
+        tenantId,
+        sessionId: ticket.whatsappId
+      });
     } else {
       // Alter template message
       msg.data.message = pupa(msg.data.message || "", {
@@ -160,7 +166,7 @@ const BuildSendMessageService = async ({
       await ticket.update({
         lastMessage: messageCreated.body,
         lastMessageAt: new Date().getTime(),
-        answered: true
+        answered: false
       });
 
       // global.rabbitWhatsapp.publishInQueue(
@@ -175,6 +181,11 @@ const BuildSendMessageService = async ({
         tenantId,
         type: "chat:create",
         payload: messageCreated
+      });
+
+      await Queue.add("SendMessages", {
+        tenantId,
+        sessionId: ticket.whatsappId
       });
     }
   } catch (error) {

@@ -27,7 +27,7 @@ const VerifyMessage = async (
   await ticket.update({
     lastMessage: msg.body,
     lastMessageAt: new Date().getTime(),
-    answered: msg.fromMe || false
+    answered: msg.fromMe && !ticket.chatFlowId
   });
   await CreateMessageService({ messageData, tenantId: ticket.tenantId });
 };

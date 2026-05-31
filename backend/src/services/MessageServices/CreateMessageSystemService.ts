@@ -292,7 +292,7 @@ const CreateMessageSystemService = async ({
       await ticket.update({
         lastMessage: messageCreated.body,
         lastMessageAt: new Date().getTime(),
-        answered: true
+        answered: sendType !== "bot"
       });
 
       socketEmit({

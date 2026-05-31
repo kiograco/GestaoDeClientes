@@ -24,6 +24,13 @@ const FindUpdateTicketsInactiveChatBot = async (): Promise<void> => {
     and config->>'type' = 'configurations'
     and t."lastInteractionBot" < CURRENT_TIMESTAMP - concat(config->'configurations'->'notResponseMessage'->'time', ' MINUTES')::interval
     and (t."queueId" is null and t."userId" is null)
+    and not exists (
+      select 1
+      from "Messages" m
+      where m."ticketId" = t.id
+      and m."sendType" = 'bot'
+      and m.status = 'pending'
+    )
   `;
 
   const tickets: any = await Ticket.sequelize?.query(query, {

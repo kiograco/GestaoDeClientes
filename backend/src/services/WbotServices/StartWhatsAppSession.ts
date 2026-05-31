@@ -5,6 +5,7 @@ import { getIO } from "../../libs/socket";
 import wbotMonitor from "./wbotMonitor";
 import { logger } from "../../utils/logger";
 import AppError from "../../errors/AppError";
+import Queue from "../../libs/Queue";
 import { StartInstaBotSession } from "../InstagramBotServices/StartInstaBotSession";
 import { StartTbotSession } from "../TbotServices/StartTbotSession";
 import { StartWaba360 } from "../WABA360/StartWaba360";
@@ -34,6 +35,10 @@ export const StartWhatsAppSession = async (
       const wbot = await initWbot(whatsapp);
       wbotMessageListener(wbot);
       wbotMonitor(wbot, whatsapp);
+      await Queue.add("SendMessages", {
+        tenantId: whatsapp.tenantId,
+        sessionId: whatsapp.id
+      });
     }
 
     if (whatsapp.type === "telegram") {

@@ -16,6 +16,20 @@ const sessions: Session[] = [];
 const startingSessions = new Set<number>();
 const stoppingSessions = new Set<number>();
 
+const getSessionPath = (id: number | string): string => {
+  const pathRoot = path.resolve(__dirname, "..", "..", ".wwebjs_auth");
+  return `${pathRoot}/session-wbot-${id}`;
+};
+
+const clearChromeProfileLocks = async (id: number | string): Promise<void> => {
+  const pathSession = getSessionPath(id);
+  await Promise.all(
+    ["SingletonCookie", "SingletonLock", "SingletonSocket"].map(lock =>
+      rm(path.join(pathSession, lock), { force: true })
+    )
+  );
+};
+
 const minimal_args = [
   "--autoplay-policy=user-gesture-required",
   "--disable-background-networking",
@@ -56,8 +70,7 @@ const minimal_args = [
 ];
 
 export const apagarPastaSessao = async (id: number | string): Promise<void> => {
-  const pathRoot = path.resolve(__dirname, "..", "..", ".wwebjs_auth");
-  const pathSession = `${pathRoot}/session-wbot-${id}`;
+  const pathSession = getSessionPath(id);
   try {
     await rm(pathSession, { recursive: true, force: true });
   } catch (error) {
@@ -103,14 +116,15 @@ const args: string[] = process.env.CHROME_ARGS
 args.unshift(`--user-agent=${DefaultOptions.userAgent}`);
 
 export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
+  if (hasWbot(whatsapp.id) || isWbotStarting(whatsapp.id)) {
+    throw new AppError("ERR_WAPP_ALREADY_INITIALIZED");
+  }
+
+  startingSessions.add(whatsapp.id);
+  await clearChromeProfileLocks(whatsapp.id);
+
   return new Promise((resolve, reject) => {
     try {
-      if (hasWbot(whatsapp.id) || isWbotStarting(whatsapp.id)) {
-        reject(new AppError("ERR_WAPP_ALREADY_INITIALIZED"));
-        return;
-      }
-
-      startingSessions.add(whatsapp.id);
       const io = getIO();
       const sessionName = whatsapp.name;
       const { tenantId } = whatsapp;
