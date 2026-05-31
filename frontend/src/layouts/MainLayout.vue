@@ -217,13 +217,23 @@
           />
           <div v-if="userProfile === 'admin'">
             <q-separator spaced />
-            <div class="q-mb-lg"></div>
-            <template v-for="item in menuDataAdmin">
-              <EssentialLink
-                v-if="exibirMenuBeta(item)"
-                :key="item.title"
-                v-bind="item"
-              />
+            <template v-for="group in menuDataAdmin">
+              <div :key="group.title">
+                <q-item-label
+                  v-show="!miniState"
+                  header
+                  class="text-uppercase text-grey-7 text-weight-bold q-pb-xs"
+                >
+                  {{ group.title }}
+                </q-item-label>
+                <EssentialLink
+                  v-for="item in group.items"
+                  v-if="exibirMenuBeta(item)"
+                  :key="item.title"
+                  v-bind="item"
+                />
+                <q-separator spaced />
+              </div>
             </template>
           </div>
 
@@ -417,6 +427,28 @@ const objMenuAdmin = [
   }
 ]
 
+const objMenuAdminGroups = [
+  {
+    title: 'Operação',
+    routes: ['painel-atendimentos', 'relatorios', 'horarioAtendimento']
+  },
+  {
+    title: 'Automação',
+    routes: ['mensagens-rapidas', 'chat-flow', 'campanhas']
+  },
+  {
+    title: 'Cadastros',
+    routes: ['usuarios', 'filas', 'etiquetas', 'configuracoes']
+  },
+  {
+    title: 'Integrações',
+    routes: ['sessoes', 'api-service']
+  }
+].map(group => ({
+  title: group.title,
+  items: group.routes.map(routeName => objMenuAdmin.find(item => item.routeName === routeName))
+}))
+
 export default {
   name: 'MainLayout',
   mixins: [socketInitial],
@@ -435,7 +467,7 @@ export default {
       alertSound,
       leftDrawerOpen: false,
       menuData: objMenu,
-      menuDataAdmin: objMenuAdmin,
+      menuDataAdmin: objMenuAdminGroups,
       countTickets: 0,
       ticketsList: []
     }

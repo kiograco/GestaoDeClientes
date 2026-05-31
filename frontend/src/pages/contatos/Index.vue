@@ -127,33 +127,43 @@
             icon="img:whatsapp-logo.png"
             @click="handleSaveTicket(props.row, 'whatsapp')"
             v-if="props.row.number"
-          />
+          >
+            <q-tooltip>Iniciar atendimento pelo WhatsApp</q-tooltip>
+          </q-btn>
           <q-btn
             flat
             round
             icon="img:instagram-logo.png"
             @click="handleSaveTicket(props.row, 'instagram')"
             v-if="props.row.instagramPK"
-          />
+          >
+            <q-tooltip>Iniciar atendimento pelo Instagram</q-tooltip>
+          </q-btn>
           <q-btn
             flat
             round
             icon="img:telegram-logo.png"
             @click="handleSaveTicket(props.row, 'telegram')"
             v-if="props.row.telegramId"
-          />
+          >
+            <q-tooltip>Iniciar atendimento pelo Telegram</q-tooltip>
+          </q-btn>
           <q-btn
             flat
             round
             icon="edit"
             @click="editContact(props.row.id)"
-          />
+          >
+            <q-tooltip>Editar contato</q-tooltip>
+          </q-btn>
           <q-btn
             flat
             round
             icon="mdi-delete"
             @click="deleteContact(props.row.id)"
-          />
+          >
+            <q-tooltip>Excluir contato</q-tooltip>
+          </q-btn>
         </q-td>
       </template>
       <template v-slot:pagination="{ pagination }">
