@@ -4,6 +4,7 @@ import { getIO } from "../../libs/socket";
 import Whatsapp from "../../models/Whatsapp";
 import { logger } from "../../utils/logger";
 import { StartWhatsAppSession } from "./StartWhatsAppSession";
+import { isWbotStopping, removeWbot } from "../../libs/wbot";
 // import { apagarPastaSessao } from "../../libs/wbot";
 
 interface Session extends Client {
@@ -62,7 +63,10 @@ const wbotMonitor = async (
 
     wbot.on("disconnected", async reason => {
       logger.info(`Disconnected session: ${sessionName} | Reason: ${reason}`);
+      if (isWbotStopping(whatsapp.id)) return;
+
       try {
+        await removeWbot(whatsapp.id, false);
         await whatsapp.update({
           status: "OPENING",
           session: "",

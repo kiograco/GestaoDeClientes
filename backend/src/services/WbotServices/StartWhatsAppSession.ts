@@ -1,4 +1,4 @@
-import { initWbot } from "../../libs/wbot";
+import { hasWbot, initWbot, isWbotStarting } from "../../libs/wbot";
 import Whatsapp from "../../models/Whatsapp";
 import { wbotMessageListener } from "./wbotMessageListener";
 import { getIO } from "../../libs/socket";
@@ -13,6 +13,14 @@ import { StartMessengerBot } from "../MessengerChannelServices/StartMessengerBot
 export const StartWhatsAppSession = async (
   whatsapp: Whatsapp
 ): Promise<void> => {
+  if (
+    whatsapp.type === "whatsapp" &&
+    (hasWbot(whatsapp.id) || isWbotStarting(whatsapp.id))
+  ) {
+    logger.info(`Session ${whatsapp.id} is already active or starting.`);
+    return;
+  }
+
   await whatsapp.update({ status: "OPENING" });
 
   const io = getIO();

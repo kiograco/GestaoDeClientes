@@ -407,7 +407,9 @@ export default {
     },
     async handleSaveWhatsApp (whatsapp) {
       try {
-        await UpdateWhatsapp(whatsapp.id, whatsapp)
+        await UpdateWhatsapp(whatsapp.id, {
+          chatFlowId: whatsapp.chatFlowId
+        })
         this.$q.notify({
           type: 'positive',
           progress: true,

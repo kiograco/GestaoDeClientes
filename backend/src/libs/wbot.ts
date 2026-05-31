@@ -13,6 +13,8 @@ interface Session extends Client {
 }
 
 const sessions: Session[] = [];
+const startingSessions = new Set<number>();
+const stoppingSessions = new Set<number>();
 
 const minimal_args = [
   "--autoplay-policy=user-gesture-required",
@@ -64,15 +66,33 @@ export const apagarPastaSessao = async (id: number | string): Promise<void> => {
   }
 };
 
-export const removeWbot = (whatsappId: number): void => {
+export const hasWbot = (whatsappId: number): boolean =>
+  sessions.some(session => session.id === whatsappId);
+
+export const isWbotStarting = (whatsappId: number): boolean =>
+  startingSessions.has(whatsappId);
+
+export const isWbotStopping = (whatsappId: number): boolean =>
+  stoppingSessions.has(whatsappId);
+
+export const removeWbot = async (
+  whatsappId: number,
+  destroy = true
+): Promise<void> => {
+  stoppingSessions.add(whatsappId);
   try {
     const sessionIndex = sessions.findIndex(s => s.id === whatsappId);
     if (sessionIndex !== -1) {
-      sessions[sessionIndex].destroy();
-      sessions.splice(sessionIndex, 1);
+      const [session] = sessions.splice(sessionIndex, 1);
+      if (destroy) {
+        await session.destroy();
+      }
     }
   } catch (err) {
     logger.error(`removeWbot | Error: ${err}`);
+  } finally {
+    startingSessions.delete(whatsappId);
+    stoppingSessions.delete(whatsappId);
   }
 };
 
@@ -85,6 +105,12 @@ args.unshift(`--user-agent=${DefaultOptions.userAgent}`);
 export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
   return new Promise((resolve, reject) => {
     try {
+      if (hasWbot(whatsapp.id) || isWbotStarting(whatsapp.id)) {
+        reject(new AppError("ERR_WAPP_ALREADY_INITIALIZED"));
+        return;
+      }
+
+      startingSessions.add(whatsapp.id);
       const io = getIO();
       const sessionName = whatsapp.name;
       const { tenantId } = whatsapp;
@@ -105,9 +131,11 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
       }) as Session;
 
       wbot.id = whatsapp.id;
+      sessions.push(wbot);
 
       wbot.initialize().catch(async err => {
         logger.error(`initWbot error | Error: ${err}`);
+        await removeWbot(whatsapp.id);
         await whatsapp.update({ status: "DISCONNECTED" });
         io.emit(`${tenantId}:whatsappSession`, {
           action: "update",
@@ -123,12 +151,6 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
         );
 
         await whatsapp.update({ qrcode: qr, status: "qrcode", retries: 0 });
-        const sessionIndex = sessions.findIndex(s => s.id === whatsapp.id);
-        if (sessionIndex === -1) {
-          wbot.id = whatsapp.id;
-          sessions.push(wbot);
-        }
-
         io.emit(`${tenantId}:whatsappSession`, {
           action: "update",
           session: whatsapp
@@ -155,6 +177,7 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
           status: "DISCONNECTED",
           retries: retry + 1
         });
+        await removeWbot(whatsapp.id);
 
         io.emit(`${tenantId}:whatsappSession`, {
           action: "update",
@@ -191,18 +214,16 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
           session: whatsapp
         });
 
-        const sessionIndex = sessions.findIndex(s => s.id === whatsapp.id);
-        if (sessionIndex === -1) {
-          wbot.id = whatsapp.id;
-          sessions.push(wbot);
-        }
+        startingSessions.delete(whatsapp.id);
 
         wbot.sendPresenceAvailable();
         SyncUnreadMessagesWbot(wbot, tenantId);
         resolve(wbot);
       });
     } catch (err) {
+      startingSessions.delete(whatsapp.id);
       logger.error(`initWbot error | Error: ${err}`);
+      reject(err);
     }
   });
 };
