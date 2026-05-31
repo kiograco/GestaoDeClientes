@@ -45,10 +45,10 @@ class User extends Model<User> {
   @Column
   passwordHash: string;
 
-  @Column
+  @Column(DataType.STRING)
   passwordResetTokenHash: string | null;
 
-  @Column
+  @Column(DataType.DATE)
   passwordResetExpires: Date | null;
 
   @Default(0)
