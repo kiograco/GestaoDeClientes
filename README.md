@@ -15,6 +15,7 @@ usuários, campanhas e chatbot configurável.
 ## Documentação
 
 - [Manual de uso para onboarding](docs/MANUAL_DE_USO.md)
+- [Publicação de demonstração no Railway](docs/DEPLOY_RAILWAY.md)
 
 ## Execução local
 

@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "NODE_OPTIONS=--openssl-legacy-provider npx quasar build",
+  "outputDirectory": "dist/spa"
+}
