@@ -7,7 +7,7 @@
   >
     <q-card
       class="q-pa-lg"
-      style="min-width: 700px"
+      style="width: 700px; max-width: 95vw"
     >
       <q-card-section>
         <div class="text-h6">

@@ -6,6 +6,10 @@ import User from "../../models/User";
 interface UserData {
   filtrosAtendimento?: any;
   isDark?: boolean;
+  onboardingAdmin?: {
+    ticketTested?: boolean;
+    completed?: boolean;
+  };
 }
 
 interface Request {

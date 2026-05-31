@@ -38,6 +38,17 @@
 
         <div class="q-gutter-sm row items-center no-wrap">
           <q-btn
+            v-if="userProfile === 'admin'"
+            round
+            dense
+            flat
+            color="grey-8"
+            icon="mdi-clipboard-check-outline"
+            @click="onboardingOpen = true"
+          >
+            <q-tooltip>Configuração inicial</q-tooltip>
+          </q-btn>
+          <q-btn
             round
             dense
             flat
@@ -242,6 +253,11 @@
       :modalUsuario.sync="modalUsuario"
       :usuarioEdicao.sync="usuario"
     />
+    <OnboardingAdmin
+      v-if="userProfile === 'admin'"
+      v-model="onboardingOpen"
+      :usuario="usuario"
+    />
   </q-layout>
 </template>
 
@@ -260,6 +276,7 @@ import { RealizarLogout } from 'src/service/login'
 import cStatusUsuario from '../components/cStatusUsuario.vue'
 import { socketIO } from 'src/utils/socket'
 import { ConsultarTickets } from 'src/service/tickets'
+import OnboardingAdmin from 'src/components/OnboardingAdmin'
 
 const socket = socketIO()
 
@@ -363,7 +380,7 @@ const objMenuAdmin = [
 export default {
   name: 'MainLayout',
   mixins: [socketInitial],
-  components: { EssentialLink, ModalUsuario, cStatusUsuario, cSystemVersion },
+  components: { EssentialLink, ModalUsuario, cStatusUsuario, cSystemVersion, OnboardingAdmin },
   data () {
     return {
       username,
@@ -371,6 +388,7 @@ export default {
       miniState: true,
       userProfile: 'user',
       modalUsuario: false,
+      onboardingOpen: false,
       usuario: {},
       alertSound,
       leftDrawerOpen: false,
@@ -575,6 +593,11 @@ export default {
     }
     this.usuario = JSON.parse(localStorage.getItem('usuario'))
     this.userProfile = localStorage.getItem('profile')
+    if (this.userProfile === 'admin') {
+      const onboardingKey = `onboardingAdmin:${this.usuario.tenantId || 'default'}`
+      const onboarding = JSON.parse(localStorage.getItem(onboardingKey) || '{}')
+      this.onboardingOpen = !(onboarding.completed || this.usuario.configs?.onboardingAdmin?.completed)
+    }
     await this.conectarSocket(this.usuario)
   },
   destroyed () {

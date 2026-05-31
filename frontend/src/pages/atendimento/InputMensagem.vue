@@ -131,7 +131,6 @@
             </q-menu>
           </q-btn>
           <q-btn
-            v-if="$q.screen.width > 500"
             flat
             dense
             @click="handlSendLinkVideo"

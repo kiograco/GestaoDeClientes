@@ -178,7 +178,7 @@
             </div>
           </div>
           <div class="row items-center q-pt-none">
-            <label class="text-heading text-bold">2ª Mensagem</label>
+            <label class="text-heading text-bold">2ª Mensagem (opcional)</label>
             <div class="col-xs-3 col-sm-2 col-md-1">
               <q-btn
                 round
@@ -228,7 +228,7 @@
             </div>
           </div>
           <div class="row items-center q-pt-none">
-            <label class="text-heading text-bold">3ª Mensagem</label>
+            <label class="text-heading text-bold">3ª Mensagem (opcional)</label>
             <div class="col-xs-3 col-sm-2 col-md-1">
               <q-btn
                 round
@@ -418,15 +418,15 @@ export default {
       name: { required },
       start: { required, isValidDate },
       message1: { required },
-      message2: { required },
-      message3: { required },
+      message2: {},
+      message3: {},
       sessionId: { required }
     }
   },
   computed: {
     ...mapGetters(['whatsapps']),
     cSessions () {
-      return this.whatsapps.filter(w => w.type === 'whatsapp' && !w.isDeleted)
+      return this.whatsapps.filter(w => w.type === 'whatsapp' && w.status === 'CONNECTED' && !w.isDeleted)
     },
     cKey () {
       return this.campanha.message1 + this.campanha.message2 + this.campanha.message3
@@ -458,7 +458,7 @@ export default {
         })
       }
       msgArray.forEach(el => {
-        if (this.messagemPreview === el) {
+        if (this.messagemPreview === el && this.campanha[el]) {
           const body = this.campanha[el]
           const msg = {
             ...this.messageTemplate,
@@ -565,7 +565,11 @@ export default {
       }
       try {
         this.loading = true
-        const campanha = { ...this.campanha }
+        const campanha = {
+          ...this.campanha,
+          message2: this.campanha.message2 || '',
+          message3: this.campanha.message3 || ''
+        }
         const medias = new FormData()
         Object.keys(campanha).forEach((key) => {
           medias.append(key, campanha[key])

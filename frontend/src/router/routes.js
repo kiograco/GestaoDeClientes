@@ -3,7 +3,11 @@ const routes = [
   {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
-    redirect: { name: 'contatos' },
+    redirect: () => ({
+      name: localStorage.getItem('profile') === 'admin'
+        ? 'home-dashboard'
+        : 'atendimento'
+    }),
     children: [
       { path: '', component: () => import('pages/contatos/Index.vue') },
       { path: '/home', name: 'home-dashboard', component: () => import('pages/dashboard/Index.vue') },

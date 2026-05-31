@@ -6,6 +6,7 @@ import {
   SendPasswordResetEmail
 } from "../../helpers/SendPasswordResetEmail";
 import User from "../../models/User";
+import { logger } from "../../utils/logger";
 
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
 
@@ -38,6 +39,11 @@ export const RequestPasswordResetService = async (
   try {
     await SendPasswordResetEmail(user.email, token);
   } catch (error) {
+    logger.error(
+      `Password reset email failed: ${
+        error instanceof Error ? error.message : "Unknown email provider error"
+      }`
+    );
     await user.update({
       passwordResetTokenHash: null,
       passwordResetExpires: null
