@@ -4,7 +4,7 @@ export const socketIO = () => {
   return io(process.env.VUE_URL_API, {
     reconnection: true,
     autoConnect: true,
-    transports: ['websocket'],
+    transports: ['polling', 'websocket'],
     auth: (cb) => {
       const tokenItem = localStorage.getItem('token')
       const token = tokenItem ? JSON.parse(tokenItem) : null
