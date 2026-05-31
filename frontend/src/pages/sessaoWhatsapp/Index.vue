@@ -19,6 +19,37 @@
         </q-card-section>
       </q-card>
     </div>
+    <q-banner
+      v-if="instagramConnection.state"
+      rounded
+      class="q-ma-sm text-white"
+      :class="`bg-${instagramConnectionColor}`"
+    >
+      <div class="text-subtitle1 text-bold">{{ instagramConnection.title }}</div>
+      <div class="text-body2">{{ instagramConnection.message }}</div>
+      <q-linear-progress
+        v-if="['opening', 'waiting'].includes(instagramConnection.state)"
+        indeterminate
+        color="white"
+        class="q-mt-sm"
+      />
+      <template v-slot:action>
+        <q-btn
+          v-if="['error', 'timeout'].includes(instagramConnection.state)"
+          flat
+          color="white"
+          label="Tentar novamente"
+          @click="retryInstagramConnection"
+        />
+        <q-btn
+          v-if="instagramConnection.state === 'success'"
+          flat
+          color="white"
+          label="Fechar"
+          @click="clearInstagramConnection"
+        />
+      </template>
+    </q-banner>
     <div class="row full-width">
       <template v-for="item in canais">
         <q-card
@@ -210,6 +241,12 @@ export default {
       listaChatFlow: [],
       whatsAppId: null,
       canais: [],
+      instagramConnection: {
+        channelId: null,
+        state: null,
+        title: '',
+        message: ''
+      },
       objStatus: {
         qrcode: ''
       },
@@ -273,9 +310,34 @@ export default {
     cDadosWhatsappSelecionado () {
       const { id } = this.whatsappSelecionado
       return this.whatsapps.find(w => w.id === id)
+    },
+    instagramConnectionColor () {
+      if (this.instagramConnection.state === 'success') return 'positive'
+      if (['error', 'timeout'].includes(this.instagramConnection.state)) return 'negative'
+      return 'primary'
     }
   },
   methods: {
+    clearInstagramConnection () {
+      this.instagramConnection = {
+        channelId: null,
+        state: null,
+        title: '',
+        message: ''
+      }
+    },
+    setInstagramConnection (channelId, state, title, message) {
+      this.instagramConnection = {
+        channelId,
+        state,
+        title,
+        message
+      }
+    },
+    retryInstagramConnection () {
+      const channel = this.canais.find(item => item.id === this.instagramConnection.channelId)
+      if (channel) this.handleConnectChannel(channel)
+    },
     formatarData (data, formato) {
       return format(parseISO(data), formato, { locale: pt })
     },
@@ -339,21 +401,54 @@ export default {
       if (channel.type !== 'instagram_oauth') {
         return this.handleStartWhatsAppSession(channel.id)
       }
+      this.setInstagramConnection(
+        channel.id,
+        'opening',
+        'Preparando autorizacao do Instagram',
+        'Aguarde enquanto abrimos a pagina oficial de autorizacao.'
+      )
       try {
         const { data } = await GetInstagramOAuthUrl(channel.id)
-        window.open(data.url, 'instagram-oauth', 'width=720,height=760')
+        const popup = window.open(data.url, 'instagram-oauth', 'width=720,height=760')
+        if (!popup) {
+          throw new Error('Instagram authorization popup blocked')
+        }
+        this.setInstagramConnection(
+          channel.id,
+          'waiting',
+          'Aguardando autorizacao do Instagram',
+          'Conclua as etapas na janela aberta. A verificacao pode levar ate tres minutos.'
+        )
         for (let attempt = 0; attempt < 90; attempt++) {
           await new Promise(resolve => setTimeout(resolve, 2000))
           const response = await ListarWhatsapps()
           this.$store.commit('LOAD_WHATSAPPS', response.data)
           const updated = response.data.find(item => item.id === channel.id)
           if (updated && updated.status === 'CONNECTED') {
+            this.setInstagramConnection(
+              channel.id,
+              'success',
+              'Instagram conectado',
+              'A conta foi autorizada e o canal esta pronto para uso.'
+            )
             this.$notificarSucesso('Instagram conectado pela API oficial.')
             return
           }
         }
+        this.setInstagramConnection(
+          channel.id,
+          'timeout',
+          'Tempo de autorizacao esgotado',
+          'Nao recebemos a confirmacao em tres minutos. Feche a janela anterior e tente novamente.'
+        )
       } catch (error) {
         console.error(error)
+        this.setInstagramConnection(
+          channel.id,
+          'error',
+          'Nao foi possivel conectar o Instagram',
+          'Verifique se o navegador bloqueou a nova janela e tente novamente. Se o erro persistir, confirme o acesso a conta diretamente no Instagram.'
+        )
         this.$notificarErro('Nao foi possivel iniciar a autorizacao oficial do Instagram.')
       }
     },

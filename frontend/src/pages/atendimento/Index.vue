@@ -881,21 +881,23 @@ export default {
         renotify: true
       }
 
-      const notification = new Notification(
-        `Mensagem de ${data.ticket.contact.name}`,
-        options
-      )
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const notification = new Notification(
+          `Mensagem de ${data.ticket.contact.name}`,
+          options
+        )
 
-      setTimeout(() => {
-        notification.close()
-      }, 10000)
+        setTimeout(() => {
+          notification.close()
+        }, 10000)
 
-      notification.onclick = e => {
-        e.preventDefault()
-        window.focus()
-        this.$store.dispatch('AbrirChatMensagens', data.ticket)
-        this.$router.push({ name: 'atendimento' })
-        // history.push(`/tickets/${ticket.id}`);
+        notification.onclick = e => {
+          e.preventDefault()
+          window.focus()
+          this.$store.dispatch('AbrirChatMensagens', data.ticket)
+          this.$router.push({ name: 'atendimento' })
+          // history.push(`/tickets/${ticket.id}`);
+        }
       }
 
       this.$nextTick(() => {
@@ -1090,10 +1092,6 @@ export default {
     await this.listarUsuarios()
     const { data } = await ListarMensagensRapidas()
     this.mensagensRapidas = data
-    if (!('Notification' in window)) {
-    } else {
-      Notification.requestPermission()
-    }
     this.userProfile = localStorage.getItem('profile')
     // this.socketInitial()
 

@@ -65,7 +65,23 @@
             </q-badge>
             <q-menu>
               <q-list style="min-width: 300px">
-
+                <q-item v-if="notificationPermission !== 'granted'">
+                  <q-item-section>
+                    <q-item-label>Notificações do navegador desativadas</q-item-label>
+                    <q-item-label caption>Ative para receber alertas de novas mensagens.</q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-btn
+                      dense
+                      flat
+                      no-caps
+                      color="primary"
+                      label="Ativar"
+                      @click="notificationPromptOpen = true"
+                    />
+                  </q-item-section>
+                </q-item>
+                <q-separator v-if="notificationPermission !== 'granted'" />
                 <q-item v-if="(parseInt(notifications.count) + parseInt(notifications_p.count)) == 0">
                   <q-item-section style="cursor: pointer;">
                     Nada de novo por aqui!
@@ -258,6 +274,30 @@
       v-model="onboardingOpen"
       :usuario="usuario"
     />
+    <q-dialog v-model="notificationPromptOpen">
+      <q-card style="width: 420px; max-width: 95vw">
+        <q-card-section>
+          <div class="text-h6">Receba avisos de novas mensagens</div>
+          <div class="text-body2 text-grey-7 q-mt-sm">
+            Ative as notificações para receber alertas no navegador quando houver um novo atendimento ou mensagem.
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn
+            flat
+            label="Agora não"
+            color="grey-7"
+            @click="dispensarAtivacaoNotificacoes"
+          />
+          <q-btn
+            unelevated
+            label="Ativar notificações"
+            color="primary"
+            @click="ativarNotificacoes"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-layout>
 </template>
 
@@ -389,6 +429,8 @@ export default {
       userProfile: 'user',
       modalUsuario: false,
       onboardingOpen: false,
+      notificationPromptOpen: false,
+      notificationPermission: 'Notification' in window ? Notification.permission : 'unsupported',
       usuario: {},
       alertSound,
       leftDrawerOpen: false,
@@ -443,6 +485,35 @@ export default {
       const { data } = await ListarWhatsapps()
       this.$store.commit('LOAD_WHATSAPPS', data)
     },
+    dispensarAtivacaoNotificacoes () {
+      localStorage.setItem('notificationPromptDismissed', 'true')
+      this.notificationPromptOpen = false
+    },
+    async ativarNotificacoes () {
+      if (!('Notification' in window)) {
+        this.$q.notify({
+          type: 'warning',
+          message: 'Este navegador não oferece suporte a notificações.'
+        })
+        this.notificationPromptOpen = false
+        return
+      }
+      const permission = await Notification.requestPermission()
+      this.notificationPermission = permission
+      this.notificationPromptOpen = false
+      if (permission === 'granted') {
+        localStorage.removeItem('notificationPromptDismissed')
+        this.$q.notify({
+          type: 'positive',
+          message: 'Notificações ativadas.'
+        })
+        return
+      }
+      this.$q.notify({
+        type: 'warning',
+        message: 'As notificações continuam desativadas. Você pode liberá-las nas configurações do navegador.'
+      })
+    },
     handlerNotifications (data) {
       const { message, contact, ticket } = data
 
@@ -453,16 +524,18 @@ export default {
         renotify: true
       }
 
-      const notification = new Notification(
-        `Mensagem de ${contact.name}`,
-        options
-      )
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const notification = new Notification(
+          `Mensagem de ${contact.name}`,
+          options
+        )
 
-      notification.onclick = e => {
-        e.preventDefault()
-        window.focus()
-        this.$store.dispatch('AbrirChatMensagens', ticket)
-        this.$router.push({ name: 'atendimento' })
+        notification.onclick = e => {
+          e.preventDefault()
+          window.focus()
+          this.$store.dispatch('AbrirChatMensagens', ticket)
+          this.$router.push({ name: 'atendimento' })
+        }
       }
       this.$nextTick(() => {
         // utilizar refs do layout
@@ -587,9 +660,12 @@ export default {
     await this.listarWhatsapps()
     await this.listarConfiguracoes()
     await this.consultarTickets()
-    if (!('Notification' in window)) {
-    } else {
-      Notification.requestPermission()
+    if (
+      'Notification' in window &&
+      Notification.permission === 'default' &&
+      localStorage.getItem('notificationPromptDismissed') !== 'true'
+    ) {
+      this.notificationPromptOpen = true
     }
     this.usuario = JSON.parse(localStorage.getItem('usuario'))
     this.userProfile = localStorage.getItem('profile')

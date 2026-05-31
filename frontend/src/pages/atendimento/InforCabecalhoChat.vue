@@ -184,6 +184,9 @@
               option-value="id"
               option-label="queue"
               label="Fila de destino"
+              :error="filaTransferenciaError"
+              error-message="Selecione uma fila para transferir o ticket."
+              @input="filaTransferenciaError = false"
               class="full-width"
             />
           </div>
@@ -236,6 +239,7 @@ export default {
       modalTransferirTicket: false,
       usuarioSelecionado: null,
       filaSelecionada: null,
+      filaTransferenciaError: false,
       usuarios: [],
       filas: []
     }
@@ -272,6 +276,7 @@ export default {
       try {
         const { data } = await ListarFilas()
         this.filas = data
+        this.filaTransferenciaError = false
         this.modalTransferirTicket = true
         this.listarUsuarios()
       } catch (error) {
@@ -290,7 +295,10 @@ export default {
       }
     },
     async confirmarTransferenciaTicket () {
-      if (!this.filaSelecionada) return
+      if (!this.filaSelecionada) {
+        this.filaTransferenciaError = true
+        return
+      }
       // if (!this.usuarioSelecionado) return
       console.log('usuario selecionado: ' + this.usuarioSelecionado)
       console.log('usuario atual do ticket: ' + this.ticketFocado.userId)
