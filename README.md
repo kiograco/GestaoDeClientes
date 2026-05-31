@@ -12,6 +12,10 @@ usuários, campanhas e chatbot configurável.
 - Chatbot visual com roteamento por etapas.
 - Campanhas, relatórios e integrações por API.
 
+## Documentação
+
+- [Manual de uso para onboarding](docs/MANUAL_DE_USO.md)
+
 ## Execução local
 
 ### Requisitos
