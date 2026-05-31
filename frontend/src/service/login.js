@@ -22,3 +22,19 @@ export function RefreshToken () {
     method: 'post'
   })
 }
+
+export function SolicitarRedefinicaoSenha (email) {
+  return request({
+    url: '/auth/password-reset/request',
+    method: 'post',
+    data: { email }
+  })
+}
+
+export function RedefinirSenha (token, password) {
+  return request({
+    url: '/auth/password-reset/confirm',
+    method: 'post',
+    data: { token, password }
+  })
+}

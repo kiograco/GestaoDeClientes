@@ -7,6 +7,8 @@ import { SendRefreshToken } from "../helpers/SendRefreshToken";
 import { RefreshTokenService } from "../services/AuthServices/RefreshTokenService";
 import { getIO } from "../libs/socket";
 import User from "../models/User";
+import { RequestPasswordResetService } from "../services/AuthServices/RequestPasswordResetService";
+import { ResetPasswordService } from "../services/AuthServices/ResetPasswordService";
 
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
@@ -94,4 +96,30 @@ export const logout = async (
   });
 
   return res.json({ message: "USER_LOGOUT" });
+};
+
+export const requestPasswordReset = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { email } = req.body;
+
+  if (typeof email === "string" && email.trim()) {
+    await RequestPasswordResetService(email);
+  }
+
+  return res.json({
+    message: "PASSWORD_RESET_EMAIL_SENT_IF_ACCOUNT_EXISTS"
+  });
+};
+
+export const resetPassword = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { token, password } = req.body;
+
+  await ResetPasswordService({ token, password });
+
+  return res.json({ message: "PASSWORD_RESET_SUCCESS" });
 };

@@ -88,7 +88,7 @@
               </span>
             </q-btn>
           </q-card-actions>
-          <!-- <q-btn
+          <q-btn
             flat
             color="info"
             no-caps
@@ -96,25 +96,109 @@
             class="q-px-sm"
             label="Esqueci a senha"
             @click="modalEsqueciSenha=true"
-          /> -->
+          />
 
           <q-inner-loading :showing="loading" />
         </q-card>
       </q-page>
 
+      <q-dialog v-model="modalEsqueciSenha" persistent>
+        <q-card style="width: 420px; max-width: 90vw">
+          <q-card-section>
+            <div class="text-h6">Recuperar senha</div>
+            <div class="text-caption text-grey-7">
+              Informe seu e-mail para receber um link de redefinição.
+            </div>
+          </q-card-section>
+          <q-card-section>
+            <q-input
+              v-model.trim="emailRedefinicao"
+              outlined
+              rounded
+              label="E-mail"
+              :error="$v.emailRedefinicao.$error"
+              error-message="Informe um e-mail válido."
+              @blur="$v.emailRedefinicao.$touch"
+              @keypress.enter="solicitarRedefinicaoSenha"
+            />
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat rounded label="Cancelar" color="negative" v-close-popup />
+            <q-btn
+              rounded
+              label="Enviar link"
+              color="primary"
+              :loading="loadingRedefinicao"
+              @click="solicitarRedefinicaoSenha"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+
+      <q-dialog v-model="modalNovaSenha" persistent>
+        <q-card style="width: 420px; max-width: 90vw">
+          <q-card-section>
+            <div class="text-h6">Cadastrar nova senha</div>
+            <div class="text-caption text-grey-7">
+              Informe uma senha com pelo menos 6 caracteres.
+            </div>
+          </q-card-section>
+          <q-card-section class="q-gutter-md">
+            <q-input
+              v-model="novaSenha"
+              outlined
+              rounded
+              label="Nova senha"
+              :type="isPwdNovaSenha ? 'password' : 'text'"
+            >
+              <template v-slot:append>
+                <q-icon
+                  :name="isPwdNovaSenha ? 'visibility_off' : 'visibility'"
+                  class="cursor-pointer"
+                  @click="isPwdNovaSenha = !isPwdNovaSenha"
+                />
+              </template>
+            </q-input>
+            <q-input
+              v-model="confirmacaoNovaSenha"
+              outlined
+              rounded
+              label="Confirmar nova senha"
+              :type="isPwdNovaSenha ? 'password' : 'text'"
+              @keypress.enter="redefinirSenha"
+            />
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat rounded label="Cancelar" color="negative" @click="cancelarNovaSenha" />
+            <q-btn
+              rounded
+              label="Salvar senha"
+              color="primary"
+              :loading="loadingRedefinicao"
+              @click="redefinirSenha"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
     </q-page-container>
   </q-layout>
 </template>
 
 <script>
 import { required, email } from 'vuelidate/lib/validators'
+import { RedefinirSenha, SolicitarRedefinicaoSenha } from 'src/service/login'
 
 export default {
   name: 'Login',
   data () {
     return {
       modalEsqueciSenha: false,
+      modalNovaSenha: false,
       emailRedefinicao: null,
+      novaSenha: '',
+      confirmacaoNovaSenha: '',
+      isPwdNovaSenha: true,
+      loadingRedefinicao: false,
       form: {
         email: null,
         password: null
@@ -152,6 +236,61 @@ export default {
           this.loading = false
         })
     },
+    async solicitarRedefinicaoSenha () {
+      this.$v.emailRedefinicao.$touch()
+      if (this.$v.emailRedefinicao.$error) return
+
+      this.loadingRedefinicao = true
+      try {
+        await SolicitarRedefinicaoSenha(this.emailRedefinicao)
+        this.modalEsqueciSenha = false
+        this.emailRedefinicao = null
+        this.$v.emailRedefinicao.$reset()
+        this.$q.notify({
+          type: 'positive',
+          message: 'Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.',
+          position: 'top'
+        })
+      } catch (error) {
+        this.$q.notify({
+          type: 'negative',
+          message: 'Não foi possível enviar o link de redefinição. Tente novamente mais tarde.',
+          position: 'top'
+        })
+      } finally {
+        this.loadingRedefinicao = false
+      }
+    },
+    async redefinirSenha () {
+      if (this.novaSenha.length < 6) {
+        this.$q.notify({ type: 'warning', message: 'A senha deve ter pelo menos 6 caracteres.' })
+        return
+      }
+      if (this.novaSenha !== this.confirmacaoNovaSenha) {
+        this.$q.notify({ type: 'warning', message: 'As senhas informadas não conferem.' })
+        return
+      }
+
+      this.loadingRedefinicao = true
+      try {
+        await RedefinirSenha(this.$route.query.tokenSetup, this.novaSenha)
+        this.$q.notify({ type: 'positive', message: 'Senha redefinida. Faça login com a nova senha.' })
+        this.cancelarNovaSenha()
+      } catch (error) {
+        this.$q.notify({
+          type: 'negative',
+          message: 'O link é inválido ou expirou. Solicite uma nova redefinição de senha.'
+        })
+      } finally {
+        this.loadingRedefinicao = false
+      }
+    },
+    cancelarNovaSenha () {
+      this.modalNovaSenha = false
+      this.novaSenha = ''
+      this.confirmacaoNovaSenha = ''
+      this.$router.replace({ name: 'login' })
+    },
     clear () {
       this.form.email = ''
       this.form.password = ''
@@ -159,6 +298,7 @@ export default {
     }
   },
   mounted () {
+    this.modalNovaSenha = !!this.$route.query.tokenSetup
   }
 }
 </script>

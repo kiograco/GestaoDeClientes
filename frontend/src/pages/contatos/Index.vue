@@ -712,9 +712,9 @@ export default {
       } catch (error) {
         console.error(error)
         this.$notificarErro('Ocorreu um erro ao sincronizar os contatos', error)
-        this.loading = true
+      } finally {
+        this.loading = false
       }
-      this.loading = true
     }
 
   },

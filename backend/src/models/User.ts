@@ -45,6 +45,12 @@ class User extends Model<User> {
   @Column
   passwordHash: string;
 
+  @Column
+  passwordResetTokenHash: string | null;
+
+  @Column
+  passwordResetExpires: Date | null;
+
   @Default(0)
   @Column
   tokenVersion: number;
