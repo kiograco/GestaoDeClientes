@@ -85,7 +85,11 @@ service.interceptors.response.use(
   },
   error => {
     loading.hide(error.config)
-    if (error?.response?.status === 403 && !error.config._retry) {
+    const errorCode = error?.response?.data?.error
+    const tenantAccessErrors = ['ERR_TENANT_INACTIVE', 'ERR_TENANT_ACCESS_EXPIRED']
+    if (tenantAccessErrors.includes(errorCode)) {
+      handlerError(error)
+    } else if (error?.response?.status === 403 && !error.config._retry) {
       error.config._retry = true
       RefreshToken().then(res => {
         if (res.data) {

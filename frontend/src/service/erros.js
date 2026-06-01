@@ -13,7 +13,7 @@ const backendErrors = {
   ERR_INVALID_CREDENTIALS:
     'Erro de autenticação. Por favor, tente novamente.',
   ERR_TENANT_INACTIVE:
-    'O acesso da empresa está suspenso. Entre em contato com o suporte comercial.',
+    'Sua conta está inativa. Entre em contato com o suporte para reativar seu acesso.',
   ERR_TENANT_ACCESS_EXPIRED:
     'O período pago da empresa terminou. Entre em contato com o suporte comercial para renovar o acesso.',
   ERR_SENDING_WAPP_MSG:

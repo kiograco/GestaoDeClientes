@@ -91,7 +91,7 @@ const user = {
           })
         }
       } catch (error) {
-        console.error(error, error.data.error === 'ERROR_NO_PERMISSION_API_ADMIN')
+        console.error(error)
       }
     }
   }
