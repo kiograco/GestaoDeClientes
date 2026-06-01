@@ -11,6 +11,10 @@ usuários, campanhas e chatbot configurável.
 - Gestão de contatos, filas e etiquetas.
 - Chatbot visual com roteamento por etapas.
 - Campanhas, relatórios e integrações por API.
+- Identidade visual por empresa com logo configurável.
+- Recuperação de senha por e-mail.
+- Painel global de superadministrador para gestão comercial das empresas.
+- Controle manual de liberação por período pago, com aviso de dias restantes.
 
 ## Documentação
 
@@ -35,6 +39,14 @@ docker compose up -d --build
 
 A API estará disponível em `http://localhost:3100`.
 
+As migrations são executadas automaticamente na inicialização do container. Para
+executá-las manualmente fora do Docker:
+
+```powershell
+cd backend
+npm run db:migrate
+```
+
 ### Frontend
 
 Crie `frontend/.env` com a URL da API e execute:
@@ -47,6 +59,89 @@ npx quasar dev
 ```
 
 A interface estará disponível em `http://localhost:8080`.
+
+## Administração SaaS
+
+Configure no backend:
+
+```env
+SUPERADMIN_EMAIL=owner@example.com
+SUPERADMIN_PASSWORD=SUBSTITUA_POR_UMA_SENHA_FORTE
+```
+
+Na inicialização, o backend garante a existência da conta global de
+superadministrador quando já existe ao menos uma empresa cadastrada. Essa conta
+é direcionada ao painel **Gestão de empresas** após o login.
+
+O superadministrador pode:
+
+- cadastrar empresas e seus administradores iniciais;
+- editar nome da empresa, nome, e-mail e senha do administrador principal;
+- definir limites de usuários e canais;
+- suspender ou reativar o acesso;
+- informar o prazo pago inicial;
+- renovar o acesso adicionando novos dias ao saldo ainda disponível.
+
+Administradores e atendentes visualizam no cabeçalho quantos dias de acesso
+restam. Quando o prazo termina ou a empresa é suspensa, login, refresh de token,
+API externa e sockets são bloqueados.
+
+Empresas antigas sem prazo definido permanecem liberadas até que o
+superadministrador faça a primeira renovação.
+
+O painel ainda utiliza renovação manual. Pagamentos online por Pix e cartão
+exigem integração adicional com um gateway de pagamento e webhooks idempotentes.
+
+## Identidade Visual
+
+Administradores de empresas podem enviar sua logo em **Configurações >
+Identidade visual**. A imagem aparece no cabeçalho e na tela de login após o
+cliente informar o e-mail.
+
+Em produção, configure:
+
+```env
+PERSISTENT_DATA_DIR=/app/data
+```
+
+As logos ficam em `/app/data/public/logos`, junto ao volume persistente usado
+para sessões do WhatsApp e mídias. Sem volume persistente, arquivos enviados
+podem ser perdidos após redeploy.
+
+## Recuperação De Senha
+
+O login possui o fluxo **Esqueci minha senha**. O backend envia o link de
+redefinição usando Resend.
+
+Configure:
+
+```env
+RESEND_API_KEY=SUBSTITUA_PELA_CHAVE_RESEND
+RESEND_FROM_EMAIL=contato@SEU_DOMINIO_VALIDADO
+```
+
+Para produção, utilize um remetente de domínio validado no Resend. O endereço
+`onboarding@resend.dev` deve ser usado somente em testes compatíveis com as
+restrições da conta.
+
+## Qualidade
+
+Execute antes de publicar:
+
+```powershell
+cd backend
+npm run lint
+npm run build
+
+cd ..\frontend
+npm run lint
+$env:NODE_OPTIONS = "--openssl-legacy-provider"
+npx quasar build
+```
+
+O backend bloqueia warnings de lint por meio de `--max-warnings 0`. A variável
+`NODE_OPTIONS` é necessária no frontend ao usar Node.js 20 com a versão atual
+do Webpack presente no projeto.
 
 ## Seguranca
 
