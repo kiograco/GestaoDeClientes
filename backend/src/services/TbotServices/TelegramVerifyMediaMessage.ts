@@ -1,6 +1,7 @@
+/* eslint-disable no-nested-ternary */
+/* eslint-disable consistent-return */
 import { join } from "path";
-import { promisify } from "util";
-import { writeFile, createWriteStream } from "fs";
+import { createWriteStream } from "fs";
 
 import { Context } from "telegraf";
 import axios from "axios";
@@ -12,14 +13,12 @@ import CreateMessageService from "../MessageServices/CreateMessageService";
 import { logger } from "../../utils/logger";
 import getQuotedForMessageId from "../../helpers/getQuotedForMessageId";
 
-const writeFileAsync = promisify(writeFile);
-
 const getMediaInfo = (msg: any) => {
   // eslint-disable-next-line prettier/prettier
   const mediaType = msg.photo ? "photo" : msg.video ? "video" : msg.audio ? "audio" : msg.voice ? "voice" : msg.sticker && !msg.sticker.is_animated ? "sticker" : "document";
   const mediaObj = msg[mediaType];
   // eslint-disable-next-line prettier/prettier
-  const [type, mimeType, SAD, fileName, fileId, caption, SAV] = [mediaType, mediaObj.mime_type ? mediaObj.mime_type : "", false, null, mediaObj.file_id ? mediaObj.file_id : mediaObj[mediaObj.length - 1].file_id, msg.caption ? msg.caption : "", mediaType == "voice"];
+  const [type, mimeType, SAD, fileName, fileId, caption, SAV] = [mediaType, mediaObj.mime_type ? mediaObj.mime_type : "", false, null, mediaObj.file_id ? mediaObj.file_id : mediaObj[mediaObj.length - 1].file_id, msg.caption ? msg.caption : "", mediaType === "voice"];
   switch (mediaType) {
     case "photo":
       return {

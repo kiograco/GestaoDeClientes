@@ -4,23 +4,23 @@ import { logger } from "../../utils/logger";
 
 interface BusinessProfile {
   vertical:
-  | "Automotive"
-  | "Beauty, Spa and Salon"
-  | "Clothing and Apparel"
-  | "Education"
-  | "Entertainment"
-  | "Event Planning and Service"
-  | "Finance and Banking"
-  | "Food and Grocery"
-  | "Public Service"
-  | "Hotel and Lodging"
-  | "Medical and Health"
-  | "Non-profit"
-  | "Professional Services"
-  | "Shopping and Retail"
-  | "Travel and Transportation"
-  | "Restaurant"
-  | "Other";
+    | "Automotive"
+    | "Beauty, Spa and Salon"
+    | "Clothing and Apparel"
+    | "Education"
+    | "Entertainment"
+    | "Event Planning and Service"
+    | "Finance and Banking"
+    | "Food and Grocery"
+    | "Public Service"
+    | "Hotel and Lodging"
+    | "Medical and Health"
+    | "Non-profit"
+    | "Professional Services"
+    | "Shopping and Retail"
+    | "Travel and Transportation"
+    | "Restaurant"
+    | "Other";
   websites: string[];
   email: string;
   description: string;

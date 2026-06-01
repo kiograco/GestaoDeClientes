@@ -14,8 +14,8 @@ import { logger } from "../utils/logger";
 interface Session extends IgApiClientMQTT {
   id: number;
   accountLogin?:
-  | AccountRepositoryLoginResponseLogged_in_user
-  | AccountRepositoryCurrentUserResponseUser;
+    | AccountRepositoryLoginResponseLogged_in_user
+    | AccountRepositoryCurrentUserResponseUser;
 }
 
 const sessions: Session[] = [];
@@ -61,17 +61,12 @@ const connectInstaBot = async (
 export const initInstaBot = async (connection: Whatsapp): Promise<Session> => {
   try {
     // const io = getIO();
-    let sessionCfg;
     let loggedUser;
     // const { tenantId } = connection;
     const username = connection.instagramUser?.replace(/^@/, "").trim();
     const password = connection.instagramKey;
     if (!username || !password) {
       throw new Error("Not credentials");
-    }
-
-    if (connection && connection.session) {
-      sessionCfg = JSON.parse(connection.session);
     }
 
     // se não funcionar, necessário adequar o "as"

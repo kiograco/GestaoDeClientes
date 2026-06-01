@@ -24,7 +24,7 @@ const VerifyMediaMessage = async (
 
   if (!media) {
     logger.error(`ERR_WAPP_DOWNLOAD_MEDIA:: ID: ${msg.id.id}`);
-    return;
+    return undefined;
   }
 
   if (!media.filename) {

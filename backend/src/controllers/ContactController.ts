@@ -278,7 +278,8 @@ export const exportContacts = async (req: Request, res: Response) => {
   fs.writeFile(file, excelBuffer, err => {
     if (err) {
       console.error("Erro ao salvar arquivo:", err);
-      return res.status(500).send("Erro ao exportar contatos");
+      res.status(500).send("Erro ao exportar contatos");
+      return;
     }
     const { BACKEND_URL } = process.env;
     const downloadLink = `${BACKEND_URL}:${process.env.PROXY_PORT}/public/downloads/${fileName}`;

@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import axios from "axios";
 import AppError from "../errors/AppError";
 
 import AuthUserService from "../services/UserServices/AuthUserSerice";
@@ -10,7 +9,6 @@ import User from "../models/User";
 import { RequestPasswordResetService } from "../services/AuthServices/RequestPasswordResetService";
 import { ResetPasswordService } from "../services/AuthServices/ResetPasswordService";
 import ShowTenantBrandingService from "../services/TenantServices/ShowTenantBrandingService";
-
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const io = getIO();

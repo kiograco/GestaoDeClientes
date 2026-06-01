@@ -8,7 +8,8 @@ import * as TenantController from "../controllers/TenantController";
 
 const tenantRoutes = express.Router();
 const logoDirectory = path.resolve(
-  process.env.PERSISTENT_DATA_DIR || path.resolve(__dirname, "..", "..", "data"),
+  process.env.PERSISTENT_DATA_DIR ||
+    path.resolve(__dirname, "..", "..", "data"),
   "logos"
 );
 mkdirSync(logoDirectory, { recursive: true });

@@ -13,7 +13,6 @@ import CreateMessageSystemService from "../services/MessageServices/CreateMessag
 
 import ListMessagesService from "../services/MessageServices/ListMessagesService";
 import ShowTicketService from "../services/TicketServices/ShowTicketService";
-import DeleteWhatsAppMessage from "../services/WbotServices/DeleteWhatsAppMessage";
 import { logger } from "../utils/logger";
 // import SendWhatsAppMedia from "../services/WbotServices/SendWhatsAppMedia";
 // import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";

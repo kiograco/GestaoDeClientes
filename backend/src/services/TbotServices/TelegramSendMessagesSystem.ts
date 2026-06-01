@@ -1,12 +1,8 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-await-in-loop */
 import { join } from "path";
-import { Op } from "sequelize";
 import { Telegraf } from "telegraf";
 import SetTicketMessagesAsRead from "../../helpers/SetTicketMessagesAsRead";
-import socketEmit from "../../helpers/socketEmit";
-import Message from "../../models/Message";
-import Ticket from "../../models/Ticket";
 import { logger } from "../../utils/logger";
 
 interface Session extends Telegraf {
@@ -17,7 +13,7 @@ const TelegramSendMessagesSystem = async (
   tbot: Session,
   ticket,
   message
-): Promise<void> => {
+): Promise<any | void> => {
   let sendedMessage: any;
   const chatId = ticket.contact.telegramId;
   const extraInfo: any = {};
@@ -92,6 +88,7 @@ const TelegramSendMessagesSystem = async (
   } catch (error) {
     const idMessage = message.id;
     logger.error(`Error send message (id: ${idMessage}):: ${error}`);
+    return undefined;
   }
 };
 

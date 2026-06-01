@@ -37,7 +37,9 @@ export const callback = async (
   return res
     .status(200)
     .type("html")
-    .send("<html><body><script>window.close()</script>Instagram conectado. Esta janela pode ser fechada.</body></html>");
+    .send(
+      "<html><body><script>window.close()</script>Instagram conectado. Esta janela pode ser fechada.</body></html>"
+    );
 };
 
 export const verifyWebhook = async (

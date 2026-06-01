@@ -2,7 +2,6 @@
 import { Request, Response } from "express";
 import TicketsQueuesService from "../services/Statistics/TicketsQueuesService";
 import ContactsReportService from "../services/Statistics/ContactsReportService";
-import AppError from "../errors/AppError";
 
 type IndexQuery = {
   dateStart: string;

@@ -1,5 +1,5 @@
 // import AppError from "../../errors/AppError";
-import { parseISO, setHours, setMinutes } from "date-fns";
+import { parseISO } from "date-fns";
 import { logger } from "../../utils/logger";
 
 import Campaign from "../../models/Campaign";

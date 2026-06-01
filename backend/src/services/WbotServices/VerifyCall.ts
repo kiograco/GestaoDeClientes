@@ -2,11 +2,8 @@ import { Contact as WbotContact, Call, Client } from "whatsapp-web.js";
 import { logger } from "../../utils/logger";
 import FindOrCreateTicketService from "../TicketServices/FindOrCreateTicketService";
 import Setting from "../../models/Setting";
-import Whatsapp from "../../models/Whatsapp";
-import Tenant from "../../models/Tenant";
 import VerifyContact from "./helpers/VerifyContact";
 import CreateMessageSystemService from "../MessageServices/CreateMessageSystemService";
-import SendMessagesSystemWbot from "./SendMessagesSystemWbot";
 
 interface Session extends Client {
   id: number;

@@ -1,4 +1,6 @@
 /* eslint-disable no-return-assign */
+/* eslint-disable no-restricted-syntax */
+/* eslint-disable no-await-in-loop */
 import { Message as WbotMessage } from "whatsapp-web.js";
 import socketEmit from "../../helpers/socketEmit";
 import Ticket from "../../models/Ticket";

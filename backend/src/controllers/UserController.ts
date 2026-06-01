@@ -34,10 +34,8 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   const { users } = await ListUsersService({ tenantId });
 
   if (users.length >= Number(process.env.USER_LIMIT)) {
-          throw new AppError("ERR_USER_LIMIT_USER_CREATION", 400);
-  }
-
-  else if (req.user.profile !== "admin") {
+    throw new AppError("ERR_USER_LIMIT_USER_CREATION", 400);
+  } else if (req.user.profile !== "admin") {
     throw new AppError("ERR_NO_PERMISSION", 403);
   }
 

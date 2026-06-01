@@ -35,13 +35,13 @@ const ListTicketsService = async ({
   searchParam = "",
   pageNumber = "1",
   status,
-  date,
+  date: _date,
   showAll,
   userId,
   withUnreadMessages,
   queuesIds,
   isNotAssignedUser,
-  includeNotQueueDefined,
+  includeNotQueueDefined: _includeNotQueueDefined,
   tenantId,
   profile
 }: Request): Promise<Response> => {

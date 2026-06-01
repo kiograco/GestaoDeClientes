@@ -2,7 +2,6 @@ import AppError from "../../errors/AppError";
 import GetWbotMessage from "../../helpers/GetWbotMessage";
 import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
-import { StartWhatsAppSessionVerify } from "./StartWhatsAppSessionVerify";
 import { getIO } from "../../libs/socket";
 
 const DeleteWhatsAppMessage = async (

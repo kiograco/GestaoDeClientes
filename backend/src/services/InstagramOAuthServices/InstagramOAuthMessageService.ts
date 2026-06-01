@@ -2,7 +2,7 @@ import axios from "axios";
 import { createWriteStream } from "fs";
 import { join } from "path";
 import { v4 as uuidv4 } from "uuid";
-import mime from "mime";
+import mime from "mime-types";
 import Whatsapp from "../../models/Whatsapp";
 import Contact from "../../models/Contact";
 import Ticket from "../../models/Ticket";
@@ -44,8 +44,9 @@ const downloadAttachment = async (
   });
   return {
     filename,
-    mediaType: String(response.headers["content-type"] || "application")
-      .split("/")[0]
+    mediaType: String(response.headers["content-type"] || "application").split(
+      "/"
+    )[0]
   };
 };
 
@@ -65,12 +66,15 @@ export const handleInstagramOAuthWebhookEvent = async (
 
   let profile: any = {};
   try {
-    const response = await axios.get(`${instagramGraphUrl}/${event.sender.id}`, {
-      params: {
-        fields: "id,username,name,profile_pic",
-        access_token: channel.instagramOAuthToken
+    const response = await axios.get(
+      `${instagramGraphUrl}/${event.sender.id}`,
+      {
+        params: {
+          fields: "id,username,name,profile_pic",
+          access_token: channel.instagramOAuthToken
+        }
       }
-    });
+    );
     profile = response.data;
   } catch (_) {
     profile = {};

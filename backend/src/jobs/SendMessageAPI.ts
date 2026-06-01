@@ -1,16 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { MessageMedia, Message as WbotMessage } from "whatsapp-web.js";
 import fs from "fs";
-import { v4 as uuid } from "uuid";
-import axios from "axios";
-import mime from "mime-types";
-import { join } from "path";
 import { logger } from "../utils/logger";
 import { getWbot } from "../libs/wbot";
-import UpsertMessageAPIService from "../services/ApiMessageService/UpsertMessageAPIService";
 import Queue from "../libs/Queue";
-import CheckIsValidContact from "../services/WbotServices/CheckIsValidContact";
-import AppError from "../errors/AppError";
 import VerifyContact from "../services/WbotServices/helpers/VerifyContact";
 import FindOrCreateTicketService from "../services/TicketServices/FindOrCreateTicketService";
 import CreateMessageSystemService from "../services/MessageServices/CreateMessageSystemService";
@@ -31,7 +23,6 @@ export default {
   async handle({ data }: any) {
     try {
       const wbot = getWbot(data.sessionId);
-      const message: any = {} as WbotMessage;
       try {
         const idNumber = await wbot.getNumberId(data.number);
         if (!idNumber) {
@@ -124,6 +115,7 @@ export default {
       //   apiConfig: data.apiConfig,
       //   tenantId: data.tenantId
       // });
+      return undefined;
     } catch (error) {
       logger.error({ message: "Error send message api", error });
       throw new Error(error);

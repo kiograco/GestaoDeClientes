@@ -1,6 +1,5 @@
-import { Sequelize, Op, QueryTypes } from "sequelize";
+import { QueryTypes } from "sequelize";
 import Contact from "../../models/Contact";
-import { logger } from "../../utils/logger";
 import sequelize from "../../database";
 
 interface Request {

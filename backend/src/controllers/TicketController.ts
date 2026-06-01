@@ -12,7 +12,6 @@ import ShowLogTicketService from "../services/TicketServices/ShowLogTicketServic
 import ShowTicketService from "../services/TicketServices/ShowTicketService";
 import UpdateTicketService from "../services/TicketServices/UpdateTicketService";
 import Whatsapp from "../models/Whatsapp";
-import AppError from "../errors/AppError";
 import CreateMessageSystemService from "../services/MessageServices/CreateMessageSystemService";
 import { pupa } from "../utils/pupa";
 

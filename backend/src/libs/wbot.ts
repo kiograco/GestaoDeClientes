@@ -128,11 +128,6 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
       const io = getIO();
       const sessionName = whatsapp.name;
       const { tenantId } = whatsapp;
-      let sessionCfg;
-      if (whatsapp?.session) {
-        sessionCfg = JSON.parse(whatsapp.session);
-      }
-
       const wbot = new Client({
         authStrategy: new LocalAuth({ clientId: `wbot-${whatsapp.id}` }),
         takeoverOnConflict: true,

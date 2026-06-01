@@ -2,7 +2,6 @@
 import { head, has } from "lodash";
 import XLSX from "xlsx";
 import Contact from "../../models/Contact";
-import CheckIsValidContact from "./CheckIsValidContact";
 // import CheckContactNumber from "../WbotServices/CheckNumber";
 
 export async function ImportFileContactsService(

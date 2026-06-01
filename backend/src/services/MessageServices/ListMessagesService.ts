@@ -46,7 +46,11 @@ const ListMessagesService = async ({
       },
       {
         model: Ticket,
-        where: {queueId: ticket.queueId, contactId: ticket.contactId, whatsappId: ticket.whatsappId},
+        where: {
+          queueId: ticket.queueId,
+          contactId: ticket.contactId,
+          whatsappId: ticket.whatsappId
+        },
         required: true
       }
     ],

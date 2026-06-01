@@ -16,7 +16,9 @@ const VerifyMediaMessage = async (
   let filename;
   try {
     filename = await GetMediaWaba360({ channel, msg, ticket });
-  } catch (error) { }
+  } catch (error) {
+    // Media is optional for webhook messages.
+  }
 
   // if (!filename) {
   //   throw new Error("ERR_WAPP_DOWNLOAD_MEDIA");

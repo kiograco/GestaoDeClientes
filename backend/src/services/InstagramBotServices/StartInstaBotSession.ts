@@ -1,22 +1,10 @@
 /* eslint-disable camelcase */
-import {
-  AccountRepositoryCurrentUserResponseUser,
-  AccountRepositoryLoginResponseLogged_in_user
-} from "instagram-private-api";
-import { IgApiClientMQTT } from "instagram_mqtt";
 import AppError from "../../errors/AppError";
 import { confirmInstaBotTwoFactor, initInstaBot } from "../../libs/InstaBot";
 import { getIO } from "../../libs/socket";
 import Whatsapp from "../../models/Whatsapp";
 import { logger } from "../../utils/logger";
 import { InstaBotMessageListener } from "./InstaBotMessageListener";
-
-interface Session extends IgApiClientMQTT {
-  id: number;
-  accountLogin?:
-    | AccountRepositoryLoginResponseLogged_in_user
-    | AccountRepositoryCurrentUserResponseUser;
-}
 
 const getConnectionErrorStatus = (err: unknown): string => {
   const message = err instanceof AppError ? err.message : `${err}`;

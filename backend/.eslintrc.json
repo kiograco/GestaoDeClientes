@@ -23,6 +23,10 @@
       { "argsIgnorePattern": "_" }
     ],
     "import/prefer-default-export": "off",
+    "no-underscore-dangle": [
+      "error",
+      { "allow": ["_serialized"] }
+    ],
     "no-console": "off",
     "no-param-reassign": "off",
     "prettier/prettier": "error",
@@ -45,5 +49,13 @@
     "import/resolver": {
       "typescript": {}
     }
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/models/*.ts"],
+      "rules": {
+        "@typescript-eslint/no-unused-vars": "off"
+      }
+    }
+  ]
 }

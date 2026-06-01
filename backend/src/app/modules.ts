@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import path from "path";
-import moment from "moment";
+import { format } from "date-fns";
 import expressInstance, { Request, Response, NextFunction } from "express";
 import * as Sentry from "@sentry/node";
 import routes from "../routes";
@@ -27,7 +27,7 @@ export default async function modules(app): Promise<void> {
       checkConnection = `Servidor indisponível! ${e}`;
     }
     res.json({
-      started: moment(started).format("DD/MM/YYYY HH:mm:ss"),
+      started: format(started, "dd/MM/yyyy HH:mm:ss"),
       currentVersion: version,
       uptime: (Date.now() - Number(started)) / 1000,
       statusService: checkConnection
@@ -54,7 +54,7 @@ export default async function modules(app): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use(async (err: Error, req: Request, res: Response, _: NextFunction) => {
     if (res.headersSent) {
-      return;
+      return undefined;
     }
 
     if (err instanceof AppError) {
@@ -63,11 +63,13 @@ export default async function modules(app): Promise<void> {
       } else {
         logger.error(err);
       }
-      return res.status(err.statusCode).json({ error: err.message });
+      res.status(err.statusCode).json({ error: err.message });
+      return undefined;
     }
 
     logger.error(err);
-    return res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
+    return undefined;
   });
 
   logger.info("modules routes already in server!");

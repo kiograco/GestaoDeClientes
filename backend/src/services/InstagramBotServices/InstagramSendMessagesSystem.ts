@@ -11,10 +11,7 @@ import { IgApiClientMQTT } from "instagram_mqtt";
 import { join } from "path";
 import sharp from "sharp";
 import SetTicketMessagesAsRead from "../../helpers/SetTicketMessagesAsRead";
-import socketEmit from "../../helpers/socketEmit";
-import Message from "../../models/Message";
 import { logger } from "../../utils/logger";
-import { sleepRandomTime } from "../../utils/sleepRandomTime";
 
 interface Session extends IgApiClientMQTT {
   id: number;

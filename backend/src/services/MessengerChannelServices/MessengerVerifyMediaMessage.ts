@@ -8,13 +8,8 @@ import Ticket from "../../models/Ticket";
 import Message from "../../models/Message";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import Whatsapp from "../../models/Whatsapp";
-import { EventMessage, MessengerRawEvent } from "./MessengerTypes";
+import { MessengerRawEvent } from "./MessengerTypes";
 import getQuotedForMessageId from "../../helpers/getQuotedForMessageId";
-
-interface IMessage extends EventMessage {
-  type: string;
-  timestamp: number;
-}
 
 const downloadFile = async (url: string, filename: string): Promise<string> => {
   const request = await axios({

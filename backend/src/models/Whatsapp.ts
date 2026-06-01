@@ -232,6 +232,7 @@ class Whatsapp extends Model<Whatsapp> {
             payload
           });
         }
+        return undefined;
       })
     );
   }

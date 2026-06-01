@@ -3,7 +3,7 @@ import fs from "fs";
 // import { promisify } from "util";
 import { join } from "path";
 import axios from "axios";
-import mime from "mime";
+import mime from "mime-types";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "../../utils/logger";
 // import MessageOffLine from "../../models/MessageOffLine";
@@ -12,12 +12,6 @@ import Message from "../../models/Message";
 import socketEmit from "../../helpers/socketEmit";
 import Queue from "../../libs/Queue";
 import { pupa } from "../../utils/pupa";
-import SendWhatsAppMedia from "../WbotServices/SendWhatsAppMedia";
-import SendWhatsAppMessage from "../WbotServices/SendWhatsAppMessage";
-import { getInstaBot } from "../../libs/InstaBot";
-import InstagramSendMessagesSystem from "../InstagramBotServices/InstagramSendMessagesSystem";
-import TelegramSendMessagesSystem from "../TbotServices/TelegramSendMessagesSystem";
-import { getTbot } from "../../libs/tbot";
 import SendMessageSystemProxy from "../../helpers/SendMessageSystemProxy";
 
 interface MessageData {

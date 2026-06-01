@@ -39,24 +39,24 @@ export default class QueueListener {
     console.error(err);
   }
 
-  static onWaiting(jobId: string): void {
+  static onWaiting(_jobId: string): void {
     // console.log(`Job with ID ${jobId} is waiting`);
   }
 
   static onActive(
-    job: Job<JobConfig>,
+    _job: Job<JobConfig>,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     jobPromise: Promise<Job<JobConfig>>
   ): void {
     // console.log(`Job with ID ${job.id} active`);
   }
 
-  static onStalled(job: Job<JobConfig>): void {
+  static onStalled(_job: Job<JobConfig>): void {
     // console.log(`Job with ID ${job.id} stalled`);
     // TODO: log stalled request. These requests are most probably double processed.
   }
 
-  static onCompleted(job: Job<JobConfig>, result: any): void {
+  static onCompleted(_job: Job<JobConfig>, _result: any): void {
     // console.log(`Job with ID ${job.id} completed`);
     // console.log({ result });
   }
@@ -105,12 +105,12 @@ export default class QueueListener {
     }
   }
 
-  static onClean(jobs: Job<JobConfig>[], type: string): void {
+  static onClean(_jobs: Job<JobConfig>[], _type: string): void {
     // console.log(`Jobs cleaned ${jobs.length} - ${type}`);
     // console.log(JSON.stringify(jobs));
   }
 
-  static onRemoved(job: Job<JobConfig>): void {
+  static onRemoved(_job: Job<JobConfig>): void {
     // console.log(`Job with ID ${job.id} removed`);
   }
 }

@@ -51,7 +51,7 @@ const DashTicketsEvolutionChannels = async ({
   userProfile
 }: Request): Promise<any[]> => {
   const data = await sequelize.query(
-    userProfile == "admin" ? queryAdmin : query,
+    userProfile === "admin" ? queryAdmin : query,
     {
       replacements: {
         tenantId,
