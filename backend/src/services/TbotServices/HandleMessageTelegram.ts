@@ -14,8 +14,8 @@ interface Session extends Telegraf {
 const HandleMessage = async (ctx: Context, tbot: Session): Promise<void> => {
   const channel = await ShowWhatsAppService({ id: tbot.id });
   let message;
-  let updateMessage: any = {};
-  // const { message, update }: any = ctx;
+  let updateMessage: LegacyAny = {};
+  // const { message, update }: LegacyAny = ctx;
   message = ctx?.message;
   updateMessage = ctx?.update;
 

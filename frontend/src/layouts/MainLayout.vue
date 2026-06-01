@@ -327,6 +327,7 @@ import cStatusUsuario from '../components/cStatusUsuario.vue'
 import { socketIO } from 'src/utils/socket'
 import { ConsultarTickets } from 'src/service/tickets'
 import OnboardingAdmin from 'src/components/OnboardingAdmin'
+import { resolveTenantLogoUrl } from 'src/utils/tenantLogo'
 
 const socket = socketIO()
 
@@ -456,7 +457,7 @@ export default {
   data () {
     return {
       username,
-      tenantLogoUrl: localStorage.getItem('tenantLogoUrl') || '/ncprogrammers-logo.svg',
+      tenantLogoUrl: resolveTenantLogoUrl(localStorage.getItem('tenantLogoUrl')),
       domainExperimentalsMenus: ['@'],
       miniState: true,
       userProfile: 'user',
@@ -507,6 +508,9 @@ export default {
     }
   },
   methods: {
+    atualizarLogoCabecalho (event) {
+      this.tenantLogoUrl = resolveTenantLogoUrl(event.detail)
+    },
     exibirMenuBeta (itemMenu) {
       if (!itemMenu?.isBeta) return true
       for (const domain of this.domainExperimentalsMenus) {
@@ -689,6 +693,7 @@ export default {
     }
   },
   async mounted () {
+    window.addEventListener('tenant-logo-updated', this.atualizarLogoCabecalho)
     this.atualizarUsuario()
     await this.listarWhatsapps()
     await this.listarConfiguracoes()
@@ -710,6 +715,7 @@ export default {
     await this.conectarSocket(this.usuario)
   },
   destroyed () {
+    window.removeEventListener('tenant-logo-updated', this.atualizarLogoCabecalho)
     socket.disconnect()
   }
 }

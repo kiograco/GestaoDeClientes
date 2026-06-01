@@ -84,7 +84,7 @@ const UpdateTicketService = async ({
   // verificar se o front envia close e substituir por closed
   const statusData = status === "close" ? "closed" : status;
 
-  const data: any = {
+  const data: LegacyAny = {
     status: statusData,
     queueId,
     userId

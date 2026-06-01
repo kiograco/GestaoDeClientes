@@ -5,6 +5,6 @@ declare namespace Express {
   }
 
   export interface Application {
-    rabbit: any;
+    rabbit: LegacyAny;
   }
 }

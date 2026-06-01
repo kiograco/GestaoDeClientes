@@ -3,7 +3,7 @@ import AppError from "../../errors/AppError";
 import { logger } from "../../utils/logger";
 
 interface Request {
-  file: any;
+  file: LegacyAny;
   apiKey: string;
 }
 

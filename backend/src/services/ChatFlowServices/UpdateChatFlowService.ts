@@ -8,7 +8,7 @@ import AppError from "../../errors/AppError";
 const writeFileAsync = promisify(writeFile);
 
 interface ChatFlowData {
-  flow: any;
+  flow: LegacyAny;
   name: string;
   userId: number;
   isActive: boolean;

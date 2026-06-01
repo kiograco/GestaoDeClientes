@@ -51,6 +51,6 @@ pupa('I like {{0}} and {{1}}', ['<br>🦄</br>', '<i>🐮</i>']);
 */
 export default function pupa(
   template: string,
-  data: unknown[] | Record<string, any>,
+  data: unknown[] | Record<string, LegacyAny>,
   options?: Options
 ): string;

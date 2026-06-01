@@ -203,9 +203,9 @@ class Whatsapp extends Model<Whatsapp> {
 
   @AfterUpdate
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static async HookStatus(instance: Whatsapp & any): Promise<void> {
+  static async HookStatus(instance: Whatsapp & LegacyAny): Promise<void> {
     const { status, name, qrcode, number, tenantId, id: sessionId } = instance;
-    const payload: any = {
+    const payload: LegacyAny = {
       name,
       number,
       status,
@@ -214,7 +214,7 @@ class Whatsapp extends Model<Whatsapp> {
       type: "hookSessionStatus"
     };
 
-    const apiConfig: any = await ApiConfig.findAll({
+    const apiConfig: LegacyAny = await ApiConfig.findAll({
       where: { tenantId, sessionId }
     });
 

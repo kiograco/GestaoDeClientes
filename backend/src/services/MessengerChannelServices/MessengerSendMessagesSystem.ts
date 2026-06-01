@@ -21,7 +21,7 @@ interface Session extends MessengerClient {
 }
 
 const MessengerSendMessagesSystem = async (
-  messengerBot: Session | any,
+  messengerBot: Session | LegacyAny,
   tenantId: number | string
 ): Promise<void> => {
   const where = {
@@ -66,13 +66,13 @@ const MessengerSendMessagesSystem = async (
     order: [["createdAt", "ASC"]]
   });
 
-  let sendedMessage: any;
+  let sendedMessage: LegacyAny;
 
   // logger.info(
   //   `SystemWbot SendMessages | Count: ${messages.length} | Tenant: ${tenantId} `
   // );
   for (const messageItem of messages) {
-    const message: Message | any = messageItem;
+    const message: Message | LegacyAny = messageItem;
     // let quotedMsgSerializedId: string | undefined;
     const { ticket } = message;
     const chatId = ticket.contact.messengerId;

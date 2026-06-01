@@ -70,7 +70,7 @@ const CreateContactService = async ({
 
     const contactWallets: Wallet[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    wallets.forEach((wallet: any) => {
+    wallets.forEach((wallet: LegacyAny) => {
       contactWallets.push({
         walletId: !wallet.id ? wallet : wallet.id,
         contactId: contact.id,

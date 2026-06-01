@@ -128,12 +128,12 @@ const Waba360SendMessagesSystem = async (
     }
 
     const buldedMessage = await buildWabaMessage360(messageItem, chatId);
-    const sendedMessage: any = await SentMessage({
+    const sendedMessage: LegacyAny = await SentMessage({
       message: buldedMessage,
       apiKey: connection.tokenAPI
     });
 
-    const messageToUpdate: any = {
+    const messageToUpdate: LegacyAny = {
       ...messageItem,
       messageId: sendedMessage.messages[0].id,
       status: "sended",

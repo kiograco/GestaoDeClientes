@@ -7,7 +7,10 @@ import ApiMessage from "../../../models/ApiMessage";
 import socketEmit from "../../../helpers/socketEmit";
 import Queue from "../../../libs/Queue";
 
-const HandleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
+const HandleMsgAck = async (
+  msg: WbotMessage,
+  ack: MessageAck
+): Promise<void> => {
   await new Promise(r => setTimeout(r, 500));
 
   try {
@@ -37,7 +40,7 @@ const HandleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
         payload: messageToUpdate
       });
 
-      const apiConfig: any = ticket.apiConfig || {};
+      const apiConfig: LegacyAny = ticket.apiConfig || {};
       if (apiConfig?.externalKey && apiConfig?.urlMessageStatus) {
         const payload = {
           ack,

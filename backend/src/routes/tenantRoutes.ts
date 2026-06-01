@@ -2,23 +2,21 @@ import express from "express";
 import multer from "multer";
 import path from "path";
 import { mkdirSync } from "fs";
+import { randomUUID } from "crypto";
 import isAuth from "../middleware/isAuth";
+import uploadConfig from "../config/upload";
 
 import * as TenantController from "../controllers/TenantController";
 
 const tenantRoutes = express.Router();
-const logoDirectory = path.resolve(
-  process.env.PERSISTENT_DATA_DIR ||
-    path.resolve(__dirname, "..", "..", "data"),
-  "logos"
-);
+const logoDirectory = path.resolve(uploadConfig.directory, "logos");
 mkdirSync(logoDirectory, { recursive: true });
 const uploadLogo = multer({
   storage: multer.diskStorage({
     destination: logoDirectory,
     filename: (_req, file, cb) => {
-      const extension = path.extname(file.originalname).toLowerCase();
-      cb(null, `tenant-logo-${Date.now()}${extension}`);
+      const extension = file.mimetype === "image/png" ? ".png" : ".jpg";
+      cb(null, `tenant-logo-${randomUUID()}${extension}`);
     }
   }),
   limits: { fileSize: 2 * 1024 * 1024 },

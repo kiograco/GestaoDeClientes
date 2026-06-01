@@ -18,14 +18,14 @@ const downloadFile = async (url: string, filename: string): Promise<string> => {
     responseType: "stream"
   });
 
-  const parseDisposition: any = request.headers["content-disposition"]
+  const parseDisposition: LegacyAny = request.headers["content-disposition"]
     ? contentDiposition.parse(request.headers["content-disposition"] || "")
     : { parameters: {} };
   let name = "";
 
-  const filenameExists: any = parseDisposition?.parameters?.filename;
+  const filenameExists: LegacyAny = parseDisposition?.parameters?.filename;
   if (filenameExists) {
-    const fileName: any = parseDisposition.parameters.filename;
+    const fileName: LegacyAny = parseDisposition.parameters.filename;
     name = `${new Date().getTime()}-${fileName}`;
   } else {
     const contentType = request.headers["content-type"];
@@ -39,7 +39,7 @@ const downloadFile = async (url: string, filename: string): Promise<string> => {
     request.data
       .pipe(createWriteStream(pathFile))
       .on("finish", async () => resolve(name))
-      .on("error", (error: any) => {
+      .on("error", (error: LegacyAny) => {
         console.error("ERROR DONWLOAD", error);
         // fs.rmdirSync(mediaDir, { recursive: true });
         reject(new Error(error));
@@ -51,7 +51,7 @@ const downloadFile = async (url: string, filename: string): Promise<string> => {
 
 const MessengerVerifyMediaMessage = async (
   channel: Whatsapp,
-  msg: MessengerRawEvent | any,
+  msg: MessengerRawEvent | LegacyAny,
   ticket: Ticket,
   contact: Contact
 ): Promise<Message | void> => {
@@ -59,7 +59,7 @@ const MessengerVerifyMediaMessage = async (
   let filename;
 
   await Promise.all(
-    msg.message.attachments.map(async (item: any, idx: any) => {
+    msg.message.attachments.map(async (item: LegacyAny, idx: LegacyAny) => {
       const name = `${ticket.id}_${msg.message_id}`;
       filename = await downloadFile(item.payload.url, name);
       let quotedMsgId;

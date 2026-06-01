@@ -12,7 +12,7 @@ const ShowStepAutoReplyMessageService = async (
   tenantId: number | string
 ): Promise<StepsReply> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = {};
+  const where: LegacyAny = {};
   if (initialStep) {
     where.initialStep = initialStep;
   } else {

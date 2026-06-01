@@ -5,7 +5,7 @@ import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
 
 const MessengerMarkRead = async (
-  messageObj: any,
+  messageObj: LegacyAny,
   tenantId: string | number
 ): Promise<void> => {
   const messages = await Message.findAll({
@@ -37,7 +37,7 @@ const MessengerMarkRead = async (
   });
 
   await Promise.all(
-    messages.map(async (message: Message | any) => {
+    messages.map(async (message: Message | LegacyAny) => {
       await message.update({ ack: 3 });
       socketEmit({
         tenantId,

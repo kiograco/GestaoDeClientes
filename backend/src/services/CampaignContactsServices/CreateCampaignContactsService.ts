@@ -33,18 +33,21 @@ const CreateCampaignContactsService = async ({
     }
   });
 
-  const data: CampaignContactData[] = campaignContacts.map((contact: any) => {
-    return {
-      contactId: contact.id,
-      campaignId,
-      messageRandom: `message${randomInteger(1, 3)}`
-    };
-  });
+  const data: CampaignContactData[] = campaignContacts.map(
+    (contact: LegacyAny) => {
+      return {
+        contactId: contact.id,
+        campaignId,
+        messageRandom: `message${randomInteger(1, 3)}`
+      };
+    }
+  );
 
   // eslint-disable-next-line consistent-return
-  const filterData = data.filter((d: any): any => {
+  const filterData = data.filter((d: LegacyAny): LegacyAny => {
     const isExists = isCreateds?.findIndex(
-      (c: any) => d.contactId === c.contactId && +campaignId === c.campaignId
+      (c: LegacyAny) =>
+        d.contactId === c.contactId && +campaignId === c.campaignId
     );
     if (isExists === -1) {
       return d;

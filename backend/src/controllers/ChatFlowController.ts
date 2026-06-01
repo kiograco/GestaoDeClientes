@@ -12,7 +12,7 @@ import DeleteChatFlowService from "../services/ChatFlowServices/DeleteChatFlowSe
 interface Line {
   connector: string;
   from: string;
-  paintStyle: string | any;
+  paintStyle: string | LegacyAny;
   to: string;
 }
 interface Configuration {
@@ -37,7 +37,7 @@ interface NodeList {
   left: string;
   name: string;
   status: string;
-  style?: string | any;
+  style?: string | LegacyAny;
   top: string;
   type?: string;
   viewOnly?: boolean;

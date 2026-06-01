@@ -46,7 +46,7 @@ const AdminUpdateUserService = async ({
 
   try {
     await schema.validate({ email, password, profile, name });
-  } catch (err: any) {
+  } catch (err: LegacyAny) {
     throw new AppError(err?.message);
   }
 

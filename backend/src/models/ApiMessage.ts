@@ -92,7 +92,7 @@ class ApiMessage extends Model<ApiMessage> {
 
   @AfterCreate
   @AfterUpdate
-  static HookMessage(instance: any): void {
+  static HookMessage(instance: LegacyAny): void {
     if (instance?.apiConfig?.urlMessageStatus) {
       const payload = {
         ack: instance.ack,

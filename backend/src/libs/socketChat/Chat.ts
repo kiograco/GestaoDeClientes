@@ -22,7 +22,7 @@ import { shared } from "./Index";
 import User from "../../models/User";
 import { logger } from "../../utils/logger";
 
-const events: any = {};
+const events: LegacyAny = {};
 
 const JoinChatServer = (socket: Socket) => {
   const { user } = socket.handshake.auth;
@@ -30,7 +30,7 @@ const JoinChatServer = (socket: Socket) => {
   logger.info(`joinChatServer USER ${user.name}`);
   const { tenantId } = user;
   const socketDataTenant = `socketData_${tenantId}`;
-  let dataTenant: any;
+  let dataTenant: LegacyAny;
 
   // dataTenant = await getValue(socketDataTenant);
   dataTenant = shared[socketDataTenant];
@@ -193,7 +193,7 @@ const onSetUserIdle = (socket: Socket) => {
 
   const socketDataTenant = `socketData_${user.tenantId}`;
   socket.on(`${user.tenantId}:setUserIdle`, () => {
-    let dataTenant: any;
+    let dataTenant: LegacyAny;
     dataTenant = shared[socketDataTenant];
     if (dataTenant) {
       dataTenant.idleUsers[user.id] = {
@@ -259,7 +259,7 @@ const onChatMessage = (socket: Socket) => {
 
   const { tenantId } = user;
   const socketDataTenant = `socketData_${tenantId}`;
-  socket.on("chatMessage", function (data) {
+  socket.on("chatMessage", function handleChatMessage(data) {
     const dataTenant = shared[socketDataTenant];
     if (dataTenant) {
       const { to } = data;
@@ -308,9 +308,9 @@ const onChatTyping = (socket: Socket) => {
       const { to } = data;
       const { from } = data;
 
-      let toUser: any = null;
-      let fromUser: any = null;
-      find(dataTenant.usersOnline, function (v) {
+      let toUser: LegacyAny = null;
+      let fromUser: LegacyAny = null;
+      find(dataTenant.usersOnline, function findTypingUsers(v) {
         if (String(v.user.id) === String(to)) {
           toUser = v.user;
         }
@@ -346,7 +346,7 @@ const onChatStopTyping = (socket: Socket) => {
     const dataTenant = shared[socketDataTenant];
     if (dataTenant) {
       const { to } = data;
-      let toUser: any = null;
+      let toUser: LegacyAny = null;
       find(dataTenant.usersOnline, v => {
         if (String(v.user.id) === String(to)) {
           toUser = v.user;
@@ -485,7 +485,7 @@ function register(socket: Socket): void {
   }
 }
 
-const eventLoop = (socket: Socket) => {
+const eventLoop = (socket: Socket): void => {
   UpdateUsers(socket);
   UpdateOnlineBubbles(socket);
   // updateConversationsNotifications()

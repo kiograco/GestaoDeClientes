@@ -31,7 +31,7 @@ const downloadAttachment = async (
   url: string
 ): Promise<{ filename: string; mediaType: string }> => {
   const response = await axios.get(url, { responseType: "stream" });
-  const extension = (mime as any).extension(
+  const extension = (mime as LegacyAny).extension(
     response.headers["content-type"] || "application/octet-stream"
   );
   const filename = `${uuidv4()}.${extension || "bin"}`;
@@ -64,7 +64,7 @@ export const handleInstagramOAuthWebhookEvent = async (
   });
   if (!channel?.instagramOAuthToken) return;
 
-  let profile: any = {};
+  let profile: LegacyAny = {};
   try {
     const response = await axios.get(
       `${instagramGraphUrl}/${event.sender.id}`,
@@ -130,7 +130,7 @@ export const handleInstagramOAuthWebhookEvent = async (
       timestamp: event.timestamp,
       status: "received"
     }
-  } as any);
+  } as LegacyAny);
 
   await VerifyStepsChatFlowTicket(
     { fromMe: false, body, timestamp: event.timestamp / 1000 },
@@ -144,8 +144,8 @@ export const handleInstagramOAuthWebhookEvent = async (
 
 export const sendInstagramOAuthMessage = async (
   ticket: Ticket,
-  message: any
-): Promise<any> => {
+  message: LegacyAny
+): Promise<LegacyAny> => {
   const channel = await Whatsapp.findOne({
     where: {
       id: ticket.whatsappId,
@@ -158,7 +158,7 @@ export const sendInstagramOAuthMessage = async (
     throw new AppError("ERR_INSTAGRAM_OAUTH_NOT_CONNECTED", 409);
   }
 
-  const contact = (ticket as any).contact as Contact;
+  const contact = (ticket as LegacyAny).contact as Contact;
   if (!contact?.instagramPK) {
     throw new AppError("ERR_INSTAGRAM_CONTACT_NOT_FOUND", 404);
   }

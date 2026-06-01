@@ -43,7 +43,7 @@ const CreateCampaignService = async ({
       })
     );
   }
-  const data: any = {
+  const data: LegacyAny = {
     name: campaign.name,
     start: parseISO(campaign.start),
     message1: campaign.message1,

@@ -7,7 +7,7 @@ import { logger } from "../../utils/logger";
 const CheckIsValidContact = async (
   number: string,
   tenantId: string | number
-): Promise<any> => {
+): Promise<LegacyAny> => {
   const defaultWhatsapp = await GetDefaultWhatsApp(tenantId);
 
   const wbot = getWbot(defaultWhatsapp.id);
@@ -19,7 +19,7 @@ const CheckIsValidContact = async (
       throw new AppError("invalidNumber", 400);
     }
     return idNumber;
-  } catch (err: any) {
+  } catch (err: LegacyAny) {
     logger.error(`CheckIsValidContact | Error: ${err}`);
     // StartWhatsAppSessionVerify(defaultWhatsapp.id, err);
     if (err.message === "invalidNumber") {

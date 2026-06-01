@@ -4,7 +4,7 @@ import AppError from "../../errors/AppError";
 import User from "../../models/User";
 
 interface UserData {
-  filtrosAtendimento?: any;
+  filtrosAtendimento?: LegacyAny;
   isDark?: boolean;
   onboardingAdmin?: {
     ticketTested?: boolean;

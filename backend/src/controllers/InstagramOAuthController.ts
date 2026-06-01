@@ -62,7 +62,7 @@ export const webhook = async (
 ): Promise<Response> => {
   const { appSecret } = getInstagramOAuthConfig();
   const signature = req.header("x-hub-signature-256");
-  const rawBody = (req as any).rawBody as Buffer | undefined;
+  const rawBody = (req as LegacyAny).rawBody as Buffer | undefined;
   if (!signature || !rawBody) {
     throw new AppError("ERR_INSTAGRAM_WEBHOOK_SIGNATURE", 403);
   }
@@ -77,8 +77,8 @@ export const webhook = async (
   }
 
   const entries = Array.isArray(req.body.entry) ? req.body.entry : [];
-  entries.forEach((entry: any) => {
-    (entry.messaging || []).forEach((event: any) => {
+  entries.forEach((entry: LegacyAny) => {
+    (entry.messaging || []).forEach((event: LegacyAny) => {
       handleInstagramOAuthWebhookEvent(event).catch(error =>
         logger.error(`Instagram webhook processing error: ${error}`)
       );

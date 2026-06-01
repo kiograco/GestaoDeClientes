@@ -46,7 +46,7 @@ export default async function express(app: Application): Promise<void> {
     app.use(
       helmet({
         crossOriginResourcePolicy: { policy: "cross-origin" }
-      } as any)
+      } as LegacyAny)
     );
   }
 
@@ -56,7 +56,7 @@ export default async function express(app: Application): Promise<void> {
   app.use(
     json({
       limit: "50MB",
-      verify: (req: any, _res, buf) => {
+      verify: (req: LegacyAny, _res, buf) => {
         req.rawBody = Buffer.from(buf);
       }
     })

@@ -57,12 +57,12 @@ const UpdateUserService = async ({
 
   try {
     await schema.validate({ email, password, profile, name });
-  } catch (err: any) {
+  } catch (err: LegacyAny) {
     throw new AppError(err?.message);
   }
 
   if (queues) {
-    const queueIds = queues.map((queue: any) => queue?.id || queue);
+    const queueIds = queues.map((queue: LegacyAny) => queue?.id || queue);
     const tenantQueues = await Queue.findAll({
       where: { id: { [Op.in]: queueIds }, tenantId },
       attributes: ["id"]

@@ -34,7 +34,7 @@ const getPermanentPageAccessToken = async (
   } = await axios.get(
     `${baseUrl}/${account_id}/accounts?access_token=${long_lived_access_token}`
   );
-  // const page_item = data.find((item: any) => item.name === page_name);
+  // const page_item = data.find((item: LegacyAny) => item.name === page_name);
   return data.length && data[0]; // page_item.access_token;
 };
 

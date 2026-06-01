@@ -33,16 +33,16 @@ const FindUpdateTicketsInactiveChatBot = async (): Promise<void> => {
     )
   `;
 
-  const tickets: any = await Ticket.sequelize?.query(query, {
+  const tickets: LegacyAny = await Ticket.sequelize?.query(query, {
     type: QueryTypes.SELECT
   });
   Promise.all(
-    tickets.map(async (item: any) => {
+    tickets.map(async (item: LegacyAny) => {
       // se não houve destino, retornar
       if (!item.destiny) return;
       const ticket = await Ticket.findByPk(item.id);
       if (ticket) {
-        const values: any = {
+        const values: LegacyAny = {
           chatFlowId: null,
           stepChatFlow: null,
           botRetries: 0,

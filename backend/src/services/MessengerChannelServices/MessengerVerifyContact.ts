@@ -24,7 +24,7 @@ const MessengerVerifyContact = async (
   messagerBot: MessengerClient,
   tenantId: string | number
 ): Promise<Contact> => {
-  const senderUser: any = await messagerBot.getPersona(contact.id);
+  const senderUser: LegacyAny = await messagerBot.getPersona(contact.id);
 
   const profilePicUrl =
     senderUser?.profilePictureUrl || senderUser?.profilePic || undefined;

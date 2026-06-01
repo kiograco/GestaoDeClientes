@@ -106,8 +106,8 @@ export type EventOptin =
 
 export type EventPayment = {
   payload: string;
-  requestedUserInfo: Record<string, any>;
-  paymentCredential: Record<string, any>;
+  requestedUserInfo: Record<string, LegacyAny>;
+  paymentCredential: Record<string, LegacyAny>;
   amount: {
     currency: string;
     amount: string;

@@ -73,7 +73,7 @@ const ListContactsService = async ({
     type: QueryTypes.SELECT
   });
 
-  const data: any = await sequelize.query(queryCount, {
+  const data: LegacyAny = await sequelize.query(queryCount, {
     type: QueryTypes.SELECT
   });
 

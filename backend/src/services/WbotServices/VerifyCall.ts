@@ -49,7 +49,7 @@ const VerifyCall = async (call: Call, wbot: Session): Promise<void> => {
 
         if (!call.from) return;
 
-        const callContact: WbotContact | any = await wbot.getChatById(
+        const callContact: WbotContact | LegacyAny = await wbot.getChatById(
           call.from
         );
 

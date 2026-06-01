@@ -29,8 +29,8 @@ import * as QueueJobs from "../libs/Queue";
 import { logger } from "../utils/logger";
 
 interface CustomSequelize extends Sequelize {
-  afterConnect?: any;
-  afterDisconnect?: any;
+  afterConnect?: LegacyAny;
+  afterDisconnect?: LegacyAny;
 }
 
 // eslint-disable-next-line

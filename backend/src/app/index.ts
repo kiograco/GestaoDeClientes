@@ -13,8 +13,8 @@ import { StartAllWhatsAppsSessions } from "../services/WbotServices/StartAllWhat
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export default async function application() {
-  const app: any = express();
-  const httpServer: any = createServer(app);
+  const app: LegacyAny = express();
+  const httpServer: LegacyAny = createServer(app);
   const port = app.get("port") || env.PORT || 3100;
 
   await bootstrap(app);

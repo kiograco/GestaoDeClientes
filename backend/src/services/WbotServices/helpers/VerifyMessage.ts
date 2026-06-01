@@ -8,7 +8,7 @@ const VerifyMessage = async (
   msg: WbotMessage,
   ticket: Ticket,
   contact: Contact
-) => {
+): Promise<void> => {
   const quotedMsg = await VerifyQuotedMessage(msg);
 
   const messageData = {

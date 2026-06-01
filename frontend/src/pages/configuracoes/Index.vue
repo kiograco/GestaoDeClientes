@@ -242,10 +242,11 @@ export default {
         localStorage.setItem('tenantLogoUrl', data.logoUrl)
         const usuario = JSON.parse(localStorage.getItem('usuario') || '{}')
         localStorage.setItem('usuario', JSON.stringify({ ...usuario, logoUrl: data.logoUrl }))
+        window.dispatchEvent(new CustomEvent('tenant-logo-updated', { detail: data.logoUrl }))
         this.logoFile = null
         this.$q.notify({
           type: 'positive',
-          message: 'Logo atualizado. Recarregue a página para visualizar no cabeçalho.'
+          message: 'Logo atualizado.'
         })
       } catch (error) {
         this.$notificarErro('Não foi possível atualizar o logo.', error)

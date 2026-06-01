@@ -118,7 +118,7 @@ export const updateLogo = async (
     throw new AppError("ERR_NO_TENANT_FOUND", 404);
   }
 
-  const logoUrl = `${process.env.BACKEND_URL}/public/logos/${req.file.filename}`;
+  const logoUrl = `/public/logos/${req.file.filename}`;
   await tenant.update({ logoUrl });
 
   return res.status(200).json({

@@ -9,10 +9,10 @@ const execAsync = promisify(exec);
 const dbConfig = require("../config/database");
 
 // Função para aguardar a conexão com o PostgreSQL
-const waitForPostgresConnection = async function () {
+const waitForPostgresConnection = async (): Promise<void> => {
   const sequelize = new Sequelize(dbConfig);
 
-  while (true) {
+  for (;;) {
     try {
       // eslint-disable-next-line no-await-in-loop
       await sequelize.authenticate();

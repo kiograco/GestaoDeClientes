@@ -28,7 +28,7 @@ const UpdateContactService = async ({
 
   const contactTags: Tag[] = [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tags.forEach((tag: any) => {
+  tags.forEach((tag: LegacyAny) => {
     contactTags.push({
       tagId: !tag.id ? tag : tag.id,
       contactId,

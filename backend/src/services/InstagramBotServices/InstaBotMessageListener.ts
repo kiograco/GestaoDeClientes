@@ -39,7 +39,7 @@ const InstaBotMessageListener = (instaBot: Session): void => {
   instaBot.realtime.on("close", () => console.error("RealtimeClient closed"));
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  instaBot.fbns.on("push", (data: any) => {
+  instaBot.fbns.on("push", (data: LegacyAny) => {
     // this.handleFbnsReceive(data)
   });
 };

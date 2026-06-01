@@ -1,14 +1,19 @@
 import { readFileSync } from "fs";
 import path from "path";
 import { format } from "date-fns";
-import expressInstance, { Request, Response, NextFunction } from "express";
+import expressInstance, {
+  Application,
+  Request,
+  Response,
+  NextFunction
+} from "express";
 import * as Sentry from "@sentry/node";
 import routes from "../routes";
 import uploadConfig from "../config/upload";
 import AppError from "../errors/AppError";
 import { logger } from "../utils/logger";
 
-export default async function modules(app): Promise<void> {
+export default async function modules(app: Application): Promise<void> {
   const { version } = JSON.parse(readFileSync("./package.json").toString());
   const started = new Date();
   const { env } = process;

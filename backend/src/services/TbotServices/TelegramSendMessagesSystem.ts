@@ -11,12 +11,12 @@ interface Session extends Telegraf {
 
 const TelegramSendMessagesSystem = async (
   tbot: Session,
-  ticket,
-  message
-): Promise<any | void> => {
-  let sendedMessage: any;
+  ticket: LegacyAny,
+  message: LegacyAny
+): Promise<LegacyAny | void> => {
+  let sendedMessage: LegacyAny;
   const chatId = ticket.contact.telegramId;
-  const extraInfo: any = {};
+  const extraInfo: LegacyAny = {};
 
   if (message.quotedMsg) {
     extraInfo.reply_to_message_id = message.quotedMsg.messageId;

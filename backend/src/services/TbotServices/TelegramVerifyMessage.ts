@@ -6,7 +6,7 @@ import CreateMessageService from "../MessageServices/CreateMessageService";
 // import { logger } from "../../utils/logger";
 
 const VerifyMessage = async (
-  ctx: Context | any,
+  ctx: Context | LegacyAny,
   fromMe: boolean,
   ticket: Ticket,
   contact: Contact
@@ -14,7 +14,7 @@ const VerifyMessage = async (
   // const quotedMsg = await VerifyQuotedMessage(msg);
   // logger.error(err);
   let message;
-  let updateMessage: any = {};
+  let updateMessage: LegacyAny = {};
   message = ctx?.message;
   updateMessage = ctx?.update;
 

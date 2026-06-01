@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "lint": "eslint --ext .ts src",
+    "lint": "eslint --ext .ts src --max-warnings 0",
     "lint:fix": "eslint --ext .ts src --fix",
     "watch": "tsc -w",
     "start": "nodemon --inspect  dist/server.js",

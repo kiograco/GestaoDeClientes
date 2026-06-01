@@ -65,7 +65,7 @@ const ListContactsService = async ({
   searchParam
 }: Request): Promise<Response> => {
   let includeCondition: Includeable[] = [];
-  let where: any = {
+  let where: LegacyAny = {
     tenantId,
     isGroup: false
   };
@@ -136,9 +136,11 @@ const ListContactsService = async ({
   if (ddds) {
     let dddsFilter: string[] = [];
     // eslint-disable-next-line consistent-return
-    ddds.forEach((el: any) => {
+    ddds.forEach((el: LegacyAny) => {
       if (el) {
-        const d = dddsPorEstado.find((ddd: any) => ddd.estado === el)?.ddds;
+        const d = dddsPorEstado.find(
+          (ddd: LegacyAny) => ddd.estado === el
+        )?.ddds;
         if (d) {
           dddsFilter = dddsFilter.concat(d);
         }

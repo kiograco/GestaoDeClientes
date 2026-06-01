@@ -8,7 +8,7 @@ interface Request {
 const AdminListChannelsService = async ({
   tenantId
 }: Request): Promise<Whatsapp[]> => {
-  const whereCondition: any = {};
+  const whereCondition: LegacyAny = {};
   if (tenantId) {
     whereCondition.tenantId = tenantId;
   }

@@ -7,7 +7,7 @@ const VerifyContact = async (
   tenantId: string | number
 ): Promise<Contact> => {
   let profilePicUrl;
-  const chatInfo: any = await ctx.getChat();
+  const chatInfo: LegacyAny = await ctx.getChat();
   try {
     profilePicUrl = chatInfo.photo?.small_file_id
       ? await ctx.telegram.getFileLink(chatInfo.photo?.small_file_id)

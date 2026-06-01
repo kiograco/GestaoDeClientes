@@ -26,7 +26,7 @@ interface Request {
 }
 
 interface Response {
-  tickets: any[];
+  tickets: LegacyAny[];
   count: number;
   hasMore: boolean;
 }
@@ -220,7 +220,7 @@ const ListTicketsService = async ({
   const limit = 30;
   const offset = limit * (+pageNumber - 1);
 
-  const tickets: any = await Ticket.sequelize?.query(query, {
+  const tickets: LegacyAny = await Ticket.sequelize?.query(query, {
     replacements: {
       tenantId,
       isQueuesIds,

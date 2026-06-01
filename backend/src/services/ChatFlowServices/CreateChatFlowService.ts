@@ -10,7 +10,7 @@ import ChatFlow from "../../models/ChatFlow";
 const writeFileAsync = promisify(writeFile);
 
 interface Request {
-  flow: any;
+  flow: LegacyAny;
   name: string;
   isActive: boolean;
   userId: number;

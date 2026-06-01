@@ -55,7 +55,7 @@ const DashTicketsEvolutionByPeriod = async ({
   tenantId,
   userId,
   userProfile
-}: Request): Promise<any[]> => {
+}: Request): Promise<LegacyAny[]> => {
   const data = await sequelize.query(
     userProfile === "admin" ? queryAdmin : query,
     {

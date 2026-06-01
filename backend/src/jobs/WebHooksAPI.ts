@@ -5,7 +5,7 @@ import { logger } from "../utils/logger";
 interface Data {
   url: string;
   type: string;
-  payload: any;
+  payload: LegacyAny;
 }
 
 interface HandlerPayload {

@@ -40,7 +40,7 @@ const SyncContactsWhatsappInstanceService = async (
       const d = new Date().toJSON();
       const query = `INSERT INTO "Contacts" (number, name, "tenantId", "createdAt", "updatedAt") VALUES
         ${dataArray
-          .map((e: any) => {
+          .map((e: LegacyAny) => {
             return `('${e.number}',
             '${e.name}',
             '${e.tenantId}',

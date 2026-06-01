@@ -44,7 +44,7 @@ const DefinedUserBotService = async (
     `;
   }
 
-  const user: any = await User.sequelize?.query(query, {
+  const user: LegacyAny = await User.sequelize?.query(query, {
     replacements: {
       tenantId,
       queueId

@@ -1,6 +1,6 @@
 import Asterisk from "asterisk-manager";
 
-// const ami: any = new Asterisk(
+// const ami: LegacyAny = new Asterisk(
 //   "5038",
 //   "192.168.206.51",
 //   "admin",
@@ -8,7 +8,7 @@ import Asterisk from "asterisk-manager";
 //   true
 // );
 
-const ami: any = new Asterisk(
+const ami: LegacyAny = new Asterisk(
   "5038",
   "192.168.206.50",
   "admin",
@@ -18,16 +18,16 @@ const ami: any = new Asterisk(
 
 ami.keepConnected();
 
-// ami.action({ action: "QueueStatus" }, (err: any, res: any) => {
+// ami.action({ action: "QueueStatus" }, (err: LegacyAny, res: LegacyAny) => {
 //   console.log("QueueStatus", err, res);
 // });
 
-// ami.action({ action: "Agents" }, (err: any, res: any) => {
+// ami.action({ action: "Agents" }, (err: LegacyAny, res: LegacyAny) => {
 //   console.log("AgentShow", err, res);
 // });
 
 // // Evento de quando a chamada entra na fila
-// ami.on("queuecallerjoin", (evt: any) => {
+// ami.on("queuecallerjoin", (evt: LegacyAny) => {
 //   console.log(
 //     `### Emitindo no canal ${evt.queue} a mensagem: \r\n ${JSON.stringify(
 //       evt
@@ -37,7 +37,7 @@ ami.keepConnected();
 // });
 
 // // Evento de quando a chamada sai da fila (quando e atendida ou abandonada)
-// ami.on("queuecallerleave", (evt: any) => {
+// ami.on("queuecallerleave", (evt: LegacyAny) => {
 //   console.log(
 //     `### Emitindo no canal ${evt.queue} a mensagem: \r\n ${JSON.stringify(
 //       evt
@@ -47,7 +47,7 @@ ami.keepConnected();
 // });
 
 // // Evento de quando a chamada e abandonada
-// ami.on("queuecallerabandon", (evt: any) => {
+// ami.on("queuecallerabandon", (evt: LegacyAny) => {
 //   console.log(
 //     `### Emitindo no canal ${evt.queue} a mensagem: \r\n ${JSON.stringify(
 //       evt
@@ -57,7 +57,7 @@ ami.keepConnected();
 // });
 
 // // Evento de quando o membro da fila (agente) muda de status
-// ami.on("queuememberstatus", (evt: any) => {
+// ami.on("queuememberstatus", (evt: LegacyAny) => {
 //   console.log(
 //     `### Emitindo no canal ${evt.queue} a mensagem: \r\n ${JSON.stringify(
 //       evt
@@ -67,7 +67,7 @@ ami.keepConnected();
 // });
 
 // // Evento de quando a chamada é atendida
-// ami.on("agentconnect", (evt: any) => {
+// ami.on("agentconnect", (evt: LegacyAny) => {
 //   console.log(
 //     `### Emitindo no canal ${evt.queue} a mensagem: \r\n ${JSON.stringify(
 //       evt
@@ -77,7 +77,7 @@ ami.keepConnected();
 // });
 
 // // Evento de membros de uma fila (que so aparece quando voce da um queue show na fila)
-// ami.on("queuemember", (evt: any) => {
+// ami.on("queuemember", (evt: LegacyAny) => {
 //   console.log(
 //     `### Emitindo no canal ${evt.queue} a mensagem: \r\n ${JSON.stringify(
 //       evt
@@ -87,7 +87,7 @@ ami.keepConnected();
 // });
 
 // // Evento de parametros de uma fila (que so aparece quando voce da um queue show na fila)
-// ami.on("queueparams", (evt: any) => {
+// ami.on("queueparams", (evt: LegacyAny) => {
 //   console.log(
 //     `### Emitindo no canal ${evt.queue} a mensagem: \r\n ${JSON.stringify(
 //       evt
@@ -96,7 +96,7 @@ ami.keepConnected();
 //   // io.emit(evt.queue, evt);
 // });
 
-// ami.on("Hangup", (evt: any) => {
+// ami.on("Hangup", (evt: LegacyAny) => {
 //   console.log(
 //     `### Emitindo no canal a mensagem de desligamento da chamada: \r\n ${JSON.stringify(
 //       evt
@@ -105,7 +105,7 @@ ami.keepConnected();
 //   // io.emit(evt.queue, evt);
 // });
 
-ami.on("Dial", (evt: any) => {
+ami.on("Dial", (evt: LegacyAny) => {
   console.log(
     `### Emitindo no canal a mensagem de desligamento da chamada: \r\n ${JSON.stringify(
       evt
@@ -114,7 +114,7 @@ ami.on("Dial", (evt: any) => {
   // io.emit(evt.queue, evt);
 });
 
-// ami.on("peerstatus", (evt: any) => {
+// ami.on("peerstatus", (evt: LegacyAny) => {
 //   console.log(JSON.stringify(evt));
 // });
 
@@ -134,12 +134,12 @@ ami.action(
       // name2: "value2"
     }
   },
-  (err: any, res: any) => {
+  (err: LegacyAny, res: LegacyAny) => {
     console.log("action", err, res);
   }
 );
 
-// ami.on("managerevent", (evt: any) => {
+// ami.on("managerevent", (evt: LegacyAny) => {
 //   if (!(evt.event === "RTCPReceived" || evt.event === "RTCPSent")) {
 //     console.log("managerevent", evt);
 //   }
@@ -160,12 +160,12 @@ ami.action(
 // Listen for specific AMI events. A list of event names can be found at
 // https://wiki.asterisk.org/wiki/display/AST/Asterisk+11+AMI+Events
 // ligação é desligada
-ami.on("hangup", (evt: any) => {
+ami.on("hangup", (evt: LegacyAny) => {
   console.log("hangup", evt);
 });
 
 // Listen for Action responses.
-ami.on("response", (evt: any) => {
+ami.on("response", (evt: LegacyAny) => {
   console.log("response", evt);
 });
 

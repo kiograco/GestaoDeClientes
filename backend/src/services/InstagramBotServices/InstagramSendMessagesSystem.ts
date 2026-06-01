@@ -22,10 +22,10 @@ interface Session extends IgApiClientMQTT {
 
 const InstagramSendMessagesSystem = async (
   instaBot: Session,
-  ticket,
-  message: any
+  ticket: LegacyAny,
+  message: LegacyAny
 ): Promise<void> => {
-  let sendedMessage: any;
+  let sendedMessage: LegacyAny;
   const chatId = ticket.contact.instagramPK;
   const threadEntity = await instaBot.entity.directThread([chatId]);
 

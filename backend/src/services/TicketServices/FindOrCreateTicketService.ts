@@ -19,7 +19,7 @@ interface Data {
   unreadMessages: number;
   tenantId: number | string;
   groupContact?: Contact;
-  msg?: Message | any;
+  msg?: Message | LegacyAny;
   isSync?: boolean;
   channel: string;
 }
@@ -33,7 +33,7 @@ const FindOrCreateTicketService = async ({
   msg,
   isSync,
   channel
-}: Data): Promise<Ticket | any> => {
+}: Data): Promise<Ticket | LegacyAny> => {
   // se for uma mensagem de campanha, não abrir tícket
   if (msg && msg.fromMe) {
     const msgCampaign = await CampaignContacts.findOne({
@@ -57,7 +57,7 @@ const FindOrCreateTicketService = async ({
       farewellMessage?.ticket?.status === "closed" &&
       farewellMessage?.ticket.lastMessage === msg.body
     ) {
-      const ticket = farewellMessage.ticket as any;
+      const ticket = farewellMessage.ticket as LegacyAny;
       ticket.isFarewellMessage = true;
       return ticket;
     }
@@ -221,7 +221,7 @@ const FindOrCreateTicketService = async ({
       s => s.key === "DirectTicketsToWallets"
     )?.value === "enabled" || false;
 
-  const ticketObj: any = {
+  const ticketObj: LegacyAny = {
     contactId: groupContact ? groupContact.id : contact.id,
     status: "pending",
     isGroup: !!groupContact,
@@ -232,7 +232,7 @@ const FindOrCreateTicketService = async ({
   };
 
   if (DirectTicketsToWallets && contact.id) {
-    const wallet: any = contact;
+    const wallet: LegacyAny = contact;
     const wallets = await wallet.getWallets();
     if (wallets && wallets[0]?.id) {
       ticketObj.status = "open";

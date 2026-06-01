@@ -210,7 +210,10 @@ export const syncContacts = async (
     .json({ message: "Contatos estão sendo sincronizados." });
 };
 
-export const upload = async (req: Request, res: Response) => {
+export const upload = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const files = req.files as Express.Multer.File[];
   const file: Express.Multer.File = head(files) as Express.Multer.File;
   const { tenantId } = req.user;
@@ -241,7 +244,10 @@ export const upload = async (req: Request, res: Response) => {
   return res.status(200).json(response);
 };
 
-export const exportContacts = async (req: Request, res: Response) => {
+export const exportContacts = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { tenantId } = req.user;
 
   const contacts = await Contact.findAll({

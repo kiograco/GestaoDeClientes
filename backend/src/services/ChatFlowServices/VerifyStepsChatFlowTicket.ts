@@ -12,9 +12,9 @@ import IsContactTest from "./IsContactTest";
 
 const isNextSteps = async (
   ticket: Ticket,
-  chatFlow: any,
-  step: any,
-  stepCondition: any
+  chatFlow: LegacyAny,
+  step: LegacyAny,
+  stepCondition: LegacyAny
 ): Promise<void> => {
   // action = 0: enviar para proximo step: nextStepId
   if (stepCondition.action === 0) {
@@ -28,7 +28,7 @@ const isNextSteps = async (
 
     /// pegar os dados do proxumo step
     const nextStep = nodesList.find(
-      (n: any) => n.id === stepCondition.nextStepId
+      (n: LegacyAny) => n.id === stepCondition.nextStepId
     );
 
     if (!nextStep) return;
@@ -46,9 +46,9 @@ const isNextSteps = async (
 
 const isQueueDefine = async (
   ticket: Ticket,
-  flowConfig: any,
-  step: any,
-  stepCondition: any
+  flowConfig: LegacyAny,
+  step: LegacyAny,
+  stepCondition: LegacyAny
 ): Promise<void> => {
   // action = 1: enviar para fila: queue
   if (stepCondition.action === 1) {
@@ -86,8 +86,8 @@ const isQueueDefine = async (
 
 const isUserDefine = async (
   ticket: Ticket,
-  step: any,
-  stepCondition: any
+  step: LegacyAny,
+  stepCondition: LegacyAny
 ): Promise<void> => {
   // action = 2: enviar para determinado usuário
   if (stepCondition.action === 2) {
@@ -119,7 +119,7 @@ const isUserDefine = async (
 // enviar mensagem de boas vindas à fila ou usuário
 const sendWelcomeMessage = async (
   ticket: Ticket,
-  flowConfig: any
+  flowConfig: LegacyAny
 ): Promise<void> => {
   if (flowConfig?.configurations?.welcomeMessage?.message) {
     const messageData = {
@@ -141,7 +141,7 @@ const sendWelcomeMessage = async (
 
 const isRetriesLimit = async (
   ticket: Ticket,
-  flowConfig: any
+  flowConfig: LegacyAny
 ): Promise<boolean> => {
   // verificar o limite de retentativas e realizar ação
   const maxRetryNumber = flowConfig?.configurations?.maxRetryBotMessage?.number;
@@ -152,13 +152,13 @@ const isRetriesLimit = async (
   ) {
     const destinyType = flowConfig.configurations.maxRetryBotMessage.type;
     const { destiny } = flowConfig.configurations.maxRetryBotMessage;
-    const updatedValues: any = {
+    const updatedValues: LegacyAny = {
       chatFlowId: null,
       stepChatFlow: null,
       botRetries: 0,
       lastInteractionBot: new Date()
     };
-    const logsRetry: any = {
+    const logsRetry: LegacyAny = {
       ticketId: ticket.id,
       type: destinyType === 1 ? "retriesLimitQueue" : "retriesLimitUserDefine"
     };
@@ -190,7 +190,7 @@ const isRetriesLimit = async (
 };
 
 const isAnswerCloseTicket = async (
-  flowConfig: any,
+  flowConfig: LegacyAny,
   ticket: Ticket,
   message: string
 ): Promise<boolean> => {
@@ -203,7 +203,7 @@ const isAnswerCloseTicket = async (
 
   // verificar condição com a ação
   const params = flowConfig.configurations.answerCloseTicket.find(
-    (condition: any) => {
+    (condition: LegacyAny) => {
       return (
         String(condition).toLowerCase().trim() ===
         String(message).toLowerCase().trim()
@@ -239,8 +239,8 @@ const isAnswerCloseTicket = async (
 };
 
 const VerifyStepsChatFlowTicket = async (
-  msg: WbotMessage | any,
-  ticket: Ticket | any
+  msg: WbotMessage | LegacyAny,
+  ticket: Ticket | LegacyAny
 ): Promise<void> => {
   let celularTeste; // ticket.chatFlow?.celularTeste;
 
@@ -258,17 +258,17 @@ const VerifyStepsChatFlowTicket = async (
       }
 
       const step = chatFlow.flow.nodeList.find(
-        (node: any) => node.id === ticket.stepChatFlow
+        (node: LegacyAny) => node.id === ticket.stepChatFlow
       );
 
       const flowConfig = chatFlow.flow.nodeList.find(
-        (node: any) => node.type === "configurations"
+        (node: LegacyAny) => node.type === "configurations"
       );
 
       // verificar condição com a ação do step
-      const stepCondition = step.conditions.find((conditions: any) => {
+      const stepCondition = step.conditions.find((conditions: LegacyAny) => {
         if (conditions.type === "US") return true;
-        const newConditions = conditions.condition.map((c: any) =>
+        const newConditions = conditions.condition.map((c: LegacyAny) =>
           String(c).toLowerCase().trim()
         );
         const message = String(msg.body).toLowerCase().trim();

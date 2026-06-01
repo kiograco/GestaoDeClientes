@@ -28,7 +28,7 @@ interface MessageData {
   internalId?: string;
   userId?: string | number;
   quotedMsgId?: string;
-  quotedMsg?: any;
+  quotedMsg?: LegacyAny;
   // status?: string;
   scheduleDate?: string | Date;
   sendType?: string;
@@ -46,7 +46,7 @@ interface MessageRequest {
 }
 
 interface Request {
-  msg: MessageRequest | any;
+  msg: MessageRequest | LegacyAny;
   scheduleDate?: string | Date;
   sendType: string;
   status: string;
@@ -59,13 +59,13 @@ interface Request {
 
 // const writeFileAsync = promisify(writeFile);
 
-const downloadMedia = async (msg: any): Promise<any> => {
+const downloadMedia = async (msg: LegacyAny): Promise<LegacyAny> => {
   try {
     const request = await axios.get(msg.mediaUrl, {
       responseType: "stream"
     });
     const cType = request.headers["content-type"];
-    const tMine: any = mime;
+    const tMine: LegacyAny = mime;
     const fileExt = tMine.extension(cType);
     const mediaName = uuidv4();
     const dir = join(__dirname, "..", "..", "..", "public");
@@ -82,7 +82,7 @@ const downloadMedia = async (msg: any): Promise<any> => {
         .on("finish", async () => {
           resolve(mediaData);
         })
-        .on("error", (error: any) => {
+        .on("error", (error: LegacyAny) => {
           console.error("ERROR DONWLOAD", error);
           fs.rmdirSync(mediaPath, { recursive: true });
           reject(new Error(error));
@@ -168,7 +168,7 @@ const CreateMessageSystemService = async ({
 
     if (medias) {
       await Promise.all(
-        medias.map(async (media: Express.Multer.File | any) => {
+        medias.map(async (media: Express.Multer.File | LegacyAny) => {
           try {
             if (!media.filename) {
               const ext = media.mimetype.split("/")[1].split(";")[0];
@@ -182,7 +182,7 @@ const CreateMessageSystemService = async ({
           messageData.mediaName = media.filename;
           messageData.originalName = media.originalname;
 
-          let message: any = {};
+          let message: LegacyAny = {};
 
           if (!messageData.scheduleDate) {
             /// enviar mensagem > run time
@@ -240,7 +240,7 @@ const CreateMessageSystemService = async ({
         })
       );
     } else {
-      let message: any = {};
+      let message: LegacyAny = {};
 
       if (!messageData.scheduleDate) {
         /// enviar mensagem > run time

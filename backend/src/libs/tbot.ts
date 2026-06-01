@@ -67,7 +67,7 @@ export const getTbot = (whatsappId: number, checkState = true): Session => {
 export const removeTbot = (whatsappId: number): void => {
   try {
     const sessionIndex = TelegramSessions.findIndex(s => s.id === whatsappId);
-    const sessionSet: any = TelegramSessions[sessionIndex];
+    const sessionSet: LegacyAny = TelegramSessions[sessionIndex];
     if (sessionIndex !== -1) {
       // Enable graceful stop
       process.once("SIGINT", () => sessionSet.stop("SIGINT"));

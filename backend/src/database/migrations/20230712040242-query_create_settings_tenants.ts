@@ -8,14 +8,14 @@ module.exports = {
       { type: QueryTypes.SELECT }
     );
 
-    const settingId: any = await queryInterface.sequelize.query(
+    const settingId: LegacyAny = await queryInterface.sequelize.query(
       'select max(id) mId from "Settings"',
       { type: QueryTypes.SELECT }
     );
 
     // Loop pelos tenants e insere as novas configurações para cada um
     await Promise.all(
-      tenants.map(async (tenant: any, idx) => {
+      tenants.map(async (tenant: LegacyAny, idx) => {
         const { id } = tenant;
         const newSettings = [
           {

@@ -7,7 +7,7 @@ import { logger } from "../../utils/logger";
 import SetWebHookUrl from "./SetWebHookUrl";
 import Waba360SendMessagesSystem from "./Waba360SendMessagesSystem";
 
-const checkingWaba360: any = {};
+const checkingWaba360: LegacyAny = {};
 
 const checkMessagesWaba360 = async (connection: Whatsapp) => {
   if (checkingWaba360[connection.tenantId]) return;

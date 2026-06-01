@@ -4,7 +4,7 @@ import { getWbot } from "../libs/wbot";
 import SendMessagesSystemWbot from "../services/WbotServices/SendMessagesSystemWbot";
 import { logger } from "../utils/logger";
 
-const sending: any = {};
+const sending: LegacyAny = {};
 
 export default {
   key: "SendMessages",
@@ -17,7 +17,7 @@ export default {
     // }
   },
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  async handle({ data }: any) {
+  async handle({ data }: LegacyAny) {
     try {
       logger.info(`Sending Tenant Initiated: ${data.tenantId}`);
       if (sending[data.tenantId]) return;

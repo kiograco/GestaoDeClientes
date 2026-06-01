@@ -122,7 +122,7 @@ const UpdateWhatsAppService = async ({
     await whatsapp.update(data);
 
     return { whatsapp, oldDefaultWhatsapp };
-  } catch (err: any) {
+  } catch (err: LegacyAny) {
     if (err instanceof AppError) {
       throw err;
     }

@@ -20,9 +20,9 @@ interface Session extends IgApiClientMQTT {
 }
 
 const handleRealtimeReceive = async (
-  ctx: MessageSyncMessageWrapper | any,
+  ctx: MessageSyncMessageWrapper | LegacyAny,
   instaBot: Session
-) => {
+): Promise<void> => {
   const channel = await ShowWhatsAppService({ id: instaBot.id });
   const threadData = await instaBot.feed
     .directThread({ thread_id: ctx.message.thread_id, oldest_cursor: "" })

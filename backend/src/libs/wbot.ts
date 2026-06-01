@@ -198,7 +198,7 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
       wbot.on("ready", async () => {
         logger.info(`Session: ${sessionName}-READY`);
 
-        const info: any = wbot?.info;
+        const info: LegacyAny = wbot?.info;
         const wbotVersion = await wbot.getWWebVersion();
         const wbotBrowser = await wbot.pupBrowser?.version();
         await whatsapp.update({

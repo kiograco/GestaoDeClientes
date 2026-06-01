@@ -13,7 +13,7 @@ import CreateMessageService from "../MessageServices/CreateMessageService";
 import { logger } from "../../utils/logger";
 import getQuotedForMessageId from "../../helpers/getQuotedForMessageId";
 
-const getMediaInfo = (msg: any) => {
+const getMediaInfo = (msg: LegacyAny) => {
   // eslint-disable-next-line prettier/prettier
   const mediaType = msg.photo ? "photo" : msg.video ? "video" : msg.audio ? "audio" : msg.voice ? "voice" : msg.sticker && !msg.sticker.is_animated ? "sticker" : "document";
   const mediaObj = msg[mediaType];
@@ -66,7 +66,10 @@ const getMediaInfo = (msg: any) => {
   }
 };
 
-const downloadFile = async (url: any, pathFile: string): Promise<void> => {
+const downloadFile = async (
+  url: LegacyAny,
+  pathFile: string
+): Promise<void> => {
   const request = await axios({
     url: url.toString(),
     method: "GET",
@@ -77,7 +80,7 @@ const downloadFile = async (url: any, pathFile: string): Promise<void> => {
     request.data
       .pipe(createWriteStream(pathFile))
       .on("finish", async () => resolve(true))
-      .on("error", (error: any) => {
+      .on("error", (error: LegacyAny) => {
         console.error("ERROR DONWLOAD", error);
         // fs.rmdirSync(mediaDir, { recursive: true });
         reject(new Error(error));
@@ -86,13 +89,13 @@ const downloadFile = async (url: any, pathFile: string): Promise<void> => {
 };
 
 const VerifyMediaMessage = async (
-  ctx: Context | any,
+  ctx: Context | LegacyAny,
   fromMe: boolean,
   ticket: Ticket,
   contact: Contact
 ): Promise<Message | void> => {
   let message;
-  let updateMessage: any = {};
+  let updateMessage: LegacyAny = {};
   message = ctx?.message;
   updateMessage = ctx?.update;
 

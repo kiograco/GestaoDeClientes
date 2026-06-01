@@ -30,7 +30,7 @@ export type RetryOptions = {
 };
 
 export type RabbitMQJob = {
-  data: any;
+  data: LegacyAny;
   queue: string;
 };
 
@@ -56,7 +56,7 @@ export default class QueueListener {
     // TODO: log stalled request. These requests are most probably double processed.
   }
 
-  static onCompleted(_job: Job<JobConfig>, _result: any): void {
+  static onCompleted(_job: Job<JobConfig>, _result: LegacyAny): void {
     // console.log(`Job with ID ${job.id} completed`);
     // console.log({ result });
   }

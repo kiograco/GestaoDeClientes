@@ -3,7 +3,7 @@ import Setting from "../../models/Setting";
 const AdminListSettingsService = async (
   tenantId?: number | string
 ): Promise<Setting[] | undefined> => {
-  const whereCondition: any = {};
+  const whereCondition: LegacyAny = {};
   if (tenantId) {
     whereCondition.tenantId = tenantId;
   }

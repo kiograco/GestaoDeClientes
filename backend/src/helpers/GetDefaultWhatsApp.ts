@@ -5,7 +5,7 @@ const GetDefaultWhatsApp = async (
   tenantId: string | number,
   channelId?: number
 ): Promise<Whatsapp> => {
-  const where: any = { tenantId, status: "CONNECTED" };
+  const where: LegacyAny = { tenantId, status: "CONNECTED" };
 
   if (channelId) {
     where.id = channelId;

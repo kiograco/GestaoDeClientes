@@ -11,7 +11,7 @@ interface Session extends MessengerClient {
   id: number;
 }
 
-const checkingMessenger: any = {};
+const checkingMessenger: LegacyAny = {};
 
 const messengerCheckMessages = async (
   messengerBot: Session,

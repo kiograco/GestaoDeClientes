@@ -10,7 +10,7 @@ import CreateMessageSystemService from "../../MessageServices/CreateMessageSyste
 // import { sleepRandomTime } from "../../../utils/sleepRandomTime";
 
 const verifyBusinessHours = async (
-  msg: WbotMessage | any,
+  msg: WbotMessage | LegacyAny,
   ticket: Ticket
 ): Promise<boolean> => {
   let isBusinessHours = true;
@@ -25,8 +25,8 @@ const verifyBusinessHours = async (
     });
 
     const dateMsg = fromUnixTime(msg.timestamp);
-    const businessDay: any = tenant.businessHours.find(
-      (d: any) => d.day === dateMsg.getDay()
+    const businessDay: LegacyAny = tenant.businessHours.find(
+      (d: LegacyAny) => d.day === dateMsg.getDay()
     );
 
     // Não existir configuração para a data, não deverá enviar

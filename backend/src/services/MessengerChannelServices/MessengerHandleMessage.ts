@@ -11,7 +11,7 @@ import MessengerShowChannel from "./MessengerShowChannel";
 import verifyBusinessHours from "../WbotServices/helpers/VerifyBusinessHours";
 
 // eslint-disable-next-line consistent-return
-const getMessageType = (message: any) => {
+const getMessageType = (message: LegacyAny) => {
   const { attachments } = message;
   const hasAttachment = attachments && attachments.length > 0;
   if (message.text && !hasAttachment) return "text";
@@ -34,7 +34,7 @@ const MessengerHandleMessage = async (
       try {
         if (context.object !== "page") return;
 
-        const entry: any = context.entry.shift();
+        const entry: LegacyAny = context.entry.shift();
         const messageObj = entry?.messaging.shift();
 
         channel = await MessengerShowChannel({ fbPageId: entry.id });

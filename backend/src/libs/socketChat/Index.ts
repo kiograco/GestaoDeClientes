@@ -7,4 +7,4 @@
 //   idleUsers: {};
 // }
 
-export const shared: any = {};
+export const shared: LegacyAny = {};

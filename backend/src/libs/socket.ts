@@ -28,7 +28,7 @@ export const initIO = (httpServer: Server): SocketIO => {
   };
 
   // apresentando problema na assinatura
-  const redis = socketRedis as any;
+  const redis = socketRedis as LegacyAny;
   io.adapter(redis(connRedis));
 
   io.use(async (socket, next) => {
@@ -110,7 +110,7 @@ export const initIO = (httpServer: Server): SocketIO => {
       Chat.register(socket);
     }
 
-    socket.on("disconnect", (reason: any) => {
+    socket.on("disconnect", (reason: LegacyAny) => {
       logger.info({
         message: `SOCKET Client disconnected , ${tenantId}, ${reason}`
       });

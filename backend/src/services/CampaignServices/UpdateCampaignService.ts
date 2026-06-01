@@ -36,7 +36,7 @@ const UpdateCampaignService = async ({
   tenantId
 }: Request): Promise<Campaign> => {
   let mediaData: Express.Multer.File | undefined;
-  let data: any = {
+  let data: LegacyAny = {
     ...campaignData,
     mediaUrl: cArquivoName(campaignData.mediaUrl),
     start: setHours(setMinutes(parseISO(campaignData.start), 0), 8)

@@ -10,7 +10,7 @@ interface Message extends EventMessage {
 }
 
 const MessengerVerifyMessage = async (
-  msg: Message | any,
+  msg: Message | LegacyAny,
   ticket: Ticket,
   contact: Contact
 ): Promise<void> => {

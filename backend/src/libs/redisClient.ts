@@ -11,9 +11,9 @@ const redisClient = new Redis({
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const getValue = (key: string) => {
   return new Promise((resolve, reject) => {
-    redisClient.get(key, (err, value): any => {
+    redisClient.get(key, (err, value): LegacyAny => {
       if (err) return reject(err);
-      let data: any;
+      let data: LegacyAny;
       if (value) {
         try {
           data = JSON.parse(value || "");
@@ -29,9 +29,9 @@ export const getValue = (key: string) => {
 };
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export const setValue = (key: string, value: any) => {
+export const setValue = (key: string, value: LegacyAny) => {
   return new Promise((resolve, reject) => {
-    let stringfy: any;
+    let stringfy: LegacyAny;
     if (typeof value === "object") {
       stringfy = JSON.stringify(value);
     } else {

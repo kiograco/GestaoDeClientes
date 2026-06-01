@@ -7,10 +7,10 @@ import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import { sendInstagramOAuthMessage } from "../services/InstagramOAuthServices/InstagramOAuthMessageService";
 
 type Payload = {
-  ticket: any;
-  messageData: any;
-  media: any;
-  userId: any;
+  ticket: LegacyAny;
+  messageData: LegacyAny;
+  media: LegacyAny;
+  userId: LegacyAny;
 };
 
 const SendMessageSystemProxy = async ({
@@ -18,7 +18,7 @@ const SendMessageSystemProxy = async ({
   messageData,
   media,
   userId
-}: Payload): Promise<any> => {
+}: Payload): Promise<LegacyAny> => {
   let message;
 
   if (messageData.mediaName) {

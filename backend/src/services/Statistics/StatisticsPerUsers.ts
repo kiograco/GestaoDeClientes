@@ -37,7 +37,7 @@ const StatisticsPerUser = async ({
   startDate,
   endDate,
   tenantId
-}: Request): Promise<any[]> => {
+}: Request): Promise<LegacyAny[]> => {
   const data = await sequelize.query(query, {
     replacements: {
       tenantId,

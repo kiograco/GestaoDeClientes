@@ -25,7 +25,7 @@ const VerifyMediaMessage = async (
   // }
   let wabaMediaId;
   if (!["text", "chat", "template"].includes(msg.type)) {
-    const msgData: any = msg;
+    const msgData: LegacyAny = msg;
     wabaMediaId = msgData[msg.type].id;
   }
 

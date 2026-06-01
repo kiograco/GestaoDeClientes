@@ -187,6 +187,7 @@
 <script>
 import { required, email } from 'vuelidate/lib/validators'
 import { ConsultarIdentidadeVisual, RedefinirSenha, SolicitarRedefinicaoSenha } from 'src/service/login'
+import { resolveTenantLogoUrl } from 'src/utils/tenantLogo'
 
 export default {
   name: 'Login',
@@ -199,7 +200,7 @@ export default {
       confirmacaoNovaSenha: '',
       isPwdNovaSenha: true,
       loadingRedefinicao: false,
-      logoUrl: localStorage.getItem('tenantLogoUrl') || '/ncprogrammers-logo.svg',
+      logoUrl: resolveTenantLogoUrl(localStorage.getItem('tenantLogoUrl')),
       form: {
         email: null,
         password: null
@@ -221,9 +222,9 @@ export default {
       if (!this.form.email || this.$v.form.email.$invalid) return
       try {
         const { data } = await ConsultarIdentidadeVisual(this.form.email)
-        this.logoUrl = data.logoUrl || '/ncprogrammers-logo.svg'
+        this.logoUrl = resolveTenantLogoUrl(data.logoUrl)
       } catch (error) {
-        this.logoUrl = '/ncprogrammers-logo.svg'
+        this.logoUrl = resolveTenantLogoUrl()
       }
     },
     fazerLogin () {

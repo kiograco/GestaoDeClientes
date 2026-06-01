@@ -10,7 +10,7 @@ const ListTagService = async ({
   isActive
 }: Request): Promise<Tag[]> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = {
+  const where: LegacyAny = {
     tenantId
   };
 

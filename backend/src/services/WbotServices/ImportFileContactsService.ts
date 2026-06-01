@@ -9,11 +9,11 @@ export async function ImportFileContactsService(
   file: Express.Multer.File | undefined,
   tags: string[],
   wallets: string[]
-) {
+): Promise<Contact[]> {
   const workbook = XLSX.readFile(file?.path as string);
-  const worksheet = head(Object.values(workbook.Sheets)) as any;
-  const rows: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 0 });
-  const contacts: any = [];
+  const worksheet = head(Object.values(workbook.Sheets)) as LegacyAny;
+  const rows: LegacyAny[] = XLSX.utils.sheet_to_json(worksheet, { header: 0 });
+  const contacts: LegacyAny = [];
 
   rows.forEach(row => {
     let name = "";
@@ -70,7 +70,7 @@ export async function ImportFileContactsService(
         defaults: contact
       });
 
-      const setContact: any = newContact;
+      const setContact: LegacyAny = newContact;
       if (created) {
         contactList.push(newContact);
       }

@@ -11,7 +11,7 @@ import CreateLogTicketService from "../../TicketServices/CreateLogTicketService"
 // import SendWhatsAppMessage from "../SendWhatsAppMessage";
 
 const verifyAutoReplyActionTicket = async (
-  msg: WbotMessage | any,
+  msg: WbotMessage | LegacyAny,
   ticket: Ticket
 ): Promise<void> => {
   const celularContato = ticket.contact.number;

@@ -113,7 +113,7 @@ const HandleMessage = async (
         // await VerifyAutoReplyActionTicket(msg, ticket);
         if (isBusinessHours) await VerifyStepsChatFlowTicket(msg, ticket);
 
-        const apiConfig: any = ticket.apiConfig || {};
+        const apiConfig: LegacyAny = ticket.apiConfig || {};
         if (
           !msg.fromMe &&
           !ticket.isGroup &&

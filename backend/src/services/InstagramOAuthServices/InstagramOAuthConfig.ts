@@ -1,6 +1,13 @@
 import AppError from "../../errors/AppError";
 
-export const getInstagramOAuthConfig = () => {
+type InstagramOAuthConfig = {
+  appId: string;
+  appSecret: string;
+  redirectUri: string;
+  verifyToken: string;
+};
+
+export const getInstagramOAuthConfig = (): InstagramOAuthConfig => {
   const appId = process.env.INSTAGRAM_APP_ID;
   const appSecret = process.env.INSTAGRAM_APP_SECRET;
   const redirectUri = process.env.INSTAGRAM_REDIRECT_URI;

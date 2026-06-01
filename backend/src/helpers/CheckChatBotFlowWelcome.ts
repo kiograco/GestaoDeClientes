@@ -44,7 +44,7 @@ const CheckChatBotFlowWelcome = async (instance: Ticket): Promise<void> => {
     return;
 
   const lineFlow = chatFlow.flow.lineList.find(
-    (line: any) => line.from === "start"
+    (line: LegacyAny) => line.from === "start"
   );
 
   await instance.update({

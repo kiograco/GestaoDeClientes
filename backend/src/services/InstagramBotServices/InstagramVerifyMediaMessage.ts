@@ -18,7 +18,10 @@ const getExt = (url: string) => {
   return s[1];
 };
 
-const downloadFile = async (url: any, pathFile: string): Promise<void> => {
+const downloadFile = async (
+  url: LegacyAny,
+  pathFile: string
+): Promise<void> => {
   const request = await axios({
     url: url.toString(),
     method: "GET",
@@ -29,7 +32,7 @@ const downloadFile = async (url: any, pathFile: string): Promise<void> => {
     request.data
       .pipe(createWriteStream(pathFile))
       .on("finish", async () => resolve(true))
-      .on("error", (error: any) => {
+      .on("error", (error: LegacyAny) => {
         console.error("ERROR DONWLOAD", error);
         // fs.rmdirSync(mediaDir, { recursive: true });
         reject(new Error(error));
@@ -38,7 +41,7 @@ const downloadFile = async (url: any, pathFile: string): Promise<void> => {
 };
 
 const VerifyMediaMessage = async (
-  ctx: MessageSyncMessageWrapper | any,
+  ctx: MessageSyncMessageWrapper | LegacyAny,
   fromMe: boolean,
   ticket: Ticket,
   contact: Contact

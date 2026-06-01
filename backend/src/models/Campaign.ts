@@ -93,11 +93,13 @@ class Campaign extends Model<Campaign> {
   delay: number;
 
   @AfterFind
-  static async updatedInstances(instances: any): Promise<void | any> {
+  static async updatedInstances(
+    instances: LegacyAny
+  ): Promise<void | LegacyAny> {
     if (!Array.isArray(instances)) return instances;
     const newInstances = await Promise.all(
       // eslint-disable-next-line consistent-return
-      instances.map(async (instance: any) => {
+      instances.map(async (instance: LegacyAny) => {
         if (!["pending", "finished", "canceled"].includes(instance.status)) {
           const pendentesEntrega = +instance.dataValues.pendentesEntrega;
           const pendentesEnvio = +instance.dataValues.pendentesEnvio;

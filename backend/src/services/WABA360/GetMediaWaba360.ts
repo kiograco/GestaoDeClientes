@@ -34,7 +34,7 @@ const downloadFile = async (
     request.data
       .pipe(createWriteStream(pathFile))
       .on("finish", async () => resolve(true))
-      .on("error", (error: any) => {
+      .on("error", (error: LegacyAny) => {
         console.error("ERROR DONWLOAD", error);
         // fs.rmdirSync(mediaDir, { recursive: true });
         reject(new Error(error));

@@ -142,7 +142,7 @@ export const indexChannels = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { tenantId } = req.query as any;
+  const { tenantId } = req.query as LegacyAny;
   const channels = await AdminListChannelsService({ tenantId });
   return res.status(200).json(channels);
 };

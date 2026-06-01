@@ -4,7 +4,7 @@
 
 import { getHours } from "date-fns";
 
-const _htmlEscape = string =>
+const _htmlEscape = (string: string): string =>
   string
     .replace(/&/g, "&amp;") // Must happen first or else it will escape other just-escaped characters.
     .replace(/"/g, "&quot;")
@@ -12,7 +12,7 @@ const _htmlEscape = string =>
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-const _htmlUnescape = htmlString =>
+const _htmlUnescape = (htmlString: string): string =>
   htmlString
     .replace(/&gt;/g, ">")
     .replace(/&lt;/g, "<")
@@ -20,7 +20,10 @@ const _htmlUnescape = htmlString =>
     .replace(/&quot;/g, '"')
     .replace(/&amp;/g, "&"); // Must happen last or else it will unescape other characters in the wrong order.
 
-export function htmlEscape(strings, ...values) {
+export function htmlEscape(
+  strings: string | TemplateStringsArray,
+  ...values: unknown[]
+): string {
   if (typeof strings === "string") {
     return _htmlEscape(strings);
   }
@@ -33,7 +36,10 @@ export function htmlEscape(strings, ...values) {
   return output;
 }
 
-export function htmlUnescape(strings, ...values) {
+export function htmlUnescape(
+  strings: string | TemplateStringsArray,
+  ...values: unknown[]
+): string {
   if (typeof strings === "string") {
     return _htmlUnescape(strings);
   }
@@ -47,9 +53,9 @@ export function htmlUnescape(strings, ...values) {
 }
 
 export class MissingValueError extends Error {
-  key: any;
+  key: LegacyAny;
 
-  constructor(key) {
+  constructor(key: string) {
     super(
       `Missing a value for ${key ? `the placeholder: ${key}` : "a placeholder"}`
     );
@@ -73,10 +79,10 @@ const greeting = (() => {
 })();
 
 export const pupa = function pupa(
-  template,
-  data,
-  { ignoreMissing = true, transform = ({ value }: any) => value } = {}
-) {
+  template: string,
+  data: LegacyAny,
+  { ignoreMissing = true, transform = ({ value }: LegacyAny) => value } = {}
+): string {
   if (typeof template !== "string") {
     throw new TypeError(
       `Expected a \`string\` in the first argument, got \`${typeof template}\``
@@ -91,7 +97,7 @@ export const pupa = function pupa(
 
   data = { ...data, greeting };
 
-  const replace = (placeholder, key) => {
+  const replace = (_placeholder: string, key: string): string => {
     let value = data;
     for (const property of key.split(".")) {
       value = value ? value[property] : undefined;
@@ -111,7 +117,7 @@ export const pupa = function pupa(
 
   const composeHtmlEscape =
     replacer =>
-    (...args: any) =>
+    (...args: LegacyAny) =>
       htmlEscape(replacer(...args));
 
   // The regex tries to match either a number inside `{{ }}` or a valid JS identifier or key path.

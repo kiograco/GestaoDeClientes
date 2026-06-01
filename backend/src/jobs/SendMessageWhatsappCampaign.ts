@@ -18,7 +18,7 @@ export default {
     }
   },
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  async handle({ data }: any) {
+  async handle({ data }: LegacyAny) {
     try {
       /// feito por está apresentando problema com o tipo
       const wbot = getWbot(data.whatsappId);

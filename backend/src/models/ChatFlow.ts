@@ -29,7 +29,7 @@ class ChatFlow extends Model<ChatFlow> {
   @Default({})
   @AllowNull
   @Column(DataType.JSON)
-  get flow(): any {
+  get flow(): LegacyAny {
     const flow = this.getDataValue("flow");
     if (flow) {
       for (const node of flow.nodeList) {

@@ -6,7 +6,7 @@ import CreateMessageService from "../MessageServices/CreateMessageService";
 // import { logger } from "../../utils/logger";
 
 const VerifyMessage = async (
-  ctx: MessageSyncMessageWrapper | any,
+  ctx: MessageSyncMessageWrapper | LegacyAny,
   fromMe: boolean,
   ticket: Ticket,
   contact: Contact

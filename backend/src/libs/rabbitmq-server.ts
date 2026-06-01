@@ -49,7 +49,7 @@ export default class RabbitmqServer {
   ) {
     this.channel.prefetch(10, false);
     await this.channel.assertQueue(queue, { durable: true });
-    this.channel.consume(queue, async (message: any) => {
+    this.channel.consume(queue, async (message: LegacyAny) => {
       try {
         await callback(message);
         // delay para processamento da mensagem
@@ -69,7 +69,7 @@ export default class RabbitmqServer {
 
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   async consume(queue: string, callback: (message: Message) => void) {
-    return this.channel.consume(queue, (message: any) => {
+    return this.channel.consume(queue, (message: LegacyAny) => {
       try {
         callback(message);
         this.channel.ack(message);

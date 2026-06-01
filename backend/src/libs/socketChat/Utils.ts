@@ -13,7 +13,7 @@ import {
 } from "lodash";
 import { Socket } from "socket.io";
 
-export const sortByKeys = (obj: any) => {
+export const sortByKeys = (obj: LegacyAny) => {
   const keys = Object.keys(obj);
   const sortedKeys = sortBy(keys);
   return fromPairs(
@@ -23,15 +23,19 @@ export const sortByKeys = (obj: any) => {
   );
 };
 
-export const sendToSelf = (socket: Socket, method: any, data: any = {}) => {
+export const sendToSelf = (
+  socket: Socket,
+  method: LegacyAny,
+  data: LegacyAny = {}
+) => {
   socket.emit(method, data);
 };
 
 export const _sendToSelf = (
-  io: { sockets: { sockets: any } },
-  socketId: any,
-  method: any,
-  data: any
+  io: { sockets: { sockets: LegacyAny } },
+  socketId: LegacyAny,
+  method: LegacyAny,
+  data: LegacyAny
 ) => {
   each(io.sockets.sockets, socket => {
     if (socket.id === socketId) {
@@ -42,29 +46,29 @@ export const _sendToSelf = (
 
 export const sendToAllConnectedClients = (
   socket: Socket,
-  method: any,
-  data: any
+  method: LegacyAny,
+  data: LegacyAny
 ) => {
   socket.emit(method, data);
 };
 
 export const sendToAllClientsInRoom = (
-  io: any,
-  room: any,
-  method: any,
-  data: any
+  io: LegacyAny,
+  room: LegacyAny,
+  method: LegacyAny,
+  data: LegacyAny
 ) => {
   io.sockets.in(room).emit(method, data);
 };
 
 export const sendToUser = (
-  socketList: any,
-  userList: any,
-  username: any,
-  method: any,
-  data: any
+  socketList: LegacyAny,
+  userList: LegacyAny,
+  username: LegacyAny,
+  method: LegacyAny,
+  data: LegacyAny
 ) => {
-  let userOnline: any = null;
+  let userOnline: LegacyAny = null;
   forEach(userList, (v, k) => {
     if (k.toLowerCase() === username.toLowerCase()) {
       userOnline = v;
@@ -85,10 +89,10 @@ export const sendToUser = (
 };
 
 export const sendToAllExcept = (
-  io: any,
-  exceptSocketId: any,
-  method: any,
-  data: any
+  io: LegacyAny,
+  exceptSocketId: LegacyAny,
+  method: LegacyAny,
+  data: LegacyAny
 ) => {
   each(io.sockets.sockets, socket => {
     if (socket.id !== exceptSocketId) {
@@ -97,7 +101,7 @@ export const sendToAllExcept = (
   });
 };
 
-export const disconnectAllClients = (io: any) => {
+export const disconnectAllClients = (io: LegacyAny) => {
   Object.keys(io.sockets.sockets).forEach(sock => {
     io.sockets.sockets[sock].disconnect(true);
   });

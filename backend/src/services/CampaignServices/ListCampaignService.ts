@@ -11,7 +11,7 @@ const ListCampaignService = async ({
   tenantId
 }: Request): Promise<Campaign[]> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = {
+  const where: LegacyAny = {
     tenantId
   };
 
