@@ -14,7 +14,7 @@ usuários, campanhas e chatbot configurável.
 - Identidade visual por empresa com logo configurável.
 - Recuperação de senha por e-mail.
 - Painel global de superadministrador para gestão comercial das empresas.
-- Controle manual de liberação por período pago, com aviso de dias restantes.
+- Assinaturas pagas via Asaas com Pix, página hospedada para cartão e webhook.
 
 ## Documentação
 
@@ -89,8 +89,49 @@ API externa e sockets são bloqueados.
 Empresas antigas sem prazo definido permanecem liberadas até que o
 superadministrador faça a primeira renovação.
 
-O painel ainda utiliza renovação manual. Pagamentos online por Pix e cartão
-exigem integração adicional com um gateway de pagamento e webhooks idempotentes.
+O painel mantém renovação manual para suporte comercial e também oferece
+assinaturas automáticas via Asaas. A empresa pode abrir **Minha assinatura**,
+escolher um plano, gerar Pix com QR Code e Copia e Cola ou abrir a página segura
+de pagamento hospedada pelo gateway. O prazo é renovado após webhook válido e
+idempotente.
+
+## Pagamentos Asaas
+
+Configure somente no backend:
+
+```env
+ASAAS_API_KEY=SUBSTITUA_PELA_CHAVE_ASAAS
+ASAAS_API_URL=https://api.asaas.com/v3
+ASAAS_WEBHOOK_TOKEN=SUBSTITUA_POR_UM_TOKEN_ALEATORIO
+ASAAS_RENEW_ON_CARD_CONFIRMED=false
+ASAAS_SUSPEND_ON_REFUND=false
+```
+
+No painel Asaas, cadastre:
+
+```text
+https://backend-api-production-6a67.up.railway.app/webhooks/asaas
+```
+
+Use o mesmo token no Asaas e em `ASAAS_WEBHOOK_TOKEN`. A chave
+`ASAAS_API_KEY` nunca deve ser exposta no frontend.
+
+Regras aplicadas:
+
+- Pix comum gera uma nova cobrança a cada renovação;
+- QR Code e Pix Copia e Cola são obtidos da API do Asaas;
+- Pix libera acesso somente após `PAYMENT_RECEIVED`;
+- cartão utiliza página hospedada e o CRM não armazena número ou CVV;
+- `PAYMENT_CONFIRMED` pode antecipar liberação do cartão quando a política
+  `ASAAS_RENEW_ON_CARD_CONFIRMED=true` estiver habilitada;
+- webhooks duplicados não adicionam dias duas vezes;
+- eventos de atraso, estorno e chargeback permanecem registrados.
+
+Pix Automático não está habilitado nesta versão porque requer acesso controlado
+pelo Asaas.
+
+Detalhes de deploy e teste estão em
+[Publicação com Railway e Vercel](docs/DEPLOY_RAILWAY.md#18-configurar-pagamentos-asaas).
 
 ## Identidade Visual
 

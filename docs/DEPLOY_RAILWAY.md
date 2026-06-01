@@ -159,6 +159,12 @@ SUPERADMIN_PASSWORD=SUBSTITUA_POR_UMA_SENHA_FORTE
 RESEND_API_KEY=SUBSTITUA_PELA_CHAVE_RESEND
 RESEND_FROM_EMAIL=contato@SEU_DOMINIO_VALIDADO
 
+ASAAS_API_KEY=SUBSTITUA_PELA_CHAVE_ASAAS
+ASAAS_API_URL=https://api.asaas.com/v3
+ASAAS_WEBHOOK_TOKEN=SUBSTITUA_POR_UM_TOKEN_ALEATORIO
+ASAAS_RENEW_ON_CARD_CONFIRMED=false
+ASAAS_SUSPEND_ON_REFUND=false
+
 POSTGRES_HOST=${{Postgres.PGHOST}}
 DB_PORT=${{Postgres.PGPORT}}
 POSTGRES_DB=${{Postgres.PGDATABASE}}
@@ -425,6 +431,8 @@ No painel Meta for Developers:
 - [ ] WebSocket recebe novas mensagens.
 - [ ] WhatsApp reconecta após reinício do backend.
 - [ ] Segredos reais não foram commitados no Git.
+- [ ] Webhook Asaas aponta para `https://backend-api-production-6a67.up.railway.app/webhooks/asaas`.
+- [ ] Token do webhook Asaas corresponde a `ASAAS_WEBHOOK_TOKEN`.
 
 ## 16. Diagnóstico rápido
 
@@ -497,3 +505,51 @@ Antes de uso comercial:
 - mantenha PostgreSQL, Redis e RabbitMQ sem exposição pública;
 - avalie VPS ou infraestrutura dedicada para maior previsibilidade;
 - trate bibliotecas não oficiais como componentes sujeitos a bloqueios e alterações dos provedores.
+
+## 18. Configurar pagamentos Asaas
+
+No painel do Asaas, configure o webhook:
+
+```text
+https://backend-api-production-6a67.up.railway.app/webhooks/asaas
+```
+
+Informe no Asaas o mesmo token salvo no Railway como:
+
+```env
+ASAAS_WEBHOOK_TOKEN=SUBSTITUA_POR_UM_TOKEN_ALEATORIO
+```
+
+O backend valida o header `asaas-access-token`. A chave `ASAAS_API_KEY` deve
+existir somente no backend e nunca deve ser adicionada ao Vercel.
+
+Eventos processados:
+
+- `PAYMENT_RECEIVED`: renova o prazo automaticamente;
+- `PAYMENT_CONFIRMED`: renova cartão antecipadamente somente quando
+  `ASAAS_RENEW_ON_CARD_CONFIRMED=true`;
+- `PAYMENT_OVERDUE`: marca a assinatura como atrasada;
+- estornos e chargebacks: são registrados e suspendem acesso somente quando
+  `ASAAS_SUSPEND_ON_REFUND=true`.
+
+Para testar Pix:
+
+1. entre como administrador de uma empresa;
+2. abra **Minha assinatura**;
+3. escolha um plano e clique em **Gerar Pix**;
+4. confirme que QR Code e Pix Copia e Cola foram exibidos;
+5. pague a cobrança de teste;
+6. confirme no painel que o webhook `PAYMENT_RECEIVED` foi entregue;
+7. recarregue **Minha assinatura** e confira o novo vencimento.
+
+Para testar um webhook manualmente:
+
+```sh
+curl -X POST https://backend-api-production-6a67.up.railway.app/webhooks/asaas \
+  -H "Content-Type: application/json" \
+  -H "asaas-access-token: SEU_TOKEN" \
+  -d '{"id":"evento-teste-unico","event":"PAYMENT_RECEIVED","payment":{"id":"ID_DE_UMA_COBRANCA_LOCAL"}}'
+```
+
+Reenvie o mesmo JSON para confirmar idempotência: o prazo não pode ser
+adicionado novamente.

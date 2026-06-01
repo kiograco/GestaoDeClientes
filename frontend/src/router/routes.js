@@ -106,6 +106,16 @@ const routes = [
     name: 'superadmin-empresas',
     component: () => import('pages/superadmin/Empresas.vue')
   },
+  {
+    path: '/superadmin/planos',
+    name: 'superadmin-planos',
+    component: () => import('pages/superadmin/Planos.vue')
+  },
+  {
+    path: '/assinatura',
+    name: 'minha-assinatura',
+    component: () => import('pages/assinatura/MinhaAssinatura.vue')
+  },
 
   // Always leave this as last one,
   // but you can also remove it

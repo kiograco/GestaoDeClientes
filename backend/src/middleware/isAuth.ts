@@ -41,12 +41,14 @@ const isAuth = async (
       attributes: ["id", "profile", "tenantId"],
       include: [{ model: Tenant, attributes: ["status", "accessExpiresAt"] }]
     });
-    if (
-      !user ||
-      user.profile !== profile ||
-      (user.profile !== "superadmin" && !isTenantAccessActive(user.tenant))
-    ) {
+    if (!user || user.profile !== profile) {
       throw new Error("User no longer has access");
+    }
+    if (user.profile !== "superadmin" && user.tenant?.status !== "active") {
+      throw new AppError("ERR_TENANT_INACTIVE", 403);
+    }
+    if (user.profile !== "superadmin" && !isTenantAccessActive(user.tenant)) {
+      throw new AppError("ERR_TENANT_ACCESS_EXPIRED", 403);
     }
 
     req.user = {
@@ -55,6 +57,7 @@ const isAuth = async (
       tenantId: user.tenantId
     };
   } catch (err) {
+    if (err instanceof AppError) throw err;
     throw new AppError("Invalid token.", 403);
   }
 

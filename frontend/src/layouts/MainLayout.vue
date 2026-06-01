@@ -341,6 +341,12 @@ const socket = socketIO()
 
 const objMenu = [
   {
+    title: 'Minha assinatura',
+    caption: 'Plano e pagamentos',
+    icon: 'mdi-credit-card-outline',
+    routeName: 'minha-assinatura'
+  },
+  {
     title: 'Dashboard',
     caption: '',
     icon: 'mdi-home',

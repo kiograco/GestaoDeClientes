@@ -1,6 +1,7 @@
 import express from "express";
 import * as AdminController from "../controllers/AdminController";
 import isAuthAdmin from "../middleware/isAuthAdmin";
+import * as PlanController from "../controllers/PlanController";
 
 const adminRoutes = express.Router();
 
@@ -13,6 +14,9 @@ adminRoutes.put(
 
 adminRoutes.get("/admin/tenants", isAuthAdmin, AdminController.indexTenants);
 adminRoutes.post("/admin/tenants", isAuthAdmin, AdminController.storeTenant);
+adminRoutes.get("/admin/plans", isAuthAdmin, PlanController.index);
+adminRoutes.post("/admin/plans", isAuthAdmin, PlanController.store);
+adminRoutes.put("/admin/plans/:planId", isAuthAdmin, PlanController.update);
 adminRoutes.put(
   "/admin/tenants/:tenantId",
   isAuthAdmin,

@@ -89,6 +89,9 @@ service.interceptors.response.use(
     const tenantAccessErrors = ['ERR_TENANT_INACTIVE', 'ERR_TENANT_ACCESS_EXPIRED']
     if (tenantAccessErrors.includes(errorCode)) {
       handlerError(error)
+      if (errorCode === 'ERR_TENANT_ACCESS_EXPIRED' && Router.currentRoute.name !== 'minha-assinatura') {
+        Router.push({ name: 'minha-assinatura' })
+      }
     } else if (error?.response?.status === 403 && !error.config._retry) {
       error.config._retry = true
       RefreshToken().then(res => {

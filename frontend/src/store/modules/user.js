@@ -66,7 +66,7 @@ const user = {
         commit('SET_IS_SUPORTE', data)
         commit('SET_IS_ADMIN', data)
 
-        if (data.profile !== 'superadmin') {
+        if (data.profile !== 'superadmin' && !data.subscriptionExpired) {
           socket.emit(`${data.tenantId}:setUserActive`)
         }
 
@@ -77,7 +77,11 @@ const user = {
           progress: true
         })
 
-        if (data.profile === 'superadmin') {
+        if (data.subscriptionExpired) {
+          this.$router.push({
+            name: 'minha-assinatura'
+          })
+        } else if (data.profile === 'superadmin') {
           this.$router.push({
             name: 'superadmin-empresas'
           })

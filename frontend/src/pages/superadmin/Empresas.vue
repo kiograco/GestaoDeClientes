@@ -14,6 +14,15 @@
               <div class="text-h6">Empresas clientes</div>
               <q-space />
               <q-btn
+                flat
+                rounded
+                color="primary"
+                icon="mdi-cash-multiple"
+                label="Planos"
+                class="q-mr-sm"
+                @click="$router.push({ name: 'superadmin-planos' })"
+              />
+              <q-btn
                 rounded
                 color="primary"
                 icon="mdi-plus"

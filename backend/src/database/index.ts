@@ -25,6 +25,10 @@ import ApiConfig from "../models/ApiConfig";
 import ApiMessage from "../models/ApiMessage";
 import LogTicket from "../models/LogTicket";
 import ChatFlow from "../models/ChatFlow";
+import Payment from "../models/Payment";
+import PaymentWebhookEvent from "../models/PaymentWebhookEvent";
+import Plan from "../models/Plan";
+import Subscription from "../models/Subscription";
 import * as QueueJobs from "../libs/Queue";
 import { logger } from "../utils/logger";
 
@@ -65,7 +69,11 @@ const models = [
   ApiConfig,
   ApiMessage,
   LogTicket,
-  ChatFlow
+  ChatFlow,
+  Plan,
+  Subscription,
+  Payment,
+  PaymentWebhookEvent
 ];
 
 sequelize.addModels(models);

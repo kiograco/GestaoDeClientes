@@ -23,6 +23,7 @@ import WebHooksRoutes from "./WebHooksRoutes";
 import adminRoutes from "./adminRoutes";
 import facebookRoutes from "./facebookRoutes";
 import instagramOAuthRoutes from "./instagramOAuthRoutes";
+import billingRoutes from "./billingRoutes";
 
 const routes = Router();
 
@@ -50,5 +51,6 @@ routes.use(WebHooksRoutes);
 routes.use(adminRoutes);
 routes.use(facebookRoutes);
 routes.use(instagramOAuthRoutes);
+routes.use(billingRoutes);
 
 export default routes;
