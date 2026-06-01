@@ -1,5 +1,20 @@
 const errors = [
   {
+    error: 'ERR_TENANT_DOCUMENT_REQUIRED',
+    description: 'CPF ou CNPJ da empresa nao informado.',
+    detail: 'Solicite ao administrador do sistema que preencha o CPF ou CNPJ no cadastro da empresa.'
+  },
+  {
+    error: 'ERR_ASAAS_AUTHENTICATION',
+    description: 'Nao foi possivel autenticar no Asaas.',
+    detail: 'Verifique a chave ASAAS_API_KEY configurada no backend.'
+  },
+  {
+    error: 'ERR_ASAAS_UNAVAILABLE',
+    description: 'O Asaas nao respondeu a solicitacao.',
+    detail: 'Tente novamente em alguns instantes. Consulte o suporte caso o erro persista.'
+  },
+  {
     error: 'ERR_SESSION_EXPIRED',
     description: 'Sua conexão expirou.',
     detail: 'A validade da sua conexão expurou. É necessário realizar novo login.'

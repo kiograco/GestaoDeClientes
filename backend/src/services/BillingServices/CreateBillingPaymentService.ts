@@ -37,7 +37,22 @@ const CreateBillingPaymentService = async ({
   const company = await Tenant.findByPk(companyId, {
     include: [{ model: User, as: "owner", attributes: ["name", "email"] }]
   });
-  if (!company?.owner) throw new AppError("ERR_NO_TENANT_FOUND", 404);
+  if (!company) throw new AppError("ERR_NO_TENANT_FOUND", 404);
+  if (!company.cpfCnpj) {
+    throw new AppError("ERR_TENANT_DOCUMENT_REQUIRED", 400);
+  }
+
+  const { owner: companyOwner } = company;
+  let owner: User | null | undefined = companyOwner;
+  if (!owner) {
+    owner = await User.findOne({
+      where: { tenantId: companyId, profile: "admin" },
+      attributes: ["id", "name", "email"],
+      order: [["id", "ASC"]]
+    });
+    if (owner) await company.update({ ownerId: owner.id });
+  }
+  if (!owner) throw new AppError("ERR_NO_TENANT_OWNER_FOUND", 404);
 
   let subscription = await Subscription.findOne({
     where: { companyId, gateway: "asaas" },
@@ -47,7 +62,8 @@ const CreateBillingPaymentService = async ({
   if (!externalCustomerId) {
     const customer = await createAsaasCustomer({
       name: company.name,
-      email: company.owner.email,
+      cpfCnpj: company.cpfCnpj,
+      email: owner.email,
       externalReference: `tenant:${company.id}`
     });
     externalCustomerId = customer.id;

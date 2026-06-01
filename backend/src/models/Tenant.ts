@@ -26,6 +26,9 @@ class Tenant extends Model<Tenant> {
   name: string;
 
   @Column
+  cpfCnpj: string;
+
+  @Column
   logoUrl: string;
 
   @Column

@@ -8,6 +8,7 @@ import { createTenantAccessExpiration } from "../../helpers/TenantAccess";
 
 interface Request {
   name: string;
+  cpfCnpj: string;
   adminName: string;
   adminEmail: string;
   adminPassword: string;
@@ -35,6 +36,10 @@ const defaultSettings = [
 const AdminCreateTenantService = async (data: Request): Promise<Tenant> => {
   const schema = Yup.object().shape({
     name: Yup.string().trim().required().min(2),
+    cpfCnpj: Yup.string()
+      .transform(value => value?.replace(/\D/g, ""))
+      .matches(/^(\d{11}|\d{14})$/, "CPF ou CNPJ invalido")
+      .required(),
     adminName: Yup.string().trim().required().min(2),
     adminEmail: Yup.string().trim().email().required(),
     adminPassword: Yup.string().required().min(6),
@@ -59,6 +64,7 @@ const AdminCreateTenantService = async (data: Request): Promise<Tenant> => {
     const tenant = await Tenant.create(
       {
         name: data.name.trim(),
+        cpfCnpj: data.cpfCnpj.replace(/\D/g, ""),
         status: "active",
         accessExpiresAt: createTenantAccessExpiration(data.paidDays || 30),
         maxUsers: data.maxUsers || 10,

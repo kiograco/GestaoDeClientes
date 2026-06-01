@@ -9,7 +9,7 @@ export const notificarErro = (msg, error = null) => {
   const findErro = Errors.find(e => e.error == erro)
   let message = ''
 
-  if (error && findErro.error) {
+  if (error && findErro?.error) {
     message = `
       <p class="text-bold">
       <span class="text-bold">${findErro.description}.</span>

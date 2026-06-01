@@ -99,6 +99,7 @@
         </q-card-section>
         <q-card-section class="q-gutter-md">
           <q-input v-model.trim="novaEmpresa.name" outlined dense label="Nome da empresa" />
+          <q-input v-model.trim="novaEmpresa.cpfCnpj" outlined dense label="CPF ou CNPJ" />
           <q-input v-model.trim="novaEmpresa.adminName" outlined dense label="Nome do administrador" />
           <q-input v-model.trim="novaEmpresa.adminEmail" outlined dense label="E-mail do administrador" type="email" />
           <q-input v-model="novaEmpresa.adminPassword" outlined dense label="Senha temporária" type="password" />
@@ -148,6 +149,7 @@
         </q-card-section>
         <q-card-section class="q-gutter-md">
           <q-input v-model.trim="empresaEdicao.name" outlined dense label="Nome da empresa" />
+          <q-input v-model.trim="empresaEdicao.cpfCnpj" outlined dense label="CPF ou CNPJ" />
           <q-input v-model.trim="empresaEdicao.adminName" outlined dense label="Nome do administrador" />
           <q-input v-model.trim="empresaEdicao.adminEmail" outlined dense label="E-mail do administrador" type="email" />
           <q-input v-model="empresaEdicao.adminPassword" outlined dense label="Nova senha (opcional)" type="password" />
@@ -183,6 +185,7 @@ export default {
       diasRenovacao: 30,
       novaEmpresa: {
         name: '',
+        cpfCnpj: '',
         adminName: '',
         adminEmail: '',
         adminPassword: '',
@@ -207,6 +210,7 @@ export default {
     cadastroValido () {
       return !!(
         this.novaEmpresa.name &&
+        this.documentoValido(this.novaEmpresa.cpfCnpj) &&
         this.novaEmpresa.adminName &&
         this.novaEmpresa.adminEmail &&
         this.novaEmpresa.adminPassword.length >= 6 &&
@@ -218,6 +222,7 @@ export default {
     edicaoValida () {
       return !!(
         this.empresaEdicao.name &&
+        this.documentoValido(this.empresaEdicao.cpfCnpj) &&
         this.empresaEdicao.adminName &&
         this.empresaEdicao.adminEmail &&
         (!this.empresaEdicao.adminPassword || this.empresaEdicao.adminPassword.length >= 6) &&
@@ -231,6 +236,7 @@ export default {
       this.modalEmpresa = false
       this.novaEmpresa = {
         name: '',
+        cpfCnpj: '',
         adminName: '',
         adminEmail: '',
         adminPassword: '',
@@ -242,6 +248,9 @@ export default {
     formatarVencimento (accessExpiresAt) {
       if (!accessExpiresAt) return 'Sem prazo definido'
       return new Intl.DateTimeFormat('pt-BR').format(new Date(accessExpiresAt))
+    },
+    documentoValido (value) {
+      return [11, 14].includes((value || '').replace(/\D/g, '').length)
     },
     formatarDiasRestantes (accessExpiresAt) {
       if (!accessExpiresAt) return 'Ilimitado'
@@ -260,6 +269,7 @@ export default {
     abrirEdicao (empresa) {
       this.empresaEdicao = {
         name: empresa.name,
+        cpfCnpj: empresa.cpfCnpj || '',
         adminName: empresa.owner?.name || '',
         adminEmail: empresa.owner?.email || '',
         adminPassword: '',

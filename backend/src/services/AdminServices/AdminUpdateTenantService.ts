@@ -10,6 +10,7 @@ interface Request {
   status?: string;
   paidDays?: number;
   name?: string;
+  cpfCnpj?: string;
   adminName?: string;
   adminEmail?: string;
   adminPassword?: string;
@@ -23,6 +24,7 @@ const AdminUpdateTenantService = async (data: Request): Promise<Tenant> => {
     status,
     paidDays,
     name,
+    cpfCnpj,
     adminName,
     adminEmail,
     adminPassword,
@@ -33,6 +35,9 @@ const AdminUpdateTenantService = async (data: Request): Promise<Tenant> => {
     status: Yup.string().oneOf(["active", "inactive"]),
     paidDays: Yup.number().integer().positive(),
     name: Yup.string().trim().min(2),
+    cpfCnpj: Yup.string()
+      .transform(value => value?.replace(/\D/g, ""))
+      .matches(/^(\d{11}|\d{14})$/, "CPF ou CNPJ invalido"),
     adminName: Yup.string().trim().min(2),
     adminEmail: Yup.string().trim().email(),
     adminPassword: Yup.string().min(6),
@@ -55,6 +60,7 @@ const AdminUpdateTenantService = async (data: Request): Promise<Tenant> => {
     !!status ||
     !!paidDays ||
     name !== undefined ||
+    cpfCnpj !== undefined ||
     maxUsers !== undefined ||
     maxConnections !== undefined;
   const hasOwnerChanges =
@@ -85,6 +91,9 @@ const AdminUpdateTenantService = async (data: Request): Promise<Tenant> => {
       {
         ...(status ? { status } : {}),
         ...(name !== undefined ? { name: name.trim() } : {}),
+        ...(cpfCnpj !== undefined
+          ? { cpfCnpj: cpfCnpj.replace(/\D/g, "") }
+          : {}),
         ...(maxUsers !== undefined ? { maxUsers } : {}),
         ...(maxConnections !== undefined ? { maxConnections } : {}),
         ...(paidDays
