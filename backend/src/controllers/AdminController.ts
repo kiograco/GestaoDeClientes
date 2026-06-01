@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getIO } from "../libs/socket";
+import { disconnectTenantSockets, getIO } from "../libs/socket";
 import AdminListChatFlowService from "../services/AdminServices/AdminListChatFlowService";
 import AdminListSettingsService from "../services/AdminServices/AdminListSettingsService";
 import AdminListTenantsService from "../services/AdminServices/AdminListTenantsService";
@@ -89,10 +89,7 @@ export const updateTenant = async (
   const { status, paidDays } = req.body;
   const tenant = await AdminUpdateTenantService({ tenantId, status, paidDays });
   if (tenant.status === "inactive") {
-    const room = getIO().in(String(tenant.id)) as unknown as {
-      disconnectSockets: (close?: boolean) => void;
-    };
-    room.disconnectSockets(true);
+    await disconnectTenantSockets(tenant.id);
   }
   return res.status(200).json(tenant);
 };

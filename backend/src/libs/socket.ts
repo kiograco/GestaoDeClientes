@@ -167,3 +167,34 @@ export const getIO = (): SocketIO => {
   }
   return io;
 };
+
+export const disconnectTenantSockets = async (
+  tenantId: number | string
+): Promise<void> => {
+  try {
+    const socketServer = getIO() as LegacyAny;
+    const socketIds: Set<string> = await socketServer
+      .in(String(tenantId))
+      .allSockets();
+    const adapter = socketServer.of("/").adapter as LegacyAny;
+
+    await Promise.all(
+      Array.from(socketIds).map(async socketId => {
+        try {
+          if (typeof adapter.remoteDisconnect === "function") {
+            await adapter.remoteDisconnect(socketId, true);
+            return;
+          }
+
+          socketServer.sockets.sockets.get(socketId)?.disconnect(true);
+        } catch (error) {
+          logger.warn(
+            `Unable to disconnect tenant socket ${socketId}: ${error}`
+          );
+        }
+      })
+    );
+  } catch (error) {
+    logger.warn(`Unable to disconnect tenant ${tenantId} sockets: ${error}`);
+  }
+};
