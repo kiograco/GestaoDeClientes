@@ -5,6 +5,7 @@ import AppError from "../errors/AppError";
 import authConfig from "../config/auth";
 import User from "../models/User";
 import Tenant from "../models/Tenant";
+import { isTenantAccessActive } from "../helpers/TenantAccess";
 
 interface TokenPayload {
   id: string;
@@ -38,12 +39,12 @@ const isAuth = async (
     const user = await User.findOne({
       where: { id, tenantId },
       attributes: ["id", "profile", "tenantId"],
-      include: [{ model: Tenant, attributes: ["status"] }]
+      include: [{ model: Tenant, attributes: ["status", "accessExpiresAt"] }]
     });
     if (
       !user ||
       user.profile !== profile ||
-      (user.profile !== "superadmin" && user.tenant?.status !== "active")
+      (user.profile !== "superadmin" && !isTenantAccessActive(user.tenant))
     ) {
       throw new Error("User no longer has access");
     }

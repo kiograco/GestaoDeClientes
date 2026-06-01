@@ -7,8 +7,40 @@ import { logger } from "../utils/logger";
 import User from "../models/User";
 import Tenant from "../models/Tenant";
 import Chat from "./socketChat/Chat";
+import { isTenantAccessActive } from "../helpers/TenantAccess";
 
 let io: SocketIO;
+const MAX_TIMEOUT_DELAY = 2147483647;
+
+const scheduleTenantAccessCheck = (
+  socket: LegacyAny,
+  tenantId: number,
+  accessExpiresAt?: Date
+): void => {
+  if (!accessExpiresAt) return;
+
+  const delay = Math.max(
+    0,
+    new Date(accessExpiresAt).getTime() - Date.now() + 1000
+  );
+  let timeout: NodeJS.Timeout;
+  const clearScheduledCheck = (): void => clearTimeout(timeout);
+  timeout = setTimeout(async () => {
+    socket.removeListener("disconnect", clearScheduledCheck);
+    const tenant = await Tenant.findByPk(tenantId, {
+      attributes: ["status", "accessExpiresAt"]
+    });
+
+    if (!isTenantAccessActive(tenant)) {
+      socket.disconnect(true);
+      return;
+    }
+
+    scheduleTenantAccessCheck(socket, tenantId, tenant?.accessExpiresAt);
+  }, Math.min(delay, MAX_TIMEOUT_DELAY));
+
+  socket.once("disconnect", clearScheduledCheck);
+};
 
 export const initIO = (httpServer: Server): SocketIO => {
   io = new SocketIO(httpServer, {
@@ -55,13 +87,15 @@ export const initIO = (httpServer: Server): SocketIO => {
             "lastLogin",
             "lastOnline"
           ],
-          include: [{ model: Tenant, attributes: ["status"] }]
+          include: [
+            { model: Tenant, attributes: ["status", "accessExpiresAt"] }
+          ]
         });
         if (
           !user ||
           String(user.tenantId) !== String(verify.data.tenantId) ||
           user.profile !== verify.data.profile ||
-          (user.profile !== "superadmin" && user.tenant?.status !== "active")
+          (user.profile !== "superadmin" && !isTenantAccessActive(user.tenant))
         ) {
           next(new Error("authentication error"));
           return;
@@ -80,6 +114,7 @@ export const initIO = (httpServer: Server): SocketIO => {
 
   io.on("connection", socket => {
     const { tenantId } = socket.handshake.auth;
+    const user = socket.handshake.auth.user as User | undefined;
     if (tenantId) {
       logger.info({
         message: "Client connected in tenant",
@@ -88,6 +123,13 @@ export const initIO = (httpServer: Server): SocketIO => {
 
       // create room to tenant
       socket.join(tenantId.toString());
+      if (user?.profile !== "superadmin") {
+        scheduleTenantAccessCheck(
+          socket,
+          Number(tenantId),
+          user?.tenant?.accessExpiresAt
+        );
+      }
 
       socket.on(`${tenantId}:joinChatBox`, ticketId => {
         logger.info(`Client joined a ticket channel ${tenantId}:${ticketId}`);

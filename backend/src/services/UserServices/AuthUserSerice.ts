@@ -6,6 +6,7 @@ import {
 } from "../../helpers/CreateTokens";
 import Queue from "../../models/Queue";
 import Tenant from "../../models/Tenant";
+import { isTenantAccessActive } from "../../helpers/TenantAccess";
 
 interface Request {
   email: string;
@@ -27,7 +28,10 @@ const AuthUserService = async ({
     where: { email },
     include: [
       { model: Queue, as: "queues" },
-      { model: Tenant, attributes: ["id", "name", "status", "logoUrl"] }
+      {
+        model: Tenant,
+        attributes: ["id", "name", "status", "logoUrl", "accessExpiresAt"]
+      }
     ]
   });
 
@@ -39,8 +43,13 @@ const AuthUserService = async ({
     throw new AppError("ERR_INVALID_CREDENTIALS", 401);
   }
 
-  if (user.profile !== "superadmin" && user.tenant?.status !== "active") {
-    throw new AppError("ERR_TENANT_INACTIVE", 403);
+  if (user.profile !== "superadmin" && !isTenantAccessActive(user.tenant)) {
+    throw new AppError(
+      user.tenant?.status === "active"
+        ? "ERR_TENANT_ACCESS_EXPIRED"
+        : "ERR_TENANT_INACTIVE",
+      403
+    );
   }
 
   const token = createAccessToken(user);

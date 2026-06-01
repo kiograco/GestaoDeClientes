@@ -193,6 +193,14 @@
           </q-btn>
         </div>
       </q-toolbar>
+      <q-banner
+        v-if="accessDaysRemaining !== null && userProfile !== 'superadmin'"
+        dense
+        :class="accessDaysRemaining <= 5 ? 'bg-orange-2 text-orange-10' : 'bg-blue-1 text-blue-10'"
+      >
+        Sua empresa possui {{ accessDaysRemaining }}
+        {{ accessDaysRemaining === 1 ? 'dia' : 'dias' }} de acesso liberado.
+      </q-banner>
     </q-header>
 
     <q-drawer
@@ -476,6 +484,14 @@ export default {
   },
   computed: {
     ...mapGetters(['notifications', 'notifications_p', 'whatsapps']),
+    accessDaysRemaining () {
+      if (!this.usuario.accessExpiresAt) return null
+      const expiration = new Date(this.usuario.accessExpiresAt)
+      const today = new Date()
+      expiration.setHours(0, 0, 0, 0)
+      today.setHours(0, 0, 0, 0)
+      return Math.max(0, Math.ceil((expiration - today) / 86400000) + 1)
+    },
     cProblemaConexao () {
       const idx = this.whatsapps.findIndex(w =>
         ['PAIRING', 'TIMEOUT', 'DISCONNECTED'].includes(w.status)

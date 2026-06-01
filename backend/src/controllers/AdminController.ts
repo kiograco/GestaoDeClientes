@@ -86,8 +86,8 @@ export const updateTenant = async (
   res: Response
 ): Promise<Response> => {
   const { tenantId } = req.params;
-  const { status } = req.body;
-  const tenant = await AdminUpdateTenantService({ tenantId, status });
+  const { status, paidDays } = req.body;
+  const tenant = await AdminUpdateTenantService({ tenantId, status, paidDays });
   if (tenant.status === "inactive") {
     const room = getIO().in(String(tenant.id)) as unknown as {
       disconnectSockets: (close?: boolean) => void;

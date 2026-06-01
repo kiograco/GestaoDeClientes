@@ -29,6 +29,9 @@ class Tenant extends Model<Tenant> {
   logoUrl: string;
 
   @Column
+  accessExpiresAt: Date;
+
+  @Column
   maxUsers: number;
 
   @Column

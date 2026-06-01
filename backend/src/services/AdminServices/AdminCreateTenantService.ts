@@ -4,6 +4,7 @@ import AppError from "../../errors/AppError";
 import Setting from "../../models/Setting";
 import Tenant from "../../models/Tenant";
 import User from "../../models/User";
+import { createTenantAccessExpiration } from "../../helpers/TenantAccess";
 
 interface Request {
   name: string;
@@ -12,6 +13,7 @@ interface Request {
   adminPassword: string;
   maxUsers?: number;
   maxConnections?: number;
+  paidDays?: number;
 }
 
 const defaultSettings = [
@@ -37,7 +39,8 @@ const AdminCreateTenantService = async (data: Request): Promise<Tenant> => {
     adminEmail: Yup.string().trim().email().required(),
     adminPassword: Yup.string().required().min(6),
     maxUsers: Yup.number().integer().positive(),
-    maxConnections: Yup.number().integer().positive()
+    maxConnections: Yup.number().integer().positive(),
+    paidDays: Yup.number().integer().positive()
   });
 
   try {
@@ -57,6 +60,7 @@ const AdminCreateTenantService = async (data: Request): Promise<Tenant> => {
       {
         name: data.name.trim(),
         status: "active",
+        accessExpiresAt: createTenantAccessExpiration(data.paidDays || 30),
         maxUsers: data.maxUsers || 10,
         maxConnections: data.maxConnections || 5
       },

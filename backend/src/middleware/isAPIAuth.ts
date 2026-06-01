@@ -4,6 +4,7 @@ import { Request, Response, NextFunction } from "express";
 import AppError from "../errors/AppError";
 import authConfig from "../config/auth";
 import Tenant from "../models/Tenant";
+import { isTenantAccessActive } from "../helpers/TenantAccess";
 
 interface TokenPayload {
   apiId: string;
@@ -39,9 +40,9 @@ const isAPIAuth = async (
     }
 
     const tenant = await Tenant.findByPk(tenantId, {
-      attributes: ["status"]
+      attributes: ["status", "accessExpiresAt"]
     });
-    if (!tenant || tenant.status !== "active") {
+    if (!isTenantAccessActive(tenant)) {
       throw new Error("Tenant no longer has access");
     }
 

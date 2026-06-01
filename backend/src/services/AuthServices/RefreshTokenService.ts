@@ -7,6 +7,7 @@ import {
   createAccessToken,
   createRefreshToken
 } from "../../helpers/CreateTokens";
+import { isTenantAccessActive } from "../../helpers/TenantAccess";
 
 interface RefreshTokenPayload {
   id: string;
@@ -30,13 +31,13 @@ export const RefreshTokenService = async (token: string): Promise<Response> => {
   const { id, tokenVersion } = decoded as RefreshTokenPayload;
 
   const user = await User.findByPk(id, {
-    include: [{ model: Tenant, attributes: ["status"] }]
+    include: [{ model: Tenant, attributes: ["status", "accessExpiresAt"] }]
   });
 
   if (
     !user ||
     user.tokenVersion !== tokenVersion ||
-    (user.profile !== "superadmin" && user.tenant?.status !== "active")
+    (user.profile !== "superadmin" && !isTenantAccessActive(user.tenant))
   ) {
     throw new AppError("ERR_SESSION_EXPIRED", 401);
   }

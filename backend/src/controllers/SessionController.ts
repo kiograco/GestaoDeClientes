@@ -9,6 +9,7 @@ import User from "../models/User";
 import { RequestPasswordResetService } from "../services/AuthServices/RequestPasswordResetService";
 import { ResetPasswordService } from "../services/AuthServices/ResetPasswordService";
 import ShowTenantBrandingService from "../services/TenantServices/ShowTenantBrandingService";
+import { getTenantAccessDaysRemaining } from "../helpers/TenantAccess";
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const io = getIO();
@@ -32,6 +33,10 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     tenantId: user.tenantId,
     tenantName: user.tenant?.name,
     logoUrl: user.tenant?.logoUrl,
+    accessExpiresAt: user.tenant?.accessExpiresAt,
+    accessDaysRemaining: getTenantAccessDaysRemaining(
+      user.tenant?.accessExpiresAt
+    ),
     queues: user.queues,
     usuariosOnline,
     configs: user.configs

@@ -53,3 +53,11 @@ export function AtualizarStatusEmpresa (tenantId, status) {
     data: { status }
   })
 }
+
+export function RenovarAcessoEmpresa (tenantId, paidDays) {
+  return request({
+    url: `/admin/tenants/${tenantId}`,
+    method: 'put',
+    data: { paidDays }
+  })
+}

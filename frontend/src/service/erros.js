@@ -14,6 +14,8 @@ const backendErrors = {
     'Erro de autenticação. Por favor, tente novamente.',
   ERR_TENANT_INACTIVE:
     'O acesso da empresa está suspenso. Entre em contato com o suporte comercial.',
+  ERR_TENANT_ACCESS_EXPIRED:
+    'O período pago da empresa terminou. Entre em contato com o suporte comercial para renovar o acesso.',
   ERR_SENDING_WAPP_MSG:
     'Erro ao enviar mensagem do WhatsApp. Verifique a página de conexões.',
   ERR_DELETE_WAPP_MSG: 'Não foi possível excluir a mensagem do WhatsApp.',
