@@ -5,6 +5,7 @@ import AppError from "../errors/AppError";
 import decodeTokenSocket from "./decodeTokenSocket";
 import { logger } from "../utils/logger";
 import User from "../models/User";
+import Tenant from "../models/Tenant";
 import Chat from "./socketChat/Chat";
 
 let io: SocketIO;
@@ -53,12 +54,14 @@ export const initIO = (httpServer: Server): SocketIO => {
             "status",
             "lastLogin",
             "lastOnline"
-          ]
+          ],
+          include: [{ model: Tenant, attributes: ["status"] }]
         });
         if (
           !user ||
           String(user.tenantId) !== String(verify.data.tenantId) ||
-          user.profile !== verify.data.profile
+          user.profile !== verify.data.profile ||
+          (user.profile !== "superadmin" && user.tenant?.status !== "active")
         ) {
           next(new Error("authentication error"));
           return;

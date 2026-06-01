@@ -6,6 +6,7 @@ import AppError from "../errors/AppError";
 import UpdateBusinessHoursService from "../services/TenantServices/UpdateBusinessHoursService";
 import ShowBusinessHoursAndMessageService from "../services/TenantServices/ShowBusinessHoursAndMessageService";
 import UpdateMessageBusinessHoursService from "../services/TenantServices/UpdateMessageBusinessHoursService";
+import Tenant from "../models/Tenant";
 
 export const updateBusinessHours = async (
   req: Request,
@@ -98,4 +99,30 @@ export const showBusinessHoursAndMessage = async (
   const tenant = await ShowBusinessHoursAndMessageService({ tenantId });
 
   return res.status(200).json(tenant);
+};
+
+export const updateLogo = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  if (req.user.profile !== "admin") {
+    throw new AppError("ERR_NO_PERMISSION", 403);
+  }
+
+  if (!req.file) {
+    throw new AppError("ERR_TENANT_LOGO_REQUIRED", 400);
+  }
+
+  const tenant = await Tenant.findByPk(req.user.tenantId);
+  if (!tenant) {
+    throw new AppError("ERR_NO_TENANT_FOUND", 404);
+  }
+
+  const logoUrl = `${process.env.BACKEND_URL}/public/logos/${req.file.filename}`;
+  await tenant.update({ logoUrl });
+
+  return res.status(200).json({
+    name: tenant.name,
+    logoUrl: tenant.logoUrl
+  });
 };

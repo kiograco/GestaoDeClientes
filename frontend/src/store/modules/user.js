@@ -48,6 +48,11 @@ const user = {
         localStorage.setItem('profile', data.profile)
         localStorage.setItem('userId', data.userId)
         localStorage.setItem('usuario', JSON.stringify(data))
+        if (data.logoUrl) {
+          localStorage.setItem('tenantLogoUrl', data.logoUrl)
+        } else {
+          localStorage.removeItem('tenantLogoUrl')
+        }
         localStorage.setItem('queues', JSON.stringify(data.queues))
         localStorage.setItem('queues', JSON.stringify(data.queues))
         localStorage.setItem('filtrosAtendimento', JSON.stringify(pesquisaTicketsFiltroPadrao))
@@ -61,7 +66,9 @@ const user = {
         commit('SET_IS_SUPORTE', data)
         commit('SET_IS_ADMIN', data)
 
-        socket.emit(`${data.tenantId}:setUserActive`)
+        if (data.profile !== 'superadmin') {
+          socket.emit(`${data.tenantId}:setUserActive`)
+        }
 
         Notify.create({
           type: 'positive',
@@ -70,7 +77,11 @@ const user = {
           progress: true
         })
 
-        if (data.profile === 'admin') {
+        if (data.profile === 'superadmin') {
+          this.$router.push({
+            name: 'superadmin-empresas'
+          })
+        } else if (data.profile === 'admin') {
           this.$router.push({
             name: 'home-dashboard'
           })

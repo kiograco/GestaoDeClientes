@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { number } from "yup";
 import { getIO } from "../libs/socket";
 import AdminListChatFlowService from "../services/AdminServices/AdminListChatFlowService";
 import AdminListSettingsService from "../services/AdminServices/AdminListSettingsService";
@@ -8,8 +7,9 @@ import AdminListUsersService from "../services/AdminServices/AdminListUsersServi
 import AdminListChannelsService from "../services/AdminServices/AdminListChannelsService";
 import AdminUpdateUserService from "../services/AdminServices/AdminUpdateUserService";
 import UpdateSettingService from "../services/SettingServices/UpdateSettingService";
-import AppError from "../errors/AppError";
 import CreateWhatsAppService from "../services/WhatsappService/CreateWhatsAppService";
+import AdminCreateTenantService from "../services/AdminServices/AdminCreateTenantService";
+import AdminUpdateTenantService from "../services/AdminServices/AdminUpdateTenantService";
 
 type IndexQuery = {
   searchParam: string;
@@ -71,6 +71,30 @@ export const indexTenants = async (
 ): Promise<Response> => {
   const tenants = await AdminListTenantsService();
   return res.status(200).json(tenants);
+};
+
+export const storeTenant = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const tenant = await AdminCreateTenantService(req.body);
+  return res.status(201).json(tenant);
+};
+
+export const updateTenant = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { tenantId } = req.params;
+  const { status } = req.body;
+  const tenant = await AdminUpdateTenantService({ tenantId, status });
+  if (tenant.status === "inactive") {
+    const room = getIO().in(String(tenant.id)) as unknown as {
+      disconnectSockets: (close?: boolean) => void;
+    };
+    room.disconnectSockets(true);
+  }
+  return res.status(200).json(tenant);
 };
 
 export const indexChatFlow = async (

@@ -9,6 +9,7 @@ const authRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
 const passwordResetRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 5 });
 
 authRoutes.post("/login", authRateLimit, SessionController.store);
+authRoutes.get("/branding", authRateLimit, SessionController.branding);
 authRoutes.post("/logout", isAuth, SessionController.logout);
 
 authRoutes.post("/refresh_token", authRateLimit, SessionController.update);

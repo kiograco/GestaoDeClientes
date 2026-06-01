@@ -5,6 +5,7 @@ import {
   createRefreshToken
 } from "../../helpers/CreateTokens";
 import Queue from "../../models/Queue";
+import Tenant from "../../models/Tenant";
 
 interface Request {
   email: string;
@@ -24,7 +25,10 @@ const AuthUserService = async ({
 }: Request): Promise<Response> => {
   const user = await User.findOne({
     where: { email },
-    include: [{ model: Queue, as: "queues" }]
+    include: [
+      { model: Queue, as: "queues" },
+      { model: Tenant, attributes: ["id", "name", "status", "logoUrl"] }
+    ]
   });
 
   if (!user) {
@@ -33,6 +37,10 @@ const AuthUserService = async ({
 
   if (!(await user.checkPassword(password))) {
     throw new AppError("ERR_INVALID_CREDENTIALS", 401);
+  }
+
+  if (user.profile !== "superadmin" && user.tenant?.status !== "active") {
+    throw new AppError("ERR_TENANT_INACTIVE", 403);
   }
 
   const token = createAccessToken(user);

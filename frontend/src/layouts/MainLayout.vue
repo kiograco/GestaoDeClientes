@@ -27,7 +27,7 @@
           v-if="$q.screen.gt.xs"
         >
           <q-img
-            src="/ncprogrammers-logo.svg"
+            :src="tenantLogoUrl"
             spinner-color="primary"
             contain
             style="height: 48px; width: 192px"
@@ -456,6 +456,7 @@ export default {
   data () {
     return {
       username,
+      tenantLogoUrl: localStorage.getItem('tenantLogoUrl') || '/ncprogrammers-logo.svg',
       domainExperimentalsMenus: ['@'],
       miniState: true,
       userProfile: 'user',

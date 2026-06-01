@@ -4,9 +4,11 @@ const routes = [
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     redirect: () => ({
-      name: localStorage.getItem('profile') === 'admin'
-        ? 'home-dashboard'
-        : 'atendimento'
+      name: localStorage.getItem('profile') === 'superadmin'
+        ? 'superadmin-empresas'
+        : localStorage.getItem('profile') === 'admin'
+          ? 'home-dashboard'
+          : 'atendimento'
     }),
     children: [
       { path: '', component: () => import('pages/contatos/Index.vue') },
@@ -98,6 +100,11 @@ const routes = [
       }
 
     ]
+  },
+  {
+    path: '/superadmin/empresas',
+    name: 'superadmin-empresas',
+    component: () => import('pages/superadmin/Empresas.vue')
   },
 
   // Always leave this as last one,

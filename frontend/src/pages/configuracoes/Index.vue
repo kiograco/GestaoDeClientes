@@ -9,6 +9,40 @@
       <q-item-label
         caption
         class="q-mt-lg q-pl-sm"
+      >Identidade visual</q-item-label>
+      <q-separator spaced />
+
+      <q-item>
+        <q-item-section>
+          <q-item-label>Logo da empresa</q-item-label>
+          <q-item-label caption>
+            Exibido no login após o usuário informar o e-mail e também no cabeçalho do sistema.
+          </q-item-label>
+          <q-file
+            v-model="logoFile"
+            outlined
+            dense
+            accept=".png,.jpg,.jpeg"
+            label="Selecione uma imagem"
+            class="q-mt-sm"
+            style="max-width: 420px"
+          />
+        </q-item-section>
+        <q-item-section side>
+          <q-btn
+            rounded
+            color="primary"
+            label="Atualizar logo"
+            :disable="!logoFile"
+            :loading="logoLoading"
+            @click="atualizarLogo"
+          />
+        </q-item-section>
+      </q-item>
+
+      <q-item-label
+        caption
+        class="q-mt-lg q-pl-sm"
       >Módulo: Atendimento</q-item-label>
       <q-separator spaced />
 
@@ -179,11 +213,14 @@
 <script>
 import { ListarChatFlow } from 'src/service/chatFlow'
 import { ListarConfiguracoes, AlterarConfiguracao } from 'src/service/configuracoes'
+import { AtualizarLogoEmpresa } from 'src/service/empresas'
 export default {
   name: 'IndexConfiguracoes',
   data () {
     return {
       configuracoes: [],
+      logoFile: null,
+      logoLoading: false,
       listaChatFlow: [],
       NotViewAssignedTickets: null,
       NotViewTicketsChatBot: null,
@@ -195,6 +232,27 @@ export default {
     }
   },
   methods: {
+    async atualizarLogo () {
+      if (!this.logoFile) return
+      const formData = new FormData()
+      formData.append('logo', this.logoFile)
+      this.logoLoading = true
+      try {
+        const { data } = await AtualizarLogoEmpresa(formData)
+        localStorage.setItem('tenantLogoUrl', data.logoUrl)
+        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}')
+        localStorage.setItem('usuario', JSON.stringify({ ...usuario, logoUrl: data.logoUrl }))
+        this.logoFile = null
+        this.$q.notify({
+          type: 'positive',
+          message: 'Logo atualizado. Recarregue a página para visualizar no cabeçalho.'
+        })
+      } catch (error) {
+        this.$notificarErro('Não foi possível atualizar o logo.', error)
+      } finally {
+        this.logoLoading = false
+      }
+    },
     async listarConfiguracoes () {
       const { data } = await ListarConfiguracoes()
       this.configuracoes = data

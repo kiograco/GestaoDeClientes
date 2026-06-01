@@ -23,6 +23,14 @@ export function RefreshToken () {
   })
 }
 
+export function ConsultarIdentidadeVisual (email) {
+  return request({
+    url: '/auth/branding',
+    method: 'get',
+    params: { email }
+  })
+}
+
 export function SolicitarRedefinicaoSenha (email) {
   return request({
     url: '/auth/password-reset/request',

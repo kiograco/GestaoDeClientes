@@ -22,3 +22,34 @@ export function AtualizarMensagemHorariosAtendiemento (data) {
     data
   })
 }
+
+export function AtualizarLogoEmpresa (data) {
+  return request({
+    url: '/tenants/logo',
+    method: 'put',
+    data
+  })
+}
+
+export function ListarEmpresas () {
+  return request({
+    url: '/admin/tenants',
+    method: 'get'
+  })
+}
+
+export function CriarEmpresa (data) {
+  return request({
+    url: '/admin/tenants',
+    method: 'post',
+    data
+  })
+}
+
+export function AtualizarStatusEmpresa (tenantId, status) {
+  return request({
+    url: `/admin/tenants/${tenantId}`,
+    method: 'put',
+    data: { status }
+  })
+}

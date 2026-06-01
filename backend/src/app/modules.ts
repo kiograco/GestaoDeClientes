@@ -1,4 +1,5 @@
 import { readFileSync } from "fs";
+import path from "path";
 import moment from "moment";
 import expressInstance, { Request, Response, NextFunction } from "express";
 import * as Sentry from "@sentry/node";
@@ -35,6 +36,16 @@ export default async function modules(app): Promise<void> {
   app.use(Sentry.Handlers.requestHandler());
 
   app.use("/public", expressInstance.static(uploadConfig.directory));
+  app.use(
+    "/public/logos",
+    expressInstance.static(
+      path.resolve(
+        process.env.PERSISTENT_DATA_DIR ||
+          path.resolve(__dirname, "..", "..", "data"),
+        "logos"
+      )
+    )
+  );
 
   app.use(routes);
   app.use(Sentry.Handlers.errorHandler());

@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 
 import AppError from "../errors/AppError";
 import authConfig from "../config/auth";
+import Tenant from "../models/Tenant";
 
 interface TokenPayload {
   apiId: string;
@@ -13,7 +14,11 @@ interface TokenPayload {
   exp: number;
 }
 
-const isAPIAuth = (req: Request, res: Response, next: NextFunction): void => {
+const isAPIAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith("Bearer ")) {
@@ -33,6 +38,13 @@ const isAPIAuth = (req: Request, res: Response, next: NextFunction): void => {
       throw new Error("External API token does not match route");
     }
 
+    const tenant = await Tenant.findByPk(tenantId, {
+      attributes: ["status"]
+    });
+    if (!tenant || tenant.status !== "active") {
+      throw new Error("Tenant no longer has access");
+    }
+
     req.APIAuth = {
       apiId,
       sessionId,
@@ -42,7 +54,7 @@ const isAPIAuth = (req: Request, res: Response, next: NextFunction): void => {
     throw new AppError("Invalid token.", 403);
   }
 
-  return next();
+  next();
 };
 
 export default isAPIAuth;

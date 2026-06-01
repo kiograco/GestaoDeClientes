@@ -9,6 +9,7 @@ import { getIO } from "../libs/socket";
 import User from "../models/User";
 import { RequestPasswordResetService } from "../services/AuthServices/RequestPasswordResetService";
 import { ResetPasswordService } from "../services/AuthServices/ResetPasswordService";
+import ShowTenantBrandingService from "../services/TenantServices/ShowTenantBrandingService";
 
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
@@ -31,6 +32,8 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     status: user.status,
     userId: user.id,
     tenantId: user.tenantId,
+    tenantName: user.tenant?.name,
+    logoUrl: user.tenant?.logoUrl,
     queues: user.queues,
     usuariosOnline,
     configs: user.configs
@@ -96,6 +99,15 @@ export const logout = async (
   });
 
   return res.json({ message: "USER_LOGOUT" });
+};
+
+export const branding = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const email = typeof req.query.email === "string" ? req.query.email : "";
+  const brandingData = await ShowTenantBrandingService(email);
+  return res.json(brandingData);
 };
 
 export const requestPasswordReset = async (

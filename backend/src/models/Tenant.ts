@@ -25,6 +25,15 @@ class Tenant extends Model<Tenant> {
   @Column
   name: string;
 
+  @Column
+  logoUrl: string;
+
+  @Column
+  maxUsers: number;
+
+  @Column
+  maxConnections: number;
+
   @ForeignKey(() => User)
   @Column
   ownerId: number;

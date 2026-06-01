@@ -153,7 +153,11 @@ PERSISTENT_DATA_DIR=/app/data
 
 JWT_SECRET=SUBSTITUA_POR_UMA_CHAVE_ALEATORIA_LONGA
 JWT_REFRESH_SECRET=SUBSTITUA_POR_OUTRA_CHAVE_ALEATORIA_LONGA
-ADMIN_DOMAIN=ncprogrammers.local
+SUPERADMIN_EMAIL=SEU_EMAIL_DE_ADMINISTRACAO
+SUPERADMIN_PASSWORD=SUBSTITUA_POR_UMA_SENHA_FORTE
+
+RESEND_API_KEY=SUBSTITUA_PELA_CHAVE_RESEND
+RESEND_FROM_EMAIL=contato@SEU_DOMINIO_VALIDADO
 
 POSTGRES_HOST=${{Postgres.PGHOST}}
 DB_PORT=${{Postgres.PGPORT}}
@@ -343,6 +347,16 @@ Senha temporária: 123456
 
 3. Abra **Perfil**.
 4. Altere imediatamente e-mail e senha.
+
+### 11.1 Acesso do superadministrador
+
+O backend cria a conta global na inicialização quando `SUPERADMIN_EMAIL` e
+`SUPERADMIN_PASSWORD` estão configurados e já existe ao menos uma empresa no
+banco. Essa conta acessa o painel de empresas após o login e pode liberar ou
+suspender o uso do sistema para cada cliente.
+
+Use uma senha exclusiva e não compartilhe essa conta com administradores das
+empresas clientes.
 
 ## 12. Validar WhatsApp
 

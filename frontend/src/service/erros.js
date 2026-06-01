@@ -12,6 +12,8 @@ const backendErrors = {
     'Não foi possível baixar mídia do WhatsApp. Verifique a página de conexões.',
   ERR_INVALID_CREDENTIALS:
     'Erro de autenticação. Por favor, tente novamente.',
+  ERR_TENANT_INACTIVE:
+    'O acesso da empresa está suspenso. Entre em contato com o suporte comercial.',
   ERR_SENDING_WAPP_MSG:
     'Erro ao enviar mensagem do WhatsApp. Verifique a página de conexões.',
   ERR_DELETE_WAPP_MSG: 'Não foi possível excluir a mensagem do WhatsApp.',

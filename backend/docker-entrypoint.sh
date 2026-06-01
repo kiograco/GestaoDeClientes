@@ -14,4 +14,5 @@ if [ -n "$PERSISTENT_DATA_DIR" ]; then
   ln -s "$PERSISTENT_DATA_DIR/public" /app/public
 fi
 
+npx sequelize db:migrate
 pm2-docker start ./dist/server.js

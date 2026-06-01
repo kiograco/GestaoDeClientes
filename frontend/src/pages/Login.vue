@@ -14,7 +14,7 @@
         >
           <q-card-section class="text-primary text-center">
             <q-img
-              src="/ncprogrammers-logo.svg"
+              :src="logoUrl"
               spinner-color="white"
               contain
               style="width: 360px; max-width: 100%; aspect-ratio: 4 / 1"
@@ -34,7 +34,7 @@
               rounded
               v-model="form.email"
               placeholder="meu@email.com"
-              @blur="$v.form.email.$touch"
+              @blur="$v.form.email.$touch(); consultarIdentidadeVisual()"
               :error="$v.form.email.$error"
               error-message="Deve ser um e-mail válido."
               outlined
@@ -186,7 +186,7 @@
 
 <script>
 import { required, email } from 'vuelidate/lib/validators'
-import { RedefinirSenha, SolicitarRedefinicaoSenha } from 'src/service/login'
+import { ConsultarIdentidadeVisual, RedefinirSenha, SolicitarRedefinicaoSenha } from 'src/service/login'
 
 export default {
   name: 'Login',
@@ -199,6 +199,7 @@ export default {
       confirmacaoNovaSenha: '',
       isPwdNovaSenha: true,
       loadingRedefinicao: false,
+      logoUrl: localStorage.getItem('tenantLogoUrl') || '/ncprogrammers-logo.svg',
       form: {
         email: null,
         password: null
@@ -216,6 +217,15 @@ export default {
     emailRedefinicao: { required, email }
   },
   methods: {
+    async consultarIdentidadeVisual () {
+      if (!this.form.email || this.$v.form.email.$invalid) return
+      try {
+        const { data } = await ConsultarIdentidadeVisual(this.form.email)
+        this.logoUrl = data.logoUrl || '/ncprogrammers-logo.svg'
+      } catch (error) {
+        this.logoUrl = '/ncprogrammers-logo.svg'
+      }
+    },
     fazerLogin () {
       this.$v.form.$touch()
       if (this.$v.form.$error) {
