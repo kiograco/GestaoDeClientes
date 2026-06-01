@@ -61,3 +61,11 @@ export function RenovarAcessoEmpresa (tenantId, paidDays) {
     data: { paidDays }
   })
 }
+
+export function AtualizarCadastroEmpresa (tenantId, data) {
+  return request({
+    url: `/admin/tenants/${tenantId}`,
+    method: 'put',
+    data
+  })
+}

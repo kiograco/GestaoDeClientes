@@ -86,8 +86,7 @@ export const updateTenant = async (
   res: Response
 ): Promise<Response> => {
   const { tenantId } = req.params;
-  const { status, paidDays } = req.body;
-  const tenant = await AdminUpdateTenantService({ tenantId, status, paidDays });
+  const tenant = await AdminUpdateTenantService({ tenantId, ...req.body });
   if (tenant.status === "inactive") {
     await disconnectTenantSockets(tenant.id);
   }

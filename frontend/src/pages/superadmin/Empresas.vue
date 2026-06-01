@@ -60,6 +60,15 @@
                   dense
                   flat
                   no-caps
+                  color="grey-8"
+                  icon="mdi-pencil"
+                  label="Editar"
+                  @click="abrirEdicao(props.row)"
+                />
+                <q-btn
+                  dense
+                  flat
+                  no-caps
                   color="primary"
                   icon="mdi-calendar-plus"
                   label="Renovar"
@@ -120,11 +129,35 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+    <q-dialog v-model="modalEdicao" persistent>
+      <q-card style="width: 560px; max-width: 95vw">
+        <q-card-section>
+          <div class="text-h6">Editar empresa cliente</div>
+          <div class="text-caption text-grey-7">
+            A senha só será alterada se um novo valor for informado.
+          </div>
+        </q-card-section>
+        <q-card-section class="q-gutter-md">
+          <q-input v-model.trim="empresaEdicao.name" outlined dense label="Nome da empresa" />
+          <q-input v-model.trim="empresaEdicao.adminName" outlined dense label="Nome do administrador" />
+          <q-input v-model.trim="empresaEdicao.adminEmail" outlined dense label="E-mail do administrador" type="email" />
+          <q-input v-model="empresaEdicao.adminPassword" outlined dense label="Nova senha (opcional)" type="password" />
+          <div class="row q-col-gutter-md">
+            <q-input v-model.number="empresaEdicao.maxUsers" outlined dense label="Limite de usuários" type="number" min="1" class="col" />
+            <q-input v-model.number="empresaEdicao.maxConnections" outlined dense label="Limite de canais" type="number" min="1" class="col" />
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat rounded label="Cancelar" color="negative" @click="modalEdicao = false" />
+          <q-btn rounded label="Salvar" color="primary" :loading="saving" :disable="!edicaoValida" @click="salvarEdicao" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-layout>
 </template>
 
 <script>
-import { AtualizarStatusEmpresa, CriarEmpresa, ListarEmpresas, RenovarAcessoEmpresa } from 'src/service/empresas'
+import { AtualizarCadastroEmpresa, AtualizarStatusEmpresa, CriarEmpresa, ListarEmpresas, RenovarAcessoEmpresa } from 'src/service/empresas'
 import { RealizarLogout } from 'src/service/login'
 
 export default {
@@ -135,7 +168,9 @@ export default {
       saving: false,
       modalEmpresa: false,
       modalRenovacao: false,
+      modalEdicao: false,
       empresaRenovacao: {},
+      empresaEdicao: {},
       diasRenovacao: 30,
       novaEmpresa: {
         name: '',
@@ -170,6 +205,16 @@ export default {
         this.novaEmpresa.maxConnections > 0 &&
         this.novaEmpresa.paidDays > 0
       )
+    },
+    edicaoValida () {
+      return !!(
+        this.empresaEdicao.name &&
+        this.empresaEdicao.adminName &&
+        this.empresaEdicao.adminEmail &&
+        (!this.empresaEdicao.adminPassword || this.empresaEdicao.adminPassword.length >= 6) &&
+        this.empresaEdicao.maxUsers > 0 &&
+        this.empresaEdicao.maxConnections > 0
+      )
     }
   },
   methods: {
@@ -202,6 +247,34 @@ export default {
       this.empresaRenovacao = empresa
       this.diasRenovacao = 30
       this.modalRenovacao = true
+    },
+    abrirEdicao (empresa) {
+      this.empresaEdicao = {
+        name: empresa.name,
+        adminName: empresa.owner?.name || '',
+        adminEmail: empresa.owner?.email || '',
+        adminPassword: '',
+        maxUsers: empresa.maxUsers,
+        maxConnections: empresa.maxConnections
+      }
+      this.empresaRenovacao = empresa
+      this.modalEdicao = true
+    },
+    async salvarEdicao () {
+      if (!this.empresaRenovacao.id || !this.edicaoValida) return
+      this.saving = true
+      try {
+        const data = { ...this.empresaEdicao }
+        if (!data.adminPassword) delete data.adminPassword
+        await AtualizarCadastroEmpresa(this.empresaRenovacao.id, data)
+        this.modalEdicao = false
+        await this.listarEmpresas()
+        this.$q.notify({ type: 'positive', message: 'Cadastro da empresa atualizado.' })
+      } catch (error) {
+        this.$notificarErro('Não foi possível atualizar o cadastro da empresa.', error)
+      } finally {
+        this.saving = false
+      }
     },
     async renovarAcesso () {
       if (!this.empresaRenovacao.id || this.diasRenovacao < 1) return

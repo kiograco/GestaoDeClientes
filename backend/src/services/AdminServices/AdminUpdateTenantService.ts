@@ -1,26 +1,47 @@
 import * as Yup from "yup";
 import AppError from "../../errors/AppError";
+import sequelize from "../../database";
 import Tenant from "../../models/Tenant";
+import User from "../../models/User";
 import { extendTenantAccessExpiration } from "../../helpers/TenantAccess";
 
 interface Request {
   tenantId: string | number;
   status?: string;
   paidDays?: number;
+  name?: string;
+  adminName?: string;
+  adminEmail?: string;
+  adminPassword?: string;
+  maxUsers?: number;
+  maxConnections?: number;
 }
 
-const AdminUpdateTenantService = async ({
-  tenantId,
-  status,
-  paidDays
-}: Request): Promise<Tenant> => {
+const AdminUpdateTenantService = async (data: Request): Promise<Tenant> => {
+  const {
+    tenantId,
+    status,
+    paidDays,
+    name,
+    adminName,
+    adminEmail,
+    adminPassword,
+    maxUsers,
+    maxConnections
+  } = data;
   const schema = Yup.object().shape({
     status: Yup.string().oneOf(["active", "inactive"]),
-    paidDays: Yup.number().integer().positive()
+    paidDays: Yup.number().integer().positive(),
+    name: Yup.string().trim().min(2),
+    adminName: Yup.string().trim().min(2),
+    adminEmail: Yup.string().trim().email(),
+    adminPassword: Yup.string().min(6),
+    maxUsers: Yup.number().integer().positive(),
+    maxConnections: Yup.number().integer().positive()
   });
 
   try {
-    await schema.validate({ status, paidDays });
+    await schema.validate(data);
   } catch (error) {
     throw new AppError(error.message);
   }
@@ -30,23 +51,78 @@ const AdminUpdateTenantService = async ({
     throw new AppError("ERR_NO_TENANT_FOUND", 404);
   }
 
-  if (!status && !paidDays) {
+  const hasTenantChanges =
+    !!status ||
+    !!paidDays ||
+    name !== undefined ||
+    maxUsers !== undefined ||
+    maxConnections !== undefined;
+  const hasOwnerChanges =
+    adminName !== undefined ||
+    adminEmail !== undefined ||
+    adminPassword !== undefined;
+  if (!hasTenantChanges && !hasOwnerChanges) {
     throw new AppError("ERR_TENANT_UPDATE_REQUIRED", 400);
   }
 
-  await tenant.update({
-    ...(status ? { status } : {}),
-    ...(paidDays
-      ? {
-          status: "active",
-          accessExpiresAt: extendTenantAccessExpiration(
-            tenant.accessExpiresAt,
-            paidDays
-          )
-        }
-      : {})
+  const owner = await User.findByPk(tenant.ownerId);
+  if (hasOwnerChanges && !owner) {
+    throw new AppError("ERR_NO_USER_FOUND", 404);
+  }
+
+  const normalizedAdminEmail = adminEmail?.trim().toLowerCase();
+  if (normalizedAdminEmail && normalizedAdminEmail !== owner?.email) {
+    const existingUser = await User.findOne({
+      where: { email: normalizedAdminEmail }
+    });
+    if (existingUser) {
+      throw new AppError("ERR_EMAIL_ALREADY_EXISTS", 400);
+    }
+  }
+
+  await sequelize.transaction(async transaction => {
+    await tenant.update(
+      {
+        ...(status ? { status } : {}),
+        ...(name !== undefined ? { name: name.trim() } : {}),
+        ...(maxUsers !== undefined ? { maxUsers } : {}),
+        ...(maxConnections !== undefined ? { maxConnections } : {}),
+        ...(paidDays
+          ? {
+              status: "active",
+              accessExpiresAt: extendTenantAccessExpiration(
+                tenant.accessExpiresAt,
+                paidDays
+              )
+            }
+          : {})
+      },
+      { transaction }
+    );
+
+    if (owner && hasOwnerChanges) {
+      await owner.update(
+        {
+          ...(adminName !== undefined ? { name: adminName.trim() } : {}),
+          ...(normalizedAdminEmail ? { email: normalizedAdminEmail } : {}),
+          ...(adminPassword ? { password: adminPassword } : {})
+        },
+        { transaction }
+      );
+    }
   });
-  return tenant;
+
+  const updatedTenant = await Tenant.findByPk(tenant.id, {
+    include: [
+      {
+        model: User,
+        as: "owner",
+        attributes: ["id", "name", "email"]
+      }
+    ]
+  });
+
+  return updatedTenant as Tenant;
 };
 
 export default AdminUpdateTenantService;
