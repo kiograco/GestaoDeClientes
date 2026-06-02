@@ -420,6 +420,24 @@
               </q-card-section>
             </q-card>
             <q-card
+              v-if="deliveryHabilitado"
+              class="bg-white btn-rounded q-mt-sm"
+              style="width: 100%"
+              bordered
+              flat
+            >
+              <q-card-section class="text-bold q-pa-sm">
+                <q-btn
+                  flat
+                  class="bg-padrao btn-rounded full-width"
+                  :color="!$q.dark.isActive ? 'grey-9' : 'white'"
+                  label="Criar pedido"
+                  icon="mdi-cart-plus"
+                  @click="modalPedidoDelivery = true"
+                />
+              </q-card-section>
+            </q-card>
+            <q-card
               class="bg-white btn-rounded q-mt-sm"
               style="width: 100%"
               bordered
@@ -661,6 +679,11 @@
       </q-drawer>
 
       <ModalNovoTicket :modalNovoTicket.sync="modalNovoTicket" />
+      <ModalPedidoManual
+        v-if="deliveryHabilitado && ticketFocado.id"
+        v-model="modalPedidoDelivery"
+        :ticket="ticketFocado"
+      />
       <ContatoModal
         :contactId="selectedContactId"
         :modalContato.sync="modalContato"
@@ -766,6 +789,7 @@ import { RealizarLogout } from 'src/service/login'
 import { ListarUsuarios } from 'src/service/user'
 import MensagemChat from './MensagemChat.vue'
 import { messagesLog } from '../../utils/constants'
+import ModalPedidoManual from 'src/pages/delivery/ModalPedidoManual'
 export default {
   name: 'IndexAtendimento',
   mixins: [mixinSockets, socketInitial],
@@ -776,7 +800,8 @@ export default {
     ContatoModal,
     ModalUsuario,
     MensagemChat,
-    ItemStatusChannel
+    ItemStatusChannel,
+    ModalPedidoManual
   },
   data () {
     return {
@@ -794,6 +819,7 @@ export default {
       loading: false,
       profile,
       modalNovoTicket: false,
+      modalPedidoDelivery: false,
       modalContato: false,
       selectedContactId: null,
       filterBusca: '',
@@ -870,6 +896,9 @@ export default {
     },
     cIsExtraInfo () {
       return this.ticketFocado?.contact?.extraInfo?.length > 0
+    },
+    deliveryHabilitado () {
+      return !!this.usuario?.enabledModules?.delivery
     }
   },
   methods: {

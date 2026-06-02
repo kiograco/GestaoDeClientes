@@ -5,6 +5,11 @@ import Plan from "../../models/Plan";
 import Subscription from "../../models/Subscription";
 import Tenant from "../../models/Tenant";
 import RenewCompanyAccessService from "./RenewCompanyAccessService";
+import OrderPayment from "../../models/OrderPayment";
+import Order from "../../models/Order";
+import OrderStatusHistory from "../../models/OrderStatusHistory";
+import { getIO } from "../../libs/socket";
+import NotifyDeliveryOrderStatusService from "../DeliveryOrderServices/NotifyDeliveryOrderStatusService";
 
 interface WebhookPayload {
   id?: string;
@@ -22,6 +27,7 @@ const refundEvents = [
   "PAYMENT_AWAITING_CHARGEBACK_REVERSAL",
   "PAYMENT_DUNNING_REQUESTED"
 ];
+const failedEvents = ["PAYMENT_OVERDUE", "PAYMENT_DELETED"];
 
 const ProcessAsaasWebhookService = async (
   payload: WebhookPayload
@@ -46,6 +52,53 @@ const ProcessAsaasWebhookService = async (
     include: [{ model: Plan }]
   });
   if (!payment) {
+    const orderPayment = await OrderPayment.findOne({
+      where: { externalPaymentId },
+      include: [{ model: Order }]
+    });
+    if (orderPayment) {
+      let updatedOrder: Order | undefined;
+      await sequelize.transaction(async transaction => {
+        if (payload.event === "PAYMENT_RECEIVED") {
+          await orderPayment.update({ status: "PAID" }, { transaction });
+          if (
+            orderPayment.order &&
+            ["NEW", "WAITING_PAYMENT"].includes(orderPayment.order.status)
+          ) {
+            const oldStatus = orderPayment.order.status;
+            await orderPayment.order.update(
+              { status: "CONFIRMED" },
+              { transaction }
+            );
+            await OrderStatusHistory.create(
+              {
+                orderId: orderPayment.order.id,
+                oldStatus,
+                newStatus: "CONFIRMED",
+                changedBy: null
+              },
+              { transaction }
+            );
+            updatedOrder = orderPayment.order;
+          }
+        } else if (refundEvents.includes(payload.event)) {
+          await orderPayment.update({ status: "REFUNDED" }, { transaction });
+        } else if (failedEvents.includes(payload.event)) {
+          await orderPayment.update({ status: "FAILED" }, { transaction });
+        }
+      });
+      if (updatedOrder) {
+        getIO().emit(`${orderPayment.tenantId}:delivery:order`, {
+          action: "update",
+          order: updatedOrder
+        });
+        await NotifyDeliveryOrderStatusService(
+          orderPayment.tenantId,
+          undefined,
+          updatedOrder
+        );
+      }
+    }
     await webhookEvent.update({ processedAt: new Date() });
     return;
   }

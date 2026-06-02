@@ -33,6 +33,7 @@
               flat
               class="q-mb-sm cursor-pointer"
               @dragstart="arrastarPedido(pedido)"
+              @click="abrirPedido(pedido)"
             >
               <q-card-section class="q-pa-sm">
                 <div class="row items-center">
@@ -51,12 +52,53 @@
         </q-card>
       </div>
     </div>
+    <q-dialog v-model="modalPedido">
+      <q-card v-if="pedidoSelecionado" style="width: 620px; max-width: 95vw">
+        <q-card-section class="row items-center">
+          <div class="text-h6">Pedido #{{ pedidoSelecionado.id }}</div>
+          <q-space />
+          <q-btn flat round icon="mdi-close" v-close-popup />
+        </q-card-section>
+        <q-separator />
+        <q-card-section>
+          <div><strong>Cliente:</strong> {{ pedidoSelecionado.contact && pedidoSelecionado.contact.name }}</div>
+          <div><strong>Modalidade:</strong> {{ pedidoSelecionado.deliveryType === 'delivery' ? 'Entrega' : 'Retirada' }}</div>
+          <div v-if="pedidoSelecionado.notes"><strong>Observacoes:</strong> {{ pedidoSelecionado.notes }}</div>
+          <q-list bordered separator class="q-mt-md">
+            <q-item v-for="item in pedidoSelecionado.items" :key="item.id">
+              <q-item-section>
+                <q-item-label>{{ item.quantity }}x {{ item.productNameSnapshot }}</q-item-label>
+                <q-item-label caption>{{ item.options.map(opcao => opcao.optionNameSnapshot).join(', ') }}</q-item-label>
+                <q-item-label v-if="item.notes" caption>Obs.: {{ item.notes }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>{{ formatarMoeda(item.total) }}</q-item-section>
+            </q-item>
+          </q-list>
+          <div class="text-right text-h6 q-mt-md">Total: {{ formatarMoeda(pedidoSelecionado.total) }}</div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat rounded icon="mdi-printer" label="Imprimir cozinha" @click="imprimirCozinha" />
+        </q-card-actions>
+        <div ref="cozinha" class="cozinha-print">
+          <h2>Pedido #{{ pedidoSelecionado.id }}</h2>
+          <p><strong>Cliente:</strong> {{ pedidoSelecionado.contact && pedidoSelecionado.contact.name }}</p>
+          <p v-if="pedidoSelecionado.notes"><strong>Observacoes:</strong> {{ pedidoSelecionado.notes }}</p>
+          <hr>
+          <div v-for="item in pedidoSelecionado.items" :key="`print-${item.id}`">
+            <p><strong>{{ item.quantity }}x {{ item.productNameSnapshot }}</strong></p>
+            <p v-if="item.options.length">{{ item.options.map(opcao => opcao.optionNameSnapshot).join(', ') }}</p>
+            <p v-if="item.notes">Obs.: {{ item.notes }}</p>
+          </div>
+        </div>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
 <script>
 import { AlterarStatusPedidoDelivery, ListarPedidosDelivery } from 'src/service/delivery'
 import { socketIO } from 'src/utils/socket'
+import { Printd } from 'printd'
 
 const socket = socketIO()
 
@@ -65,6 +107,8 @@ export default {
   data () {
     return {
       pedidos: [],
+      pedidoSelecionado: null,
+      modalPedido: false,
       pedidoArrastado: null,
       searchParam: '',
       loading: false,
@@ -90,12 +134,24 @@ export default {
     arrastarPedido (pedido) {
       this.pedidoArrastado = pedido
     },
+    abrirPedido (pedido) {
+      this.pedidoSelecionado = pedido
+      this.modalPedido = true
+    },
+    imprimirCozinha () {
+      const printd = new Printd()
+      printd.print(this.$refs.cozinha, ['body { font-family: Arial, sans-serif; font-size: 14px; }'])
+    },
     async soltarPedido (status) {
       if (!this.pedidoArrastado || this.pedidoArrastado.status === status) return
       await AlterarStatusPedidoDelivery(this.pedidoArrastado.id, status)
       this.pedidoArrastado = null
     },
     atualizarPedido ({ action, order }) {
+      if (!order.contact || !order.items) {
+        this.carregar()
+        return
+      }
       const index = this.pedidos.findIndex(pedido => pedido.id === order.id)
       if (index >= 0) this.$set(this.pedidos, index, order)
       if (action === 'create' && index < 0) this.pedidos.unshift(order)
@@ -134,5 +190,9 @@ export default {
 
 .drop-area {
   min-height: calc(100vh - 240px);
+}
+
+.cozinha-print {
+  display: none;
 }
 </style>

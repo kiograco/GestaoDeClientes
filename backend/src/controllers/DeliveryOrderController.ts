@@ -4,6 +4,7 @@ import AppError from "../errors/AppError";
 import EnsureDeliveryModule from "../helpers/EnsureDeliveryModule";
 import { getIO } from "../libs/socket";
 import * as DeliveryOrder from "../services/DeliveryOrderServices/DeliveryOrderService";
+import NotifyDeliveryOrderStatusService from "../services/DeliveryOrderServices/NotifyDeliveryOrderStatusService";
 
 const itemSchema = Yup.object().shape({
   productId: Yup.number().integer().positive().required(),
@@ -54,8 +55,18 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
     typeof req.query.searchParam === "string"
       ? req.query.searchParam
       : undefined;
+  const contactId =
+    typeof req.query.contactId === "string" ? req.query.contactId : undefined;
+  const ticketId =
+    typeof req.query.ticketId === "string" ? req.query.ticketId : undefined;
   return res.json(
-    await DeliveryOrder.listOrders(req.user.tenantId, status, searchParam)
+    await DeliveryOrder.listOrders(
+      req.user.tenantId,
+      status,
+      searchParam,
+      contactId,
+      ticketId
+    )
   );
 };
 
@@ -83,5 +94,6 @@ export const updateStatus = async (
     status
   );
   emitOrder(req.user.tenantId, "update", order);
+  await NotifyDeliveryOrderStatusService(req.user.tenantId, req.user.id, order);
   return res.json(order);
 };

@@ -72,9 +72,32 @@
             <q-input v-model.trim="produto.saleEndTime" outlined dense mask="time" label="Venda ate" class="col" />
           </div>
           <q-toggle v-model="produto.available" label="Produto disponivel" />
-          <div class="text-caption text-grey-7">
-            Variacoes e adicionais ja sao suportados pela API e serao configurados pela proxima etapa da interface.
+          <q-separator />
+          <div class="row items-center">
+            <div class="text-subtitle2">Variacoes e adicionais</div>
+            <q-space />
+            <q-btn flat dense color="primary" icon="mdi-plus" label="Adicionar grupo" @click="adicionarGrupo" />
           </div>
+          <q-card v-for="(grupo, grupoIndex) in produto.optionGroups" :key="grupoIndex" flat bordered>
+            <q-card-section class="q-gutter-sm">
+              <div class="row q-col-gutter-sm items-center">
+                <q-input v-model.trim="grupo.name" outlined dense label="Grupo: tamanho, sabor ou adicional" class="col" />
+                <q-toggle v-model="grupo.required" label="Obrigatorio" />
+                <q-btn flat round color="negative" icon="mdi-delete" @click="removerGrupo(grupoIndex)" />
+              </div>
+              <div class="row q-col-gutter-sm">
+                <q-input v-model.number="grupo.minSelections" outlined dense type="number" min="0" label="Minimo" class="col" />
+                <q-input v-model.number="grupo.maxSelections" outlined dense type="number" min="1" label="Maximo" class="col" />
+              </div>
+              <div v-for="(opcao, opcaoIndex) in grupo.options" :key="opcaoIndex" class="row q-col-gutter-sm items-center">
+                <q-input v-model.trim="opcao.name" outlined dense label="Opcao" class="col" />
+                <q-input v-model.number="opcao.price" outlined dense type="number" min="0" step="0.01" label="Acrescimo" class="col-3" />
+                <q-toggle v-model="opcao.available" label="Ativa" />
+                <q-btn flat round color="negative" icon="mdi-delete" @click="removerOpcao(grupo, opcaoIndex)" />
+              </div>
+              <q-btn flat dense color="primary" icon="mdi-plus" label="Adicionar opcao" @click="adicionarOpcao(grupo)" />
+            </q-card-section>
+          </q-card>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat rounded label="Cancelar" @click="modalProduto = false" />
@@ -141,7 +164,17 @@ export default {
       return this.categorias.map(categoria => ({ label: categoria.name, value: categoria.id }))
     },
     produtoValido () {
-      return !!(this.produto.categoryId && this.produto.name && this.produto.basePrice >= 0)
+      return !!(
+        this.produto.categoryId &&
+        this.produto.name &&
+        this.produto.basePrice >= 0 &&
+        this.produto.optionGroups.every(grupo =>
+          grupo.name &&
+          grupo.minSelections >= 0 &&
+          grupo.maxSelections >= Math.max(1, grupo.minSelections) &&
+          grupo.options.every(opcao => opcao.name && opcao.price >= 0)
+        )
+      )
     }
   },
   methods: {
@@ -155,6 +188,24 @@ export default {
     abrirProduto (produto = null) {
       this.produto = produto ? { ...produto, optionGroups: produto.optionGroups || [] } : produtoVazio()
       this.modalProduto = true
+    },
+    adicionarGrupo () {
+      this.produto.optionGroups.push({
+        name: '',
+        required: false,
+        minSelections: 0,
+        maxSelections: 1,
+        options: []
+      })
+    },
+    removerGrupo (index) {
+      this.produto.optionGroups.splice(index, 1)
+    },
+    adicionarOpcao (grupo) {
+      grupo.options.push({ name: '', price: 0, available: true })
+    },
+    removerOpcao (grupo, index) {
+      grupo.options.splice(index, 1)
     },
     async carregar () {
       this.loading = true

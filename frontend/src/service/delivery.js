@@ -18,3 +18,22 @@ export const AlterarStatusPedidoDelivery = (id, status) => request({
   method: 'put',
   data: { status }
 })
+export const CriarPedidoDelivery = data => request({ url: '/delivery/orders', method: 'post', data })
+export const ListarEnderecosDelivery = contactId => request({
+  url: `/delivery/contacts/${contactId}/addresses`,
+  method: 'get'
+})
+export const CriarEnderecoDelivery = data => request({ url: '/delivery/addresses', method: 'post', data })
+export const AlterarEnderecoDelivery = data => request({ url: `/delivery/addresses/${data.id}`, method: 'put', data })
+export const ExcluirEnderecoDelivery = id => request({ url: `/delivery/addresses/${id}`, method: 'delete' })
+export const ResolverZonaDelivery = params => request({ url: '/delivery/zones/resolve', method: 'get', params })
+export const CriarPagamentoPedidoDelivery = (orderId, data) => request({
+  url: `/delivery/orders/${orderId}/payments`,
+  method: 'post',
+  data
+})
+export const AlterarStatusPagamentoPedidoDelivery = (paymentId, status) => request({
+  url: `/delivery/order-payments/${paymentId}/status`,
+  method: 'put',
+  data: { status }
+})

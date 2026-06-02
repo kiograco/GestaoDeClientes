@@ -17,6 +17,7 @@ import Contact from "./Contact";
 import Ticket from "./Ticket";
 import OrderItem from "./OrderItem";
 import OrderStatusHistory from "./OrderStatusHistory";
+import OrderPayment from "./OrderPayment";
 
 @Table
 class Order extends Model<Order> {
@@ -55,6 +56,8 @@ class Order extends Model<Order> {
   @HasMany(() => OrderItem) items: OrderItem[];
 
   @HasMany(() => OrderStatusHistory) statusHistory: OrderStatusHistory[];
+
+  @HasMany(() => OrderPayment) payments: OrderPayment[];
 
   @CreatedAt createdAt: Date;
 

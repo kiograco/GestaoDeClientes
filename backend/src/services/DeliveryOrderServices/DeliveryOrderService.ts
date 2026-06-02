@@ -11,6 +11,7 @@ import ProductOption from "../../models/ProductOption";
 import ProductOptionGroup from "../../models/ProductOptionGroup";
 import Ticket from "../../models/Ticket";
 import { resolveZone } from "../DeliveryAddressServices/DeliveryAddressService";
+import OrderPayment from "../../models/OrderPayment";
 
 export const ORDER_STATUSES = [
   "NEW",
@@ -49,7 +50,8 @@ const orderInclude = [
     as: "items",
     include: [{ model: OrderItemOption, as: "options" }]
   },
-  { model: OrderStatusHistory, as: "statusHistory" }
+  { model: OrderStatusHistory, as: "statusHistory" },
+  { model: OrderPayment, as: "payments" }
 ];
 
 const money = (value: number): number => Math.round(value * 100) / 100;
@@ -78,7 +80,14 @@ const buildItem = async (
     transaction
   });
   if (!product) throw new AppError("ERR_NO_PRODUCT_FOUND", 404);
-  const optionIds = data.optionIds || [];
+  const optionIds = [...new Set(data.optionIds || [])];
+  if (optionIds.length !== (data.optionIds || []).length) {
+    throw new AppError("ERR_INVALID_PRODUCT_OPTION", 400);
+  }
+  const groups = await ProductOptionGroup.findAll({
+    where: { productId: product.id, tenantId },
+    transaction
+  });
   const options = optionIds.length
     ? await ProductOption.findAll({
         where: { id: { [Op.in]: optionIds }, tenantId, available: true },
@@ -95,6 +104,18 @@ const buildItem = async (
   if (options.length !== optionIds.length) {
     throw new AppError("ERR_INVALID_PRODUCT_OPTION", 400);
   }
+  groups.forEach(group => {
+    const selections = options.filter(
+      option => option.groupId === group.id
+    ).length;
+    if (
+      selections < group.minSelections ||
+      selections > group.maxSelections ||
+      (group.required && selections === 0)
+    ) {
+      throw new AppError("ERR_INVALID_PRODUCT_OPTION_SELECTIONS", 400);
+    }
+  });
   const optionsTotal = options.reduce(
     (total, option) => total + Number(option.price),
     0
@@ -111,11 +132,15 @@ const buildItem = async (
 export const listOrders = async (
   tenantId: string | number,
   status?: string,
-  searchParam?: string
+  searchParam?: string,
+  contactId?: string,
+  ticketId?: string
 ): Promise<Order[]> => {
   const where: LegacyAny = { tenantId };
   if (status) where.status = status;
   if (searchParam) where.id = Number(searchParam) || 0;
+  if (contactId) where.contactId = contactId;
+  if (ticketId) where.ticketId = ticketId;
   return Order.findAll({
     where,
     include: orderInclude,
