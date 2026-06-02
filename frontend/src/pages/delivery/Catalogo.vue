@@ -71,6 +71,7 @@
             dense
             label="URL publica da imagem"
             hint="Use um link direto HTTPS, por exemplo: https://cdn.exemplo.com/produtos/pizza.jpg"
+            :rules="[validarImageUrl]"
           />
           <div class="row q-col-gutter-md">
             <q-input v-model.number="produto.basePrice" outlined dense type="number" min="0" step="0.01" label="Preco base" class="col" />
@@ -184,6 +185,16 @@ export default {
     }
   },
   methods: {
+    validarImageUrl (value) {
+      if (!value) return true
+      if (value.startsWith('data:')) return 'Imagens em Base64 nao sao aceitas. Informe uma URL publica.'
+      try {
+        const url = new URL(value)
+        return ['http:', 'https:'].includes(url.protocol) || 'Informe uma URL publica HTTP ou HTTPS.'
+      } catch (error) {
+        return 'Informe uma URL publica valida.'
+      }
+    },
     formatarMoeda (value) {
       return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0)
     },

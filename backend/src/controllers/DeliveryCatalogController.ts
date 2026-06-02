@@ -30,6 +30,11 @@ const productSchema = Yup.object().shape({
   description: Yup.string().nullable(),
   imageUrl: Yup.string()
     .transform(value => value || null)
+    .test(
+      "not-data-url",
+      "Envie uma URL publica da imagem. Imagens em Base64 nao sao aceitas",
+      value => !value || !value.startsWith("data:")
+    )
     .url("Informe uma URL publica valida para a imagem")
     .nullable(),
   basePrice: Yup.number().min(0).required(),
