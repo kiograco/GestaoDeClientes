@@ -65,7 +65,13 @@
           <q-select v-model="produto.categoryId" :options="opcoesCategorias" emit-value map-options outlined dense label="Categoria" />
           <q-input v-model.trim="produto.name" outlined dense label="Nome" />
           <q-input v-model.trim="produto.description" outlined dense type="textarea" label="Descricao" />
-          <q-input v-model.trim="produto.imageUrl" outlined dense label="URL da imagem" />
+          <q-input
+            v-model.trim="produto.imageUrl"
+            outlined
+            dense
+            label="URL publica da imagem"
+            hint="Use um link direto HTTPS, por exemplo: https://cdn.exemplo.com/produtos/pizza.jpg"
+          />
           <div class="row q-col-gutter-md">
             <q-input v-model.number="produto.basePrice" outlined dense type="number" min="0" step="0.01" label="Preco base" class="col" />
             <q-input v-model.trim="produto.saleStartTime" outlined dense mask="time" label="Venda a partir de" class="col" />

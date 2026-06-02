@@ -28,7 +28,10 @@ const productSchema = Yup.object().shape({
   categoryId: Yup.number().integer().positive().required(),
   name: Yup.string().trim().required().min(2),
   description: Yup.string().nullable(),
-  imageUrl: Yup.string().nullable(),
+  imageUrl: Yup.string()
+    .transform(value => value || null)
+    .url("Informe uma URL publica valida para a imagem")
+    .nullable(),
   basePrice: Yup.number().min(0).required(),
   available: Yup.boolean(),
   saleStartTime: Yup.string()

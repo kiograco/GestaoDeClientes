@@ -32,7 +32,7 @@ class Product extends Model<Product> {
 
   @Column(DataType.TEXT) description: string;
 
-  @Column imageUrl: string;
+  @Column(DataType.TEXT) imageUrl: string;
 
   @Column(DataType.DECIMAL(12, 2)) basePrice: number;
 
