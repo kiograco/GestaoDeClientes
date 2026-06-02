@@ -35,7 +35,14 @@ const productSchema = Yup.object().shape({
       "Envie uma URL publica da imagem. Imagens em Base64 nao sao aceitas",
       value => !value || !value.startsWith("data:")
     )
-    .url("Informe uma URL publica valida para a imagem")
+    .test(
+      "is-image-url",
+      "Informe uma URL publica valida para a imagem",
+      value =>
+        !value ||
+        value.startsWith("/public/products/") ||
+        /^https?:\/\//i.test(value)
+    )
     .nullable(),
   basePrice: Yup.number().min(0).required(),
   available: Yup.boolean(),
@@ -133,6 +140,22 @@ export const storeProduct = async (
         await validate(productSchema, req.body)
       )
     );
+};
+
+export const storeProductImage = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  requireAdmin(req);
+  await EnsureDeliveryModule(req.user.tenantId);
+
+  if (!req.file) {
+    throw new AppError("Envie uma imagem JPG, PNG ou WEBP", 400);
+  }
+
+  return res.status(201).json({
+    imageUrl: `/public/products/${req.file.filename}`
+  });
 };
 
 export const updateProduct = async (

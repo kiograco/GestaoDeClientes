@@ -8,6 +8,7 @@ export const ListarProdutosDelivery = () => request({ url: '/delivery/products',
 export const CriarProdutoDelivery = data => request({ url: '/delivery/products', method: 'post', data })
 export const AlterarProdutoDelivery = data => request({ url: `/delivery/products/${data.id}`, method: 'put', data })
 export const ExcluirProdutoDelivery = id => request({ url: `/delivery/products/${id}`, method: 'delete' })
+export const EnviarImagemProdutoDelivery = data => request({ url: '/delivery/products/image', method: 'post', data })
 export const ListarZonasDelivery = () => request({ url: '/delivery/zones', method: 'get' })
 export const CriarZonaDelivery = data => request({ url: '/delivery/zones', method: 'post', data })
 export const AlterarZonaDelivery = data => request({ url: `/delivery/zones/${data.id}`, method: 'put', data })

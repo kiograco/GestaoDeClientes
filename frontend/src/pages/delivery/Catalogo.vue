@@ -69,9 +69,35 @@
             v-model.trim="produto.imageUrl"
             outlined
             dense
-            label="URL publica da imagem"
-            hint="Use um link direto HTTPS, por exemplo: https://cdn.exemplo.com/produtos/pizza.jpg"
+            label="URL publica da imagem (opcional)"
+            hint="Informe um link HTTPS ou envie um arquivo abaixo."
             :rules="[validarImageUrl]"
+          />
+          <div class="row q-col-gutter-sm items-center">
+            <q-file
+              v-model="produtoImageFile"
+              outlined
+              dense
+              clearable
+              accept=".jpg,.jpeg,.png,.webp"
+              label="Enviar imagem JPG, PNG ou WEBP"
+              class="col"
+            />
+            <q-btn
+              rounded
+              color="primary"
+              label="Enviar imagem"
+              :disable="!produtoImageFile"
+              :loading="uploadingImage"
+              @click="enviarImagemProduto"
+            />
+          </div>
+          <q-img
+            v-if="produto.imageUrl"
+            :src="resolverImageUrl(produto.imageUrl)"
+            contain
+            style="height: 160px; max-width: 260px"
+            class="bg-grey-2"
           />
           <div class="row q-col-gutter-md">
             <q-input v-model.number="produto.basePrice" outlined dense type="number" min="0" step="0.01" label="Preco base" class="col" />
@@ -119,7 +145,7 @@
 import {
   AlterarCategoriaDelivery, AlterarProdutoDelivery, CriarCategoriaDelivery,
   CriarProdutoDelivery, ExcluirCategoriaDelivery, ExcluirProdutoDelivery,
-  ListarCategoriasDelivery, ListarProdutosDelivery
+  EnviarImagemProdutoDelivery, ListarCategoriasDelivery, ListarProdutosDelivery
 } from 'src/service/delivery'
 
 const categoriaVazia = () => ({
@@ -151,6 +177,8 @@ export default {
       modalProduto: false,
       loading: false,
       saving: false,
+      uploadingImage: false,
+      produtoImageFile: null,
       colunasCategorias: [
         { name: 'name', label: 'Nome', field: 'name', align: 'left' },
         { name: 'description', label: 'Descricao', field: 'description', align: 'left' },
@@ -188,12 +216,18 @@ export default {
     validarImageUrl (value) {
       if (!value) return true
       if (value.startsWith('data:')) return 'Imagens em Base64 nao sao aceitas. Informe uma URL publica.'
+      if (value.startsWith('/public/products/')) return true
       try {
         const url = new URL(value)
         return ['http:', 'https:'].includes(url.protocol) || 'Informe uma URL publica HTTP ou HTTPS.'
       } catch (error) {
         return 'Informe uma URL publica valida.'
       }
+    },
+    resolverImageUrl (value) {
+      if (!value || /^(https?:)?\/\//i.test(value)) return value
+      const apiUrl = (process.env.VUE_URL_API || '').replace(/\/+$/, '')
+      return `${apiUrl}${value.startsWith('/') ? value : `/${value}`}`
     },
     formatarMoeda (value) {
       return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0)
@@ -204,7 +238,24 @@ export default {
     },
     abrirProduto (produto = null) {
       this.produto = produto ? { ...produto, optionGroups: produto.optionGroups || [] } : produtoVazio()
+      this.produtoImageFile = null
       this.modalProduto = true
+    },
+    async enviarImagemProduto () {
+      if (!this.produtoImageFile) return
+      const formData = new FormData()
+      formData.append('image', this.produtoImageFile)
+      this.uploadingImage = true
+      try {
+        const { data } = await EnviarImagemProdutoDelivery(formData)
+        this.produto.imageUrl = data.imageUrl
+        this.produtoImageFile = null
+        this.$q.notify({ type: 'positive', message: 'Imagem enviada.' })
+      } catch (error) {
+        this.$notificarErro('Nao foi possivel enviar a imagem.', error)
+      } finally {
+        this.uploadingImage = false
+      }
     },
     adicionarGrupo () {
       this.produto.optionGroups.push({
