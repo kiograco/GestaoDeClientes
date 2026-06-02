@@ -417,6 +417,22 @@
                   label="Editar Contato"
                   @click="editContact(ticketFocado.contact.id)"
                 />
+                <q-btn
+                  color="primary"
+                  class="q-mt-sm bg-padrao btn-rounded"
+                  flat
+                  icon="mdi-account-cash-outline"
+                  label="Cadastrar ou editar cliente"
+                  @click="abrirCliente(ticketFocado.contact.id)"
+                />
+                <q-btn
+                  color="primary"
+                  class="q-mt-sm bg-padrao btn-rounded"
+                  flat
+                  icon="mdi-account-plus-outline"
+                  label="Novo cliente"
+                  @click="abrirCliente()"
+                />
               </q-card-section>
             </q-card>
             <q-card
@@ -689,6 +705,11 @@
         :modalContato.sync="modalContato"
         @contatoModal:contato-editado="contatoEditado"
       />
+      <ClienteModal
+        v-model="modalCliente"
+        :contactId="selectedCustomerContactId"
+        @saved="clienteSalvo"
+      />
 
       <ModalUsuario
         :isProfile="true"
@@ -790,6 +811,7 @@ import { ListarUsuarios } from 'src/service/user'
 import MensagemChat from './MensagemChat.vue'
 import { messagesLog } from '../../utils/constants'
 import ModalPedidoManual from 'src/pages/delivery/ModalPedidoManual'
+import ClienteModal from 'src/pages/clientes/ClienteModal'
 export default {
   name: 'IndexAtendimento',
   mixins: [mixinSockets, socketInitial],
@@ -801,7 +823,8 @@ export default {
     ModalUsuario,
     MensagemChat,
     ItemStatusChannel,
-    ModalPedidoManual
+    ModalPedidoManual,
+    ClienteModal
   },
   data () {
     return {
@@ -821,7 +844,9 @@ export default {
       modalNovoTicket: false,
       modalPedidoDelivery: false,
       modalContato: false,
+      modalCliente: false,
       selectedContactId: null,
+      selectedCustomerContactId: null,
       filterBusca: '',
       showDialog: false,
       atendimentos: [],
@@ -945,6 +970,20 @@ export default {
     editContact (contactId) {
       this.selectedContactId = contactId
       this.modalContato = true
+    },
+    abrirCliente (contactId = null) {
+      this.selectedCustomerContactId = contactId
+      this.modalCliente = true
+    },
+    clienteSalvo (cliente) {
+      if (cliente.id === this.ticketFocado.contact.id) {
+        this.contatoEditado({
+          ...this.ticketFocado.contact,
+          name: cliente.name,
+          number: cliente.number,
+          email: cliente.email
+        })
+      }
     },
     contatoEditado (contato) {
       this.$store.commit('UPDATE_TICKET_FOCADO_CONTACT', contato)
