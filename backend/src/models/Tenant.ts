@@ -40,6 +40,12 @@ class Tenant extends Model<Tenant> {
   @Column
   maxConnections: number;
 
+  @Column({ defaultValue: "generic" })
+  businessType: string;
+
+  @Column(DataType.JSONB)
+  enabledModules: { delivery: boolean };
+
   @ForeignKey(() => User)
   @Column
   ownerId: number;

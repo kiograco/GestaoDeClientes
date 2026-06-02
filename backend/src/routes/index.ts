@@ -24,6 +24,9 @@ import adminRoutes from "./adminRoutes";
 import facebookRoutes from "./facebookRoutes";
 import instagramOAuthRoutes from "./instagramOAuthRoutes";
 import billingRoutes from "./billingRoutes";
+import deliveryCatalogRoutes from "./deliveryCatalogRoutes";
+import deliveryAddressRoutes from "./deliveryAddressRoutes";
+import deliveryOrderRoutes from "./deliveryOrderRoutes";
 
 const routes = Router();
 
@@ -52,5 +55,8 @@ routes.use(adminRoutes);
 routes.use(facebookRoutes);
 routes.use(instagramOAuthRoutes);
 routes.use(billingRoutes);
+routes.use(deliveryCatalogRoutes);
+routes.use(deliveryAddressRoutes);
+routes.use(deliveryOrderRoutes);
 
 export default routes;

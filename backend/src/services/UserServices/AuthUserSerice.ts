@@ -29,7 +29,15 @@ const AuthUserService = async ({
       { model: Queue, as: "queues" },
       {
         model: Tenant,
-        attributes: ["id", "name", "status", "logoUrl", "accessExpiresAt"]
+        attributes: [
+          "id",
+          "name",
+          "status",
+          "logoUrl",
+          "accessExpiresAt",
+          "businessType",
+          "enabledModules"
+        ]
       }
     ]
   });

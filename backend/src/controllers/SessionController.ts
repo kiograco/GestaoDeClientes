@@ -37,6 +37,8 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     tenantName: user.tenant?.name,
     logoUrl: user.tenant?.logoUrl,
     accessExpiresAt: user.tenant?.accessExpiresAt,
+    businessType: user.tenant?.businessType,
+    enabledModules: user.tenant?.enabledModules,
     accessDaysRemaining: getTenantAccessDaysRemaining(
       user.tenant?.accessExpiresAt
     ),

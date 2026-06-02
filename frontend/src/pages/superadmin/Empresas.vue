@@ -103,6 +103,15 @@
           <q-input v-model.trim="novaEmpresa.adminName" outlined dense label="Nome do administrador" />
           <q-input v-model.trim="novaEmpresa.adminEmail" outlined dense label="E-mail do administrador" type="email" />
           <q-input v-model="novaEmpresa.adminPassword" outlined dense label="Senha temporária" type="password" />
+          <q-select
+            v-model="novaEmpresa.businessType"
+            :options="tiposEmpresa"
+            emit-value
+            map-options
+            outlined
+            dense
+            label="Tipo de empresa"
+          />
           <div class="row q-col-gutter-md">
             <q-input v-model.number="novaEmpresa.maxUsers" outlined dense label="Limite de usuários" type="number" class="col" />
             <q-input v-model.number="novaEmpresa.maxConnections" outlined dense label="Limite de canais" type="number" class="col" />
@@ -153,6 +162,15 @@
           <q-input v-model.trim="empresaEdicao.adminName" outlined dense label="Nome do administrador" />
           <q-input v-model.trim="empresaEdicao.adminEmail" outlined dense label="E-mail do administrador" type="email" />
           <q-input v-model="empresaEdicao.adminPassword" outlined dense label="Nova senha (opcional)" type="password" />
+          <q-select
+            v-model="empresaEdicao.businessType"
+            :options="tiposEmpresa"
+            emit-value
+            map-options
+            outlined
+            dense
+            label="Tipo de empresa"
+          />
           <div class="row q-col-gutter-md">
             <q-input v-model.number="empresaEdicao.maxUsers" outlined dense label="Limite de usuários" type="number" min="1" class="col" />
             <q-input v-model.number="empresaEdicao.maxConnections" outlined dense label="Limite de canais" type="number" min="1" class="col" />
@@ -183,6 +201,10 @@ export default {
       empresaRenovacao: {},
       empresaEdicao: {},
       diasRenovacao: 30,
+      tiposEmpresa: [
+        { label: 'CRM padrao', value: 'generic' },
+        { label: 'Loja de delivery', value: 'food_delivery' }
+      ],
       novaEmpresa: {
         name: '',
         cpfCnpj: '',
@@ -191,7 +213,8 @@ export default {
         adminPassword: '',
         maxUsers: 10,
         maxConnections: 5,
-        paidDays: 30
+        paidDays: 30,
+        businessType: 'generic'
       },
       empresas: [],
       columns: [
@@ -242,7 +265,8 @@ export default {
         adminPassword: '',
         maxUsers: 10,
         maxConnections: 5,
-        paidDays: 30
+        paidDays: 30,
+        businessType: 'generic'
       }
     },
     formatarVencimento (accessExpiresAt) {
@@ -274,7 +298,8 @@ export default {
         adminEmail: empresa.owner?.email || '',
         adminPassword: '',
         maxUsers: empresa.maxUsers,
-        maxConnections: empresa.maxConnections
+        maxConnections: empresa.maxConnections,
+        businessType: empresa.businessType || 'generic'
       }
       this.empresaRenovacao = empresa
       this.modalEdicao = true

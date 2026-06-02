@@ -417,6 +417,27 @@ const objMenuAdmin = [
     routeName: 'etiquetas'
   },
   {
+    title: 'Cardapio',
+    caption: 'Produtos e categorias',
+    icon: 'mdi-silverware-fork-knife',
+    routeName: 'delivery-catalogo',
+    requiredModule: 'delivery'
+  },
+  {
+    title: 'Pedidos',
+    caption: 'Painel operacional',
+    icon: 'mdi-clipboard-list-outline',
+    routeName: 'delivery-pedidos',
+    requiredModule: 'delivery'
+  },
+  {
+    title: 'Areas de entrega',
+    caption: 'Taxas e prazos',
+    icon: 'mdi-map-marker-radius',
+    routeName: 'delivery-zonas',
+    requiredModule: 'delivery'
+  },
+  {
     title: 'Horário de Atendimento',
     caption: 'Horário de funcionamento',
     icon: 'mdi-calendar-clock',
@@ -445,7 +466,7 @@ const objMenuAdmin = [
 const objMenuAdminGroups = [
   {
     title: 'Operação',
-    routes: ['painel-atendimentos', 'relatorios', 'horarioAtendimento']
+    routes: ['painel-atendimentos', 'delivery-pedidos', 'relatorios', 'horarioAtendimento']
   },
   {
     title: 'Automação',
@@ -453,7 +474,7 @@ const objMenuAdminGroups = [
   },
   {
     title: 'Cadastros',
-    routes: ['usuarios', 'filas', 'etiquetas', 'configuracoes']
+    routes: ['usuarios', 'filas', 'etiquetas', 'delivery-catalogo', 'delivery-zonas', 'configuracoes']
   },
   {
     title: 'Integrações',
@@ -534,6 +555,7 @@ export default {
       this.tenantLogoUrl = resolveTenantLogoUrl(event.detail)
     },
     exibirMenuBeta (itemMenu) {
+      if (itemMenu?.requiredModule && !this.usuario.enabledModules?.[itemMenu.requiredModule]) return false
       if (!itemMenu?.isBeta) return true
       for (const domain of this.domainExperimentalsMenus) {
         if (this.usuario.email.indexOf(domain) !== -1) return true

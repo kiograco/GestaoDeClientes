@@ -15,6 +15,7 @@ interface Request {
   maxUsers?: number;
   maxConnections?: number;
   paidDays?: number;
+  businessType?: "generic" | "food_delivery";
 }
 
 const defaultSettings = [
@@ -45,7 +46,8 @@ const AdminCreateTenantService = async (data: Request): Promise<Tenant> => {
     adminPassword: Yup.string().required().min(6),
     maxUsers: Yup.number().integer().positive(),
     maxConnections: Yup.number().integer().positive(),
-    paidDays: Yup.number().integer().positive()
+    paidDays: Yup.number().integer().positive(),
+    businessType: Yup.string().oneOf(["generic", "food_delivery"])
   });
 
   try {
@@ -68,7 +70,9 @@ const AdminCreateTenantService = async (data: Request): Promise<Tenant> => {
         status: "active",
         accessExpiresAt: createTenantAccessExpiration(data.paidDays || 30),
         maxUsers: data.maxUsers || 10,
-        maxConnections: data.maxConnections || 5
+        maxConnections: data.maxConnections || 5,
+        businessType: data.businessType || "generic",
+        enabledModules: { delivery: data.businessType === "food_delivery" }
       },
       { transaction }
     );

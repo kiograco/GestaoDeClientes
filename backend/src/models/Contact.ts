@@ -24,6 +24,8 @@ import Tenant from "./Tenant";
 import Ticket from "./Ticket";
 import ContactTag from "./ContactTag";
 import User from "./User";
+import CustomerAddress from "./CustomerAddress";
+import Order from "./Order";
 
 @Table
 class Contact extends Model<Contact> {
@@ -102,6 +104,12 @@ class Contact extends Model<Contact> {
 
   @HasMany(() => CampaignContacts)
   campaignContacts: CampaignContacts[];
+
+  @HasMany(() => CustomerAddress)
+  addresses: CustomerAddress[];
+
+  @HasMany(() => Order)
+  orders: Order[];
 
   @BelongsToMany(
     () => Campaign,

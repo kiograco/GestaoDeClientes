@@ -16,6 +16,7 @@ interface Request {
   adminPassword?: string;
   maxUsers?: number;
   maxConnections?: number;
+  businessType?: "generic" | "food_delivery";
 }
 
 const AdminUpdateTenantService = async (data: Request): Promise<Tenant> => {
@@ -29,7 +30,8 @@ const AdminUpdateTenantService = async (data: Request): Promise<Tenant> => {
     adminEmail,
     adminPassword,
     maxUsers,
-    maxConnections
+    maxConnections,
+    businessType
   } = data;
   const schema = Yup.object().shape({
     status: Yup.string().oneOf(["active", "inactive"]),
@@ -42,7 +44,8 @@ const AdminUpdateTenantService = async (data: Request): Promise<Tenant> => {
     adminEmail: Yup.string().trim().email(),
     adminPassword: Yup.string().min(6),
     maxUsers: Yup.number().integer().positive(),
-    maxConnections: Yup.number().integer().positive()
+    maxConnections: Yup.number().integer().positive(),
+    businessType: Yup.string().oneOf(["generic", "food_delivery"])
   });
 
   try {
@@ -62,7 +65,8 @@ const AdminUpdateTenantService = async (data: Request): Promise<Tenant> => {
     name !== undefined ||
     cpfCnpj !== undefined ||
     maxUsers !== undefined ||
-    maxConnections !== undefined;
+    maxConnections !== undefined ||
+    businessType !== undefined;
   const hasOwnerChanges =
     adminName !== undefined ||
     adminEmail !== undefined ||
@@ -96,6 +100,12 @@ const AdminUpdateTenantService = async (data: Request): Promise<Tenant> => {
           : {}),
         ...(maxUsers !== undefined ? { maxUsers } : {}),
         ...(maxConnections !== undefined ? { maxConnections } : {}),
+        ...(businessType !== undefined
+          ? {
+              businessType,
+              enabledModules: { delivery: businessType === "food_delivery" }
+            }
+          : {}),
         ...(paidDays
           ? {
               status: "active",

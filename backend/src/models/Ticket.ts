@@ -27,6 +27,7 @@ import Queue from "./Queue";
 import Tenant from "./Tenant";
 import MessagesOffLine from "./MessageOffLine";
 import ChatFlow from "./ChatFlow";
+import Order from "./Order";
 
 @Table
 class Ticket extends Model<Ticket> {
@@ -164,6 +165,9 @@ class Ticket extends Model<Ticket> {
 
   @HasMany(() => MessagesOffLine)
   messagesOffLine: MessagesOffLine[];
+
+  @HasMany(() => Order)
+  orders: Order[];
 
   @Default(null)
   @AllowNull

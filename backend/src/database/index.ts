@@ -29,6 +29,16 @@ import Payment from "../models/Payment";
 import PaymentWebhookEvent from "../models/PaymentWebhookEvent";
 import Plan from "../models/Plan";
 import Subscription from "../models/Subscription";
+import ProductCategory from "../models/ProductCategory";
+import Product from "../models/Product";
+import ProductOptionGroup from "../models/ProductOptionGroup";
+import ProductOption from "../models/ProductOption";
+import CustomerAddress from "../models/CustomerAddress";
+import DeliveryZone from "../models/DeliveryZone";
+import Order from "../models/Order";
+import OrderItem from "../models/OrderItem";
+import OrderItemOption from "../models/OrderItemOption";
+import OrderStatusHistory from "../models/OrderStatusHistory";
 import * as QueueJobs from "../libs/Queue";
 import { logger } from "../utils/logger";
 
@@ -73,7 +83,17 @@ const models = [
   Plan,
   Subscription,
   Payment,
-  PaymentWebhookEvent
+  PaymentWebhookEvent,
+  ProductCategory,
+  Product,
+  ProductOptionGroup,
+  ProductOption,
+  CustomerAddress,
+  DeliveryZone,
+  Order,
+  OrderItem,
+  OrderItemOption,
+  OrderStatusHistory
 ];
 
 sequelize.addModels(models);
