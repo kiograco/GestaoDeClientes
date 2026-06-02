@@ -364,6 +364,12 @@ const objMenu = [
     caption: 'Lista de contatos',
     icon: 'mdi-card-account-mail',
     routeName: 'contatos'
+  },
+  {
+    title: 'Clientes',
+    caption: 'Cadastro comercial',
+    icon: 'mdi-account-cash-outline',
+    routeName: 'clientes'
   }
 ]
 

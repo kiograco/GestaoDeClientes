@@ -9,6 +9,7 @@ import {
   AllowNull,
   Default,
   HasMany,
+  HasOne,
   BeforeCreate,
   ForeignKey,
   BelongsTo,
@@ -26,6 +27,7 @@ import ContactTag from "./ContactTag";
 import User from "./User";
 import CustomerAddress from "./CustomerAddress";
 import Order from "./Order";
+import CustomerProfile from "./CustomerProfile";
 
 @Table
 class Contact extends Model<Contact> {
@@ -110,6 +112,9 @@ class Contact extends Model<Contact> {
 
   @HasMany(() => Order)
   orders: Order[];
+
+  @HasOne(() => CustomerProfile)
+  salesProfile: CustomerProfile;
 
   @BelongsToMany(
     () => Campaign,

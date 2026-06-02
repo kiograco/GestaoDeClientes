@@ -27,6 +27,7 @@ import billingRoutes from "./billingRoutes";
 import deliveryCatalogRoutes from "./deliveryCatalogRoutes";
 import deliveryAddressRoutes from "./deliveryAddressRoutes";
 import deliveryOrderRoutes from "./deliveryOrderRoutes";
+import salesCustomerRoutes from "./salesCustomerRoutes";
 
 const routes = Router();
 
@@ -58,5 +59,6 @@ routes.use(billingRoutes);
 routes.use(deliveryCatalogRoutes);
 routes.use(deliveryAddressRoutes);
 routes.use(deliveryOrderRoutes);
+routes.use(salesCustomerRoutes);
 
 export default routes;
