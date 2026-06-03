@@ -7,6 +7,7 @@ import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
 import UserMessagesLog from "../../models/UserMessagesLog";
 import { logger } from "../../utils/logger";
+import { guardWhatsAppSend } from "./helpers/WhatsAppSendGuard";
 // import { StartWhatsAppSessionVerify } from "./StartWhatsAppSessionVerify";
 
 interface Request {
@@ -31,6 +32,14 @@ const SendWhatsAppMessage = async ({
   const wbot = await GetTicketWbot(ticket);
 
   try {
+    await guardWhatsAppSend({
+      whatsappId: ticket.whatsappId,
+      tenantId: ticket.tenantId,
+      recipient: ticket.contact.number,
+      body,
+      source: "manual"
+    });
+
     const sendMessage = await wbot.sendMessage(
       `${ticket.contact.number}@${ticket.isGroup ? "g" : "c"}.us`,
       body,

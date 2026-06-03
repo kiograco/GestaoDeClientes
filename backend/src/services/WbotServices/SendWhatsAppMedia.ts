@@ -5,6 +5,7 @@ import GetTicketWbot from "../../helpers/GetTicketWbot";
 import Ticket from "../../models/Ticket";
 import UserMessagesLog from "../../models/UserMessagesLog";
 import { logger } from "../../utils/logger";
+import { guardWhatsAppSend } from "./helpers/WhatsAppSendGuard";
 
 interface Request {
   media: Express.Multer.File;
@@ -21,6 +22,13 @@ const SendWhatsAppMedia = async ({
     const wbot = await GetTicketWbot(ticket);
 
     const newMedia = MessageMedia.fromFilePath(media.path);
+    await guardWhatsAppSend({
+      whatsappId: ticket.whatsappId,
+      tenantId: ticket.tenantId,
+      recipient: ticket.contact.number,
+      mediaName: media.filename,
+      source: "manual-media"
+    });
 
     const sendMessage = await wbot.sendMessage(
       `${ticket.contact.number}@${ticket.isGroup ? "g" : "c"}.us`,

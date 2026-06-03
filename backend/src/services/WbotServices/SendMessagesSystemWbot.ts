@@ -9,6 +9,7 @@ import { logger } from "../../utils/logger";
 import { sleepRandomTime } from "../../utils/sleepRandomTime";
 import Contact from "../../models/Contact";
 import GetWbotMessage from "../../helpers/GetWbotMessage";
+import { guardWhatsAppSend } from "./helpers/WhatsAppSendGuard";
 // import SetTicketMessagesAsRead from "../../helpers/SetTicketMessagesAsRead";
 
 interface Session extends Client {
@@ -97,6 +98,15 @@ const SendMessagesSystemWbot = async (
     }
 
     try {
+      await guardWhatsAppSend({
+        whatsappId: wbot.id,
+        tenantId,
+        recipient: contactNumber,
+        body: message.body,
+        mediaName: message.mediaName,
+        source: "system"
+      });
+
       if (message.mediaType !== "chat" && message.mediaName) {
         const customPath = join(__dirname, "..", "..", "..", "public");
         const mediaPath = join(customPath, message.mediaName);
