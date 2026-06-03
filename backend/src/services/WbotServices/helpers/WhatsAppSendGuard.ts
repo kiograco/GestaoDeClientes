@@ -6,7 +6,7 @@ interface GuardParams {
   tenantId?: number | string;
   recipient: string;
   body?: string;
-  mediaName?: string;
+  mediaName?: string | null;
   source?: string;
 }
 

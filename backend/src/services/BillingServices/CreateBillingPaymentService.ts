@@ -7,6 +7,7 @@ import Subscription from "../../models/Subscription";
 import Tenant from "../../models/Tenant";
 import User from "../../models/User";
 import {
+  AsaasPaymentResponse,
   createAsaasCustomer,
   createAsaasPayment,
   getAsaasPixQrCode
@@ -17,6 +18,14 @@ interface Request {
   planId: number;
   method: "PIX" | "CARD";
 }
+
+const isPixUnavailableError = (error: AppError): boolean => {
+  const message = error?.message || "";
+  return (
+    message.includes("Pix") &&
+    message.includes("não permite pagamentos via Pix")
+  );
+};
 
 const CreateBillingPaymentService = async ({
   companyId,
@@ -86,14 +95,32 @@ const CreateBillingPaymentService = async ({
   }
 
   const dueDate = format(addDays(new Date(), 1), "yyyy-MM-dd");
-  const asaasPayment = await createAsaasPayment({
+  const paymentPayload = {
     customer: externalCustomerId,
-    billingType: method === "PIX" ? "PIX" : "UNDEFINED",
     value: Number(plan.price),
     dueDate,
     description: `Plano ${plan.name} - ${plan.durationDays} dias`,
     externalReference: `tenant:${companyId}:plan:${plan.id}`
-  });
+  };
+  let effectiveMethod = method;
+  let pixUnavailableReason: string | undefined;
+  let asaasPayment: AsaasPaymentResponse;
+
+  try {
+    asaasPayment = await createAsaasPayment({
+      ...paymentPayload,
+      billingType: method === "PIX" ? "PIX" : "UNDEFINED"
+    });
+  } catch (error) {
+    if (method !== "PIX" || !isPixUnavailableError(error)) throw error;
+
+    pixUnavailableReason = error.message;
+    effectiveMethod = "CARD";
+    asaasPayment = await createAsaasPayment({
+      ...paymentPayload,
+      billingType: "UNDEFINED"
+    });
+  }
   const payment = await Payment.create({
     companyId,
     subscriptionId: subscription.id,
@@ -101,20 +128,37 @@ const CreateBillingPaymentService = async ({
     gateway: "asaas",
     externalPaymentId: asaasPayment.id,
     amount: String(asaasPayment.value),
-    method,
+    method: effectiveMethod,
     dueDate: asaasPayment.dueDate,
     status: asaasPayment.status,
     paymentUrl: asaasPayment.invoiceUrl,
-    rawPayload: asaasPayment
+    rawPayload: {
+      ...asaasPayment,
+      requestedMethod: method,
+      pixUnavailableReason
+    }
   });
 
   // TODO: Pix Automático requires controlled Asaas access. Keep one charge per renewal for now.
-  if (method === "PIX") {
-    const pix = await getAsaasPixQrCode(asaasPayment.id);
-    await payment.update({
-      pixQrCode: pix.encodedImage,
-      pixCopyPaste: pix.payload
-    });
+  if (effectiveMethod === "PIX") {
+    try {
+      const pix = await getAsaasPixQrCode(asaasPayment.id);
+      await payment.update({
+        pixQrCode: pix.encodedImage,
+        pixCopyPaste: pix.payload
+      });
+    } catch (error) {
+      if (!isPixUnavailableError(error)) throw error;
+
+      await payment.update({
+        method: "CARD",
+        rawPayload: {
+          ...asaasPayment,
+          requestedMethod: method,
+          pixUnavailableReason: error.message
+        }
+      });
+    }
   }
 
   return payment;

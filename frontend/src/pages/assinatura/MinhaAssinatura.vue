@@ -146,7 +146,16 @@ export default {
         const { data } = await CriarPagamento({ planId, method })
         this.pagamentoAtual = data
         await this.carregar()
-        this.$q.notify({ type: 'positive', message: method === 'PIX' ? 'Pix gerado. Aguarde a confirmação após o pagamento.' : 'Página segura de pagamento gerada.' })
+        const hasPix = data.method === 'PIX' && data.pixQrCode
+        const pixFallback = method === 'PIX' && !hasPix
+        this.$q.notify({
+          type: pixFallback ? 'warning' : 'positive',
+          message: hasPix
+            ? 'Pix gerado. Aguarde a confirmacao apos o pagamento.'
+            : pixFallback
+              ? 'Pix indisponivel no Asaas. Use a pagina segura de pagamento.'
+              : 'Pagina segura de pagamento gerada.'
+        })
       } catch (error) {
         this.$notificarErro('Não foi possível gerar o pagamento.', error)
       } finally {
