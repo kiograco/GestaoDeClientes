@@ -10,19 +10,9 @@ export const notificarErro = (msg, error = null) => {
   let message = ''
 
   if (error && findErro?.error) {
-    message = `
-      <p class="text-bold">
-      <span class="text-bold">${findErro.description}.</span>
-      </p>
-      <p>${findErro.detail}</p>
-    `
+    message = `${findErro.description}. ${findErro.detail}`
   } else {
-    message = `
-    <p class="text-bold">
-      <span class="text-bold">${msg}</span>
-    </p>
-    <p>Detail: ${erro}</p>
-    `
+    message = `${msg}. Detail: ${erro}`
   }
 
   Notify.create({
@@ -35,14 +25,13 @@ export const notificarErro = (msg, error = null) => {
       icon: 'close',
       round: true,
       color: 'white'
-    }],
-    html: true
+    }]
   })
   throw new Error(message)
 }
 
 export const notificarSucesso = (msg) => {
-  const message = `Tudo certo... <br>${msg}.`
+  const message = `Tudo certo... ${msg}.`
   Notify.create({
     type: 'positive',
     progress: true,
@@ -53,7 +42,6 @@ export const notificarSucesso = (msg) => {
       icon: 'close',
       round: true,
       color: 'white'
-    }],
-    html: true
+    }]
   })
 }

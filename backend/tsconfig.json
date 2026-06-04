@@ -18,6 +18,8 @@
   },
   "exclude": [
     "dist",
-    "public"
+    "public",
+    "tests",
+    "jest.config.js"
   ]
 }

@@ -2,6 +2,10 @@ import { createHash } from "crypto";
 import { Op } from "sequelize";
 import * as Yup from "yup";
 import AppError from "../../errors/AppError";
+import {
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_POLICY_MESSAGE
+} from "../../helpers/UserSecurity";
 import User from "../../models/User";
 
 interface Request {
@@ -18,7 +22,10 @@ export const ResetPasswordService = async ({
 }: Request): Promise<void> => {
   const schema = Yup.object().shape({
     token: Yup.string().required(),
-    password: Yup.string().required().min(6).max(50)
+    password: Yup.string()
+      .required()
+      .min(MIN_PASSWORD_LENGTH, PASSWORD_POLICY_MESSAGE)
+      .max(72)
   });
 
   try {

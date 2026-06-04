@@ -158,7 +158,7 @@
                       v-on="itemEvents"
                     >
                       <q-item-section>
-                        <q-item-label v-html="opt.nome"></q-item-label>
+                        <q-item-label>{{ opt.nome }}</q-item-label>
                       </q-item-section>
                       <q-item-section side>
                         <q-checkbox
@@ -203,7 +203,7 @@
                       v-on="itemEvents"
                     >
                       <q-item-section>
-                        <q-item-label v-html="opt.tag"></q-item-label>
+                        <q-item-label>{{ opt.tag }}</q-item-label>
                       </q-item-section>
                       <q-item-section side>
                         <q-checkbox
@@ -254,7 +254,7 @@
                       v-on="itemEvents"
                     >
                       <q-item-section>
-                        <q-item-label v-html="opt.name"></q-item-label>
+                        <q-item-label>{{ opt.name }}</q-item-label>
                       </q-item-section>
                       <q-item-section side>
                         <q-checkbox

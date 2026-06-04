@@ -434,6 +434,7 @@ import { socketIO } from 'src/utils/socket'
 import { ConsultarTickets } from 'src/service/tickets'
 import OnboardingAdmin from 'src/components/OnboardingAdmin'
 import { resolveTenantLogoUrl } from 'src/utils/tenantLogo'
+import { clearAccessToken } from 'src/utils/authToken'
 
 const socket = socketIO()
 
@@ -741,7 +742,7 @@ export default {
     async efetuarLogout () {
       try {
         await RealizarLogout(this.usuario)
-        localStorage.removeItem('token')
+        clearAccessToken()
         localStorage.removeItem('username')
         localStorage.removeItem('profile')
         localStorage.removeItem('userId')

@@ -1,6 +1,7 @@
 import { format, parseISO, parseJSON } from 'date-fns'
 import pt from 'date-fns/locale/pt-BR'
 import { mapGetters } from 'vuex'
+import { escapeHtml, sanitizeHtml } from 'src/utils/sanitizeHtml'
 
 export default {
   computed: {
@@ -22,7 +23,7 @@ export default {
     },
     farmatarMensagemWhatsapp (body) {
       if (!body) return
-      let format = body
+      let format = escapeHtml(body)
       function is_aplhanumeric (c) {
         var x = c.charCodeAt()
         return !!(((x >= 65 && x <= 90) || (x >= 97 && x <= 122) || (x >= 48 && x <= 57)))
@@ -53,7 +54,7 @@ export default {
       format = whatsappStyles(format, '*', '<b>', '</b>')
       format = whatsappStyles(format, '~', '<s>', '</s>')
       format = format.replace(/\n/gi, '<br>')
-      return format
+      return sanitizeHtml(format)
     },
     formatarData (data, formato = 'dd/MM/yyyy') {
       return format(parseISO(data), formato, { locale: pt })

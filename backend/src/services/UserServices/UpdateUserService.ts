@@ -2,6 +2,11 @@ import * as Yup from "yup";
 import { Op } from "sequelize";
 
 import AppError from "../../errors/AppError";
+import {
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_POLICY_MESSAGE,
+  TENANT_USER_PROFILES
+} from "../../helpers/UserSecurity";
 import Queue from "../../models/Queue";
 import User from "../../models/User";
 import UsersQueues from "../../models/UsersQueues";
@@ -23,6 +28,7 @@ interface Request {
   userData: UserData;
   userId: string | number;
   tenantId: string | number;
+  requestUserId?: string | number;
 }
 
 interface Response {
@@ -35,7 +41,8 @@ interface Response {
 const UpdateUserService = async ({
   userData,
   userId,
-  tenantId
+  tenantId,
+  requestUserId
 }: Request): Promise<Response | undefined> => {
   const user = await User.findOne({
     where: { id: userId, tenantId },
@@ -49,8 +56,8 @@ const UpdateUserService = async ({
   const schema = Yup.object().shape({
     name: Yup.string().min(2),
     email: Yup.string().email(),
-    profile: Yup.string(),
-    password: Yup.string()
+    profile: Yup.string().oneOf(TENANT_USER_PROFILES),
+    password: Yup.string().min(MIN_PASSWORD_LENGTH, PASSWORD_POLICY_MESSAGE)
   });
 
   const { email, password, profile, name, queues } = userData;
@@ -59,6 +66,14 @@ const UpdateUserService = async ({
     await schema.validate({ email, password, profile, name });
   } catch (err: LegacyAny) {
     throw new AppError(err?.message);
+  }
+
+  if (
+    profile !== undefined &&
+    requestUserId !== undefined &&
+    String(requestUserId) === String(userId)
+  ) {
+    throw new AppError("ERR_CANNOT_CHANGE_OWN_PROFILE", 403);
   }
 
   if (queues) {

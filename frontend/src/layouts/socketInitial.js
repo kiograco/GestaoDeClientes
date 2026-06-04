@@ -2,6 +2,7 @@ const usuario = JSON.parse(localStorage.getItem('usuario'))
 import Router from 'src/router/index'
 import { socketIO } from '../utils/socket'
 import { ConsultarTickets } from 'src/service/tickets'
+import { clearAccessToken } from 'src/utils/authToken'
 
 const socket = socketIO()
 
@@ -9,7 +10,7 @@ const userId = +localStorage.getItem('userId')
 
 socket.on(`tokenInvalid:${socket.id}`, () => {
   socket.disconnect()
-  localStorage.removeItem('token')
+  clearAccessToken()
   localStorage.removeItem('username')
   localStorage.removeItem('profile')
   localStorage.removeItem('userId')
@@ -98,7 +99,6 @@ export default {
             message: `A conexão com o WhatsApp está pronta e o mesmo está habilitado para enviar e receber mensagens. Conexão: ${data.session.name}. Número: ${data.session.number}.`,
             type: 'positive',
             color: 'primary',
-            html: true,
             progress: true,
             timeout: 7000,
             actions: [{

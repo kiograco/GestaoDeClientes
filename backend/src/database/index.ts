@@ -41,6 +41,7 @@ import OrderItemOption from "../models/OrderItemOption";
 import OrderStatusHistory from "../models/OrderStatusHistory";
 import OrderPayment from "../models/OrderPayment";
 import CustomerProfile from "../models/CustomerProfile";
+import AuditLog from "../models/AuditLog";
 import * as QueueJobs from "../libs/Queue";
 import { logger } from "../utils/logger";
 
@@ -97,7 +98,8 @@ const models = [
   OrderItemOption,
   OrderStatusHistory,
   OrderPayment,
-  CustomerProfile
+  CustomerProfile,
+  AuditLog
 ];
 
 sequelize.addModels(models);

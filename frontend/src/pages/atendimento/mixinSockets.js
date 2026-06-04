@@ -3,6 +3,7 @@ import Router from 'src/router/index'
 import checkTicketFilter from 'src/utils/checkTicketFilter'
 import { socketIO } from 'src/utils/socket'
 import { ConsultarTickets } from 'src/service/tickets'
+import { clearAccessToken } from 'src/utils/authToken'
 
 const socket = socketIO()
 
@@ -12,7 +13,7 @@ const userId = +localStorage.getItem('userId')
 
 socket.on(`tokenInvalid:${socket.id}`, () => {
   socket.disconnect()
-  localStorage.removeItem('token')
+  clearAccessToken()
   localStorage.removeItem('username')
   localStorage.removeItem('profile')
   localStorage.removeItem('userId')

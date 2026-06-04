@@ -116,5 +116,9 @@ export const startSession = async (
     StartWhatsAppSession(whatsapp);
   }
 
-  return res.status(200).json(whatsapp);
+  return res.status(200).json({
+    message: "Starting session.",
+    sessionId: whatsapp.id,
+    status: whatsapp.status
+  });
 };

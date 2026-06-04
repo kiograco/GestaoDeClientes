@@ -9,6 +9,7 @@ import UpdateUserService from "../services/UserServices/UpdateUserService";
 import ShowUserService from "../services/UserServices/ShowUserService";
 import DeleteUserService from "../services/UserServices/DeleteUserService";
 import UpdateUserConfigsService from "../services/UserServices/UpdateUserConfigsService";
+import createAuditLog from "../services/AuditLogService";
 
 type IndexQuery = {
   searchParam: string;
@@ -53,6 +54,17 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     user
   });
 
+  await createAuditLog({
+    tenantId,
+    userId: req.user.id,
+    action: "user.create",
+    resource: "user",
+    resourceId: user.id,
+    ip: req.ip,
+    userAgent: req.get("user-agent"),
+    metadata: { profile: user.profile }
+  });
+
   return res.status(200).json(user);
 };
 
@@ -83,12 +95,28 @@ export const update = async (
     delete userData.queues;
   }
 
-  const user = await UpdateUserService({ userData, userId, tenantId });
+  const user = await UpdateUserService({
+    userData,
+    userId,
+    tenantId,
+    requestUserId: req.user.id
+  });
 
   const io = getIO();
   io.emit(`${tenantId}:user`, {
     action: "update",
     user
+  });
+
+  await createAuditLog({
+    tenantId,
+    userId: req.user.id,
+    action: "user.update",
+    resource: "user",
+    resourceId: userId,
+    ip: req.ip,
+    userAgent: req.get("user-agent"),
+    metadata: { changedProfile: Boolean(userData.profile) }
   });
 
   return res.status(200).json(user);

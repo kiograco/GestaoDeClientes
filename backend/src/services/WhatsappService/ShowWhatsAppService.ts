@@ -19,7 +19,6 @@ const ShowWhatsAppService = async ({
     "status",
     "plugged",
     "isDefault",
-    "tokenTelegram",
     "instagramUser",
     "type",
     "createdAt",
@@ -28,13 +27,12 @@ const ShowWhatsAppService = async ({
     "phone",
     "tenantId",
     "wabaBSP",
-    "tokenAPI",
     "fbPageId",
     "farewellMessage",
     "chatFlowId"
   ];
   if (isInternal) {
-    attr.push("instagramKey");
+    attr.push("tokenTelegram", "tokenAPI", "instagramKey");
   }
 
   const whatsapp = await Whatsapp.findByPk(id, {

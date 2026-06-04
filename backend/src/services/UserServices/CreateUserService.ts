@@ -1,6 +1,11 @@
 import * as Yup from "yup";
 
 import AppError from "../../errors/AppError";
+import {
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_POLICY_MESSAGE,
+  TENANT_USER_PROFILES
+} from "../../helpers/UserSecurity";
 import User from "../../models/User";
 
 interface Request {
@@ -41,11 +46,14 @@ const CreateUserService = async ({
           return !emailExists;
         }
       ),
-    password: Yup.string().required().min(5)
+    password: Yup.string()
+      .required()
+      .min(MIN_PASSWORD_LENGTH, PASSWORD_POLICY_MESSAGE),
+    profile: Yup.string().oneOf(TENANT_USER_PROFILES)
   });
 
   try {
-    await schema.validate({ email, password, name, tenantId });
+    await schema.validate({ email, password, name, tenantId, profile });
   } catch (err) {
     throw new AppError(err.message);
   }

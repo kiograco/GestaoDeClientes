@@ -54,6 +54,7 @@
 </template>
 
 <script>
+import { sanitizeHtml } from 'src/utils/sanitizeHtml'
 
 export default {
   props: {
@@ -101,7 +102,7 @@ export default {
         this.mostrarBotao = true
       }
 
-      return (text)
+      return this.renderPre ? text : sanitizeHtml(text)
     }
   },
 

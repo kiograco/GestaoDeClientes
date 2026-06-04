@@ -71,7 +71,7 @@
                   <div
                     style="word-wrap: normal !important; white-space: normal !important; "
                     class="word-wrap customWrap"
-                    v-html="corpo"
+                    {{ corpo }}
                   ></div>
                 </div>
               </td>

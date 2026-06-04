@@ -1,8 +1,10 @@
+import { Op } from "sequelize";
 import AppError from "../../errors/AppError";
 import socketEmit from "../../helpers/socketEmit";
 import Contact from "../../models/Contact";
 import ContactCustomField from "../../models/ContactCustomField";
 import ContactWallet from "../../models/ContactWallet";
+import User from "../../models/User";
 
 interface ExtraInfo {
   id?: number;
@@ -55,8 +57,16 @@ const UpdateContactService = async ({
   }
 
   if (extraInfo) {
+    const currentExtraInfoIds = new Set(
+      contact.extraInfo.map(info => Number(info.id))
+    );
+
     await Promise.all(
       extraInfo.map(async info => {
+        if (info.id && !currentExtraInfoIds.has(Number(info.id))) {
+          throw new AppError("ERR_CONTACT_CUSTOM_FIELD_NOT_FOUND", 404);
+        }
+
         await ContactCustomField.upsert({ ...info, contactId: contact.id });
       })
     );
@@ -66,13 +76,30 @@ const UpdateContactService = async ({
         const stillExists = extraInfo.findIndex(info => info.id === oldInfo.id);
 
         if (stillExists === -1) {
-          await ContactCustomField.destroy({ where: { id: oldInfo.id } });
+          await ContactCustomField.destroy({
+            where: { id: oldInfo.id, contactId: contact.id }
+          });
         }
       })
     );
   }
 
   if (wallets) {
+    const walletIds = [
+      ...new Set(wallets.map((wallet: LegacyAny) => wallet?.id || wallet))
+    ];
+
+    if (walletIds.length) {
+      const tenantWallets = await User.findAll({
+        where: { id: { [Op.in]: walletIds }, tenantId },
+        attributes: ["id"]
+      });
+
+      if (tenantWallets.length !== walletIds.length) {
+        throw new AppError("ERR_WALLET_NOT_FOUND", 404);
+      }
+    }
+
     await ContactWallet.destroy({
       where: {
         tenantId,
@@ -80,15 +107,11 @@ const UpdateContactService = async ({
       }
     });
 
-    const contactWallets: Wallet[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    wallets.forEach((wallet: LegacyAny) => {
-      contactWallets.push({
-        walletId: !wallet.id ? wallet : wallet.id,
-        contactId,
-        tenantId
-      });
-    });
+    const contactWallets: Wallet[] = walletIds.map(walletId => ({
+      walletId,
+      contactId,
+      tenantId
+    }));
 
     await ContactWallet.bulkCreate(contactWallets);
   }

@@ -487,7 +487,7 @@
                       v-on="itemEvents"
                     >
                       <q-item-section>
-                        <q-item-label v-html="opt.tag"></q-item-label>
+                        <q-item-label>{{ opt.tag }}</q-item-label>
                       </q-item-section>
                       <q-item-section side>
                         <q-checkbox
@@ -566,7 +566,7 @@
                       v-on="itemEvents"
                     >
                       <q-item-section>
-                        <q-item-label v-html="opt.name"></q-item-label>
+                        <q-item-label>{{ opt.name }}</q-item-label>
                       </q-item-section>
                       <q-item-section side>
                         <q-checkbox
@@ -797,6 +797,7 @@ import MensagemChat from './MensagemChat.vue'
 import { messagesLog } from '../../utils/constants'
 import ModalPedidoManual from 'src/pages/delivery/ModalPedidoManual'
 import ClienteModal from 'src/pages/clientes/ClienteModal'
+import { clearAccessToken } from 'src/utils/authToken'
 export default {
   name: 'IndexAtendimento',
   mixins: [mixinSockets, socketInitial],
@@ -1039,7 +1040,7 @@ export default {
       console.log('logout - index atendimento')
       try {
         await RealizarLogout(usuario)
-        localStorage.removeItem('token')
+        clearAccessToken()
         localStorage.removeItem('username')
         localStorage.removeItem('profile')
         localStorage.removeItem('userId')

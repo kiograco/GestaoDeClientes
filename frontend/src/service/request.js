@@ -6,10 +6,12 @@ import { Notify } from 'quasar'
 
 import backendErrors from './erros'
 import { RefreshToken } from './login'
+import { clearAccessToken, getAccessToken, setAccessToken } from 'src/utils/authToken'
 
 const service = axios.create({
   baseURL: process.env.VUE_URL_API,
-  timeout: 20000
+  timeout: 20000,
+  withCredentials: true
 })
 
 const handlerError = err => {
@@ -25,7 +27,6 @@ const handlerError = err => {
   Notify.create({
     position: 'top',
     type: 'negative',
-    html: true,
     progress: true,
     message: `${JSON.stringify(error)}`
   })
@@ -57,11 +58,10 @@ service.interceptors.request.use(
     // url = url.replace(r, id_conta_cliente)
     // const u = new RegExp('id_unidade_negocio', 'g')
     // config.url = url.replace(u, id_unidade_negocio)
-    const tokenAuth = JSON.parse(localStorage.getItem('token'))
-    const token = 'Bearer ' + tokenAuth
-    if (token) {
+    const tokenAuth = getAccessToken()
+    if (tokenAuth) {
       // config.headers['Authorization'] = 'Bearer ' + token
-      config.headers.Authorization = token
+      config.headers.Authorization = 'Bearer ' + tokenAuth
     }
     return config
   },
@@ -94,14 +94,16 @@ service.interceptors.response.use(
       }
     } else if (error?.response?.status === 403 && !error.config._retry) {
       error.config._retry = true
-      RefreshToken().then(res => {
+      return RefreshToken().then(res => {
         if (res.data) {
-          localStorage.setItem('token', JSON.stringify(res.data.token))
+          setAccessToken(res.data.token)
+          error.config.headers.Authorization = 'Bearer ' + res.data.token
+          return service(error.config)
         }
       })
     }
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token')
+      clearAccessToken()
       localStorage.removeItem('username')
       localStorage.removeItem('profile')
       localStorage.removeItem('userId')
@@ -120,8 +122,7 @@ service.interceptors.response.use(
         message: 'Processando informações de estatisticas',
         position: 'top',
         type: 'positive',
-        progress: true,
-        html: true
+        progress: true
       })
     } else {
       // handlerError(error)

@@ -1,5 +1,8 @@
 import request from "supertest";
 import Contact from "../../src/models/Contact";
+import ContactTag from "../../src/models/ContactTag";
+import ContactWallet from "../../src/models/ContactWallet";
+import Tag from "../../src/models/Tag";
 import { bearerTokenFor } from "../helpers/auth";
 import { makeTestApp } from "../helpers/app";
 import { createAdminUser, createContact } from "../factories";
@@ -73,5 +76,47 @@ describe("contacts API", () => {
       .get(`/contacts/${contactB.id}`)
       .set("Authorization", bearerTokenFor(userA))
       .expect(404);
+  });
+
+  it("impede vincular carteira de outra empresa ao contato", async () => {
+    const app = await makeTestApp();
+    const userA = await createAdminUser();
+    const userB = await createAdminUser();
+    const contactA = await createContact({ tenantId: userA.tenantId });
+
+    await request(app)
+      .put(`/contact-wallet/${contactA.id}`)
+      .set("Authorization", bearerTokenFor(userA))
+      .send({ wallets: [userB.id] })
+      .expect(404)
+      .expect(({ body }) => {
+        expect(body.error).toBe("ERR_WALLET_NOT_FOUND");
+      });
+
+    expect(await ContactWallet.count()).toBe(0);
+  });
+
+  it("impede vincular tag de outra empresa ao contato", async () => {
+    const app = await makeTestApp();
+    const userA = await createAdminUser();
+    const userB = await createAdminUser();
+    const contactA = await createContact({ tenantId: userA.tenantId });
+    const tagB = await Tag.create({
+      tag: "VIP",
+      color: "#ff0000",
+      userId: userB.id,
+      tenantId: userB.tenantId
+    });
+
+    await request(app)
+      .put(`/contact-tags/${contactA.id}`)
+      .set("Authorization", bearerTokenFor(userA))
+      .send({ tags: [tagB.id] })
+      .expect(404)
+      .expect(({ body }) => {
+        expect(body.error).toBe("ERR_TAG_NOT_FOUND");
+      });
+
+    expect(await ContactTag.count()).toBe(0);
   });
 });

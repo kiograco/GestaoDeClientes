@@ -713,7 +713,6 @@ export default {
     },
     onRejectedFiles (rejectedEntries) {
       this.$q.notify({
-        html: true,
         message: `Ops... Ocorreu um erro! <br>
         <ul>
           <li>Cada arquivo deve ter no máximo 10MB.</li>

@@ -1,5 +1,10 @@
 import * as Yup from "yup";
 import AppError from "../../errors/AppError";
+import {
+  ADMIN_USER_PROFILES,
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_POLICY_MESSAGE
+} from "../../helpers/UserSecurity";
 import User from "../../models/User";
 
 interface UserData {
@@ -38,8 +43,8 @@ const AdminUpdateUserService = async ({
   const schema = Yup.object().shape({
     name: Yup.string().min(2),
     email: Yup.string().email(),
-    profile: Yup.string(),
-    password: Yup.string()
+    profile: Yup.string().oneOf(ADMIN_USER_PROFILES),
+    password: Yup.string().min(MIN_PASSWORD_LENGTH, PASSWORD_POLICY_MESSAGE)
   });
 
   const { email, password, profile, name } = userData;

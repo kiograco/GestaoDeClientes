@@ -13,16 +13,28 @@ import {
   getTenantAccessDaysRemaining,
   isTenantAccessActive
 } from "../helpers/TenantAccess";
+import {
+  ConfirmMfaSetupService,
+  DisableMfaService,
+  StartMfaSetupService
+} from "../services/AuthServices/MfaService";
+import createAuditLog from "../services/AuditLogService";
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const io = getIO();
 
-  const { email, password } = req.body;
+  const { email, password, mfaCode } = req.body;
 
-  const { token, user, refreshToken, usuariosOnline } = await AuthUserService({
+  const { token, user, refreshToken, usuariosOnline, mfaRequired } =
+    await AuthUserService({
     email,
-    password
-  });
+    password,
+    mfaCode
+    });
+
+  if (mfaRequired) {
+    return res.status(401).json({ error: "ERR_MFA_REQUIRED", mfaRequired: true });
+  }
 
   SendRefreshToken(res, refreshToken);
 
@@ -57,6 +69,16 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
       isOnline: true,
       lastLogin: new Date()
     }
+  });
+
+  await createAuditLog({
+    tenantId: user.tenantId,
+    userId: user.id,
+    action: "auth.login",
+    resource: "user",
+    resourceId: user.id,
+    ip: req.ip,
+    userAgent: req.get("user-agent")
   });
 
   return res.status(200).json(params);
@@ -108,6 +130,16 @@ export const logout = async (
     secure: process.env.NODE_ENV === "production"
   });
 
+  await createAuditLog({
+    tenantId: userLogout?.tenantId,
+    userId: userLogout?.id,
+    action: "auth.logout",
+    resource: "user",
+    resourceId: userLogout?.id,
+    ip: req.ip,
+    userAgent: req.get("user-agent")
+  });
+
   return res.json({ message: "USER_LOGOUT" });
 };
 
@@ -144,4 +176,46 @@ export const resetPassword = async (
   await ResetPasswordService({ token, password });
 
   return res.json({ message: "PASSWORD_RESET_SUCCESS" });
+};
+
+export const startMfaSetup = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const setup = await StartMfaSetupService(req.user.id, req.user.tenantId);
+  return res.json(setup);
+};
+
+export const confirmMfaSetup = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  await ConfirmMfaSetupService(req.user.id, req.user.tenantId, req.body.code);
+  await createAuditLog({
+    tenantId: req.user.tenantId,
+    userId: req.user.id,
+    action: "auth.mfa_enabled",
+    resource: "user",
+    resourceId: req.user.id,
+    ip: req.ip,
+    userAgent: req.get("user-agent")
+  });
+  return res.json({ message: "MFA_ENABLED" });
+};
+
+export const disableMfa = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  await DisableMfaService(req.user.id, req.user.tenantId, req.body.code);
+  await createAuditLog({
+    tenantId: req.user.tenantId,
+    userId: req.user.id,
+    action: "auth.mfa_disabled",
+    resource: "user",
+    resourceId: req.user.id,
+    ip: req.ip,
+    userAgent: req.get("user-agent")
+  });
+  return res.json({ message: "MFA_DISABLED" });
 };

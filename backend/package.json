@@ -19,6 +19,7 @@
     "test:seed": "cross-env NODE_ENV=test POSTGRES_HOST=localhost POSTGRES_DB=wchats_test POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres DB_PORT=5432 sequelize db:seed:all",
     "test:db:prepare": "npm run test:db:create && npm run test:migrate",
     "test:db:reset": "cross-env NODE_ENV=test POSTGRES_HOST=localhost POSTGRES_DB=wchats_test POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres DB_PORT=5432 sequelize db:migrate:undo:all && npm run test:migrate && npm run test:seed",
+    "privacy:retention": "node scripts/run-privacy-retention.js",
     "db:migrate": "rm -Rf dist && npm run build && npx sequelize db:migrate",
     "db:seed": "npx sequelize db:seed:all"
   },

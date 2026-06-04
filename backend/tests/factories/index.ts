@@ -41,7 +41,7 @@ export const createUser = async (
   return User.create({
     name: "Usuario Teste",
     email: `${unique("user")}@example.test`,
-    password: "123456",
+    password: "SenhaTeste123!",
     status: "online",
     profile: "admin",
     tenantId,

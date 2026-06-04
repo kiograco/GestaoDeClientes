@@ -6,10 +6,13 @@ import {
 } from "../../helpers/CreateTokens";
 import Queue from "../../models/Queue";
 import Tenant from "../../models/Tenant";
+import { isTenantAccessActive } from "../../helpers/TenantAccess";
+import { isMfaEnabled, verifyUserMfaCode } from "../AuthServices/MfaService";
 
 interface Request {
   email: string;
   password: string;
+  mfaCode?: string;
 }
 
 interface Response {
@@ -17,11 +20,13 @@ interface Response {
   token: string;
   refreshToken: string;
   usuariosOnline?: User[];
+  mfaRequired?: boolean;
 }
 
 const AuthUserService = async ({
   email,
-  password
+  password,
+  mfaCode
 }: Request): Promise<Response> => {
   const user = await User.findOne({
     where: { email },
@@ -53,6 +58,21 @@ const AuthUserService = async ({
   if (user.profile !== "superadmin" && user.tenant?.status !== "active") {
     throw new AppError("ERR_TENANT_INACTIVE", 403);
   }
+
+  if (user.profile !== "superadmin" && !isTenantAccessActive(user.tenant)) {
+    throw new AppError("ERR_TENANT_ACCESS_EXPIRED", 403);
+  }
+
+  if (isMfaEnabled(user) && !mfaCode) {
+    return {
+      user,
+      token: "",
+      refreshToken: "",
+      mfaRequired: true
+    };
+  }
+
+  verifyUserMfaCode(user, mfaCode);
 
   const token = createAccessToken(user);
   const refreshToken = createRefreshToken(user);

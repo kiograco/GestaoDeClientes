@@ -1,6 +1,7 @@
 import { RealizarLogin } from '../../service/login'
 import { Notify, Dark } from 'quasar'
 import { socketIO } from 'src/utils/socket'
+import { setAccessToken } from 'src/utils/authToken'
 
 const socket = socketIO()
 
@@ -43,7 +44,7 @@ const user = {
       user.email = user.email.trim()
       try {
         const { data } = await RealizarLogin(user)
-        localStorage.setItem('token', JSON.stringify(data.token))
+        setAccessToken(data.token)
         localStorage.setItem('username', data.username)
         localStorage.setItem('profile', data.profile)
         localStorage.setItem('userId', data.userId)

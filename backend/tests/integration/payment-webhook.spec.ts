@@ -25,6 +25,7 @@ describe("payment webhooks", () => {
 
     await request(app)
       .post("/webhooks/asaas")
+      .set("asaas-access-token", "test-asaas-webhook-token")
       .send({
         id: "evt_webhook_123",
         event: "PAYMENT_RECEIVED",
@@ -43,5 +44,20 @@ describe("payment webhooks", () => {
     expect(await PaymentWebhookEvent.count()).toBe(1);
     expect(await Order.count()).toBe(1);
     expect(await OrderPayment.count()).toBe(1);
+  });
+
+  it("rejeita webhook Asaas sem token valido", async () => {
+    const app = await makeTestApp();
+
+    await request(app)
+      .post("/webhooks/asaas")
+      .send({
+        id: "evt_webhook_invalid_token",
+        event: "PAYMENT_RECEIVED",
+        payment: { id: "pay_webhook_123", status: "RECEIVED" }
+      })
+      .expect(401);
+
+    expect(await PaymentWebhookEvent.count()).toBe(0);
   });
 });

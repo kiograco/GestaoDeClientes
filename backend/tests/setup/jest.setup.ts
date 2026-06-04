@@ -13,6 +13,8 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || "test-jwt-secret";
 process.env.JWT_REFRESH_SECRET =
   process.env.JWT_REFRESH_SECRET || "test-refresh-secret";
 process.env.FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:8080";
+process.env.ASAAS_WEBHOOK_TOKEN =
+  process.env.ASAAS_WEBHOOK_TOKEN || "test-asaas-webhook-token";
 
 jest.setTimeout(30000);
 

@@ -7,11 +7,12 @@ import { makeTestApp } from "../helpers/app";
 describe("auth and subscription API", () => {
   it("autentica com login e retorna token JWT", async () => {
     const app = await makeTestApp();
-    const user = await createAdminUser({ password: "123456" });
+    const password = "SenhaTeste123!";
+    const user = await createAdminUser({ password });
 
     const response = await request(app)
       .post("/auth/login")
-      .send({ email: user.email, password: "123456" })
+      .send({ email: user.email, password })
       .expect(200);
 
     expect(response.body).toEqual(
@@ -33,6 +34,26 @@ describe("auth and subscription API", () => {
     await request(app)
       .get("/contacts")
       .set("Authorization", bearerTokenFor(user))
+      .expect(403)
+      .expect(({ body }) => {
+        expect(body.error).toBe("ERR_TENANT_ACCESS_EXPIRED");
+      });
+  });
+
+  it("bloqueia login quando assinatura/acesso da empresa esta expirado", async () => {
+    const app = await makeTestApp();
+    const expiredTenant = await createTenant({
+      accessExpiresAt: subDays(new Date(), 1)
+    });
+    const password = "SenhaTeste123!";
+    const user = await createAdminUser({
+      tenantId: expiredTenant.id,
+      password
+    });
+
+    await request(app)
+      .post("/auth/login")
+      .send({ email: user.email, password })
       .expect(403)
       .expect(({ body }) => {
         expect(body.error).toBe("ERR_TENANT_ACCESS_EXPIRED");

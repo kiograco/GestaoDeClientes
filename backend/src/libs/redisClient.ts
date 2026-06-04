@@ -8,6 +8,8 @@ const redisClient = new Redis({
   password: process.env.IO_REDIS_PASSWORD || undefined
 });
 
+export { redisClient };
+
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const getValue = (key: string) => {
   return new Promise((resolve, reject) => {

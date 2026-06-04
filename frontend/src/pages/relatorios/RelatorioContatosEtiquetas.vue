@@ -28,7 +28,7 @@
                     v-on="itemEvents"
                   >
                     <q-item-section>
-                      <q-item-label v-html="opt.tag"></q-item-label>
+                      <q-item-label>{{ opt.tag }}</q-item-label>
                     </q-item-section>
                     <q-item-section side>
                       <q-checkbox

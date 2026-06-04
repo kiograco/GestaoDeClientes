@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client'
+import { getAccessToken } from 'src/utils/authToken'
 
 export const socketIO = () => {
   return io(process.env.VUE_URL_API, {
@@ -6,8 +7,7 @@ export const socketIO = () => {
     autoConnect: true,
     transports: ['polling', 'websocket'],
     auth: (cb) => {
-      const tokenItem = localStorage.getItem('token')
-      const token = tokenItem ? JSON.parse(tokenItem) : null
+      const token = getAccessToken()
       // eslint-disable-next-line standard/no-callback-literal
       cb({ token })
     }
