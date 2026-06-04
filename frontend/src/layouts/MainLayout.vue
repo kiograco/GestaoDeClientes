@@ -96,6 +96,18 @@
             flat
             unelevated
             class="app-icon-btn"
+            :icon="$q.dark.isActive ? 'mdi-white-balance-sunny' : 'mdi-weather-night'"
+            @click="$setConfigsUsuario({ isDark: !$q.dark.isActive })"
+          >
+            <q-tooltip>
+              {{ $q.dark.isActive ? 'Desativar' : 'Ativar' }} modo escuro
+            </q-tooltip>
+          </q-btn>
+          <q-btn
+            dense
+            flat
+            unelevated
+            class="app-icon-btn"
             icon="notifications"
           >
             <q-badge
@@ -296,27 +308,6 @@
 
         </q-list>
       </q-scroll-area>
-      <div
-        class="absolute-bottom text-center row justify-start"
-        style="height: 52px; border-top: 1px solid var(--border); background: var(--surface);"
-      >
-        <q-toggle
-          size="xl"
-          keep-color
-          dense
-          class="text-bold q-ml-xs"
-          :icon-color="$q.dark.isActive ? 'black' : 'white'"
-          :value="$q.dark.isActive"
-          :color="$q.dark.isActive ? 'grey-3' : 'black'"
-          checked-icon="mdi-white-balance-sunny"
-          unchecked-icon="mdi-weather-sunny"
-          @input="$setConfigsUsuario({ isDark: !$q.dark.isActive })"
-        >
-          <q-tooltip content-class="text-body1 hide-scrollbar">
-            {{ $q.dark.isActive ? 'Desativar' : 'Ativar' }} Modo Escuro (Dark Mode)
-          </q-tooltip>
-        </q-toggle>
-      </div>
     </q-drawer>
 
     <q-page-container>

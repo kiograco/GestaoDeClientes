@@ -1,37 +1,70 @@
 <template>
   <q-dialog :value="value" persistent @hide="$emit('input', false)">
-    <q-card style="width: 900px; max-width: 96vw">
-      <q-card-section class="text-h6">{{ cliente.id ? 'Editar' : 'Novo' }} cliente</q-card-section>
-      <q-card-section class="q-gutter-md">
-        <div class="text-subtitle2">Dados principais</div>
-        <div class="row q-col-gutter-md">
-          <q-input v-model.trim="cliente.name" outlined dense label="Nome *" class="col-12 col-md-6" />
-          <q-input v-model.trim="cliente.companyName" outlined dense label="Empresa" class="col-12 col-md-6" />
-          <q-input v-model.trim="cliente.number" outlined dense label="WhatsApp ou telefone *" class="col-12 col-md-4" />
-          <q-input v-model.trim="cliente.secondaryPhone" outlined dense label="Telefone alternativo" class="col-12 col-md-4" />
-          <q-input v-model.trim="cliente.email" outlined dense label="E-mail" class="col-12 col-md-4" />
-          <q-input v-model.trim="cliente.document" outlined dense label="CPF ou CNPJ" class="col-12 col-md-4" />
-          <q-input v-model="cliente.birthDate" outlined dense type="date" label="Data de nascimento" class="col-12 col-md-4" />
+    <q-card class="cliente-modal app-card">
+      <q-card-section class="cliente-modal__header">
+        <div>
+          <div class="cliente-modal__eyebrow">Cadastro comercial</div>
+          <div class="cliente-modal__title">{{ cliente.id ? 'Editar cliente' : 'Novo cliente' }}</div>
+          <div class="cliente-modal__subtitle">
+            Organize os dados de contato, qualificacao e endereco do cliente.
+          </div>
+        </div>
+        <q-btn
+          flat
+          round
+          dense
+          icon="mdi-close"
+          class="app-icon-btn"
+          @click="$emit('input', false)"
+        >
+          <q-tooltip>Fechar</q-tooltip>
+        </q-btn>
+      </q-card-section>
+
+      <q-separator />
+
+      <q-card-section class="cliente-modal__body">
+        <section class="cliente-section">
+          <div class="cliente-section__header">
+            <q-icon name="mdi-account-outline" />
+            <div>
+              <div class="cliente-section__title">Dados principais</div>
+              <div class="cliente-section__description">Informacoes usadas para identificar e segmentar o cliente.</div>
+            </div>
+          </div>
+          <div class="row q-col-gutter-md">
+          <q-input v-model.trim="cliente.name" outlined label="Nome *" class="col-12 col-md-6" />
+          <q-input v-model.trim="cliente.companyName" outlined label="Empresa" class="col-12 col-md-6" />
+          <q-input v-model.trim="cliente.number" outlined label="WhatsApp ou telefone *" class="col-12 col-md-4" />
+          <q-input v-model.trim="cliente.secondaryPhone" outlined label="Telefone alternativo" class="col-12 col-md-4" />
+          <q-input v-model.trim="cliente.email" outlined label="E-mail" class="col-12 col-md-4" />
+          <q-input v-model.trim="cliente.document" outlined label="CPF ou CNPJ" class="col-12 col-md-4" />
+          <q-input v-model="cliente.birthDate" outlined type="date" label="Data de nascimento" class="col-12 col-md-4" />
           <q-select
             v-model="cliente.salesStatus"
             :options="opcoesStatus"
             emit-value
             map-options
             outlined
-            dense
             label="Situacao comercial"
             class="col-12 col-md-4"
           />
-          <q-input v-model.trim="cliente.source" outlined dense label="Origem do cliente" class="col-12" />
-        </div>
+          <q-input v-model.trim="cliente.source" outlined label="Origem do cliente" class="col-12" />
+          </div>
+        </section>
 
-        <q-separator />
-        <div class="text-subtitle2">Endereco principal</div>
-        <div class="row q-col-gutter-md">
+        <section class="cliente-section">
+          <div class="cliente-section__header">
+            <q-icon name="mdi-map-marker-outline" />
+            <div>
+              <div class="cliente-section__title">Endereco principal</div>
+              <div class="cliente-section__description">Campos obrigatorios ajudam em entregas, visitas e roteamento.</div>
+            </div>
+          </div>
+          <div class="row q-col-gutter-md">
           <q-input
             v-model.trim="cliente.address.zipCode"
             outlined
-            dense
             mask="#####-###"
             unmasked-value
             label="CEP *"
@@ -42,21 +75,44 @@
               <q-btn flat round dense icon="mdi-magnify" :loading="loadingCep" @click="consultarCep" />
             </template>
           </q-input>
-          <q-input v-model.trim="cliente.address.street" outlined dense label="Logradouro *" class="col-12 col-md-6" />
-          <q-input v-model.trim="cliente.address.number" outlined dense label="Numero *" class="col-12 col-md-3" />
-          <q-input v-model.trim="cliente.address.district" outlined dense label="Bairro *" class="col-12 col-md-4" />
-          <q-input v-model.trim="cliente.address.city" outlined dense label="Cidade *" class="col-12 col-md-4" />
-          <q-input v-model.trim="cliente.address.state" outlined dense maxlength="2" label="UF *" class="col-12 col-md-2" />
-          <q-input v-model.trim="cliente.address.complement" outlined dense label="Complemento" class="col-12 col-md-6" />
-          <q-input v-model.trim="cliente.address.reference" outlined dense label="Referencia" class="col-12 col-md-6" />
-        </div>
+          <q-input v-model.trim="cliente.address.street" outlined label="Logradouro *" class="col-12 col-md-6" />
+          <q-input v-model.trim="cliente.address.number" outlined label="Numero *" class="col-12 col-md-3" />
+          <q-input v-model.trim="cliente.address.district" outlined label="Bairro *" class="col-12 col-md-4" />
+          <q-input v-model.trim="cliente.address.city" outlined label="Cidade *" class="col-12 col-md-4" />
+          <q-input v-model.trim="cliente.address.state" outlined maxlength="2" label="UF *" class="col-12 col-md-2" />
+          <q-input v-model.trim="cliente.address.complement" outlined label="Complemento" class="col-12 col-md-6" />
+          <q-input v-model.trim="cliente.address.reference" outlined label="Referencia" class="col-12 col-md-6" />
+          </div>
+        </section>
 
-        <q-separator />
-        <q-input v-model.trim="cliente.notes" outlined dense type="textarea" label="Observacoes comerciais" />
+        <section class="cliente-section">
+          <div class="cliente-section__header">
+            <q-icon name="mdi-note-text-outline" />
+            <div>
+              <div class="cliente-section__title">Observacoes</div>
+              <div class="cliente-section__description">Contexto comercial visivel para vendas e atendimento.</div>
+            </div>
+          </div>
+          <q-input
+            v-model.trim="cliente.notes"
+            outlined
+            type="textarea"
+            autogrow
+            label="Observacoes comerciais"
+          />
+        </section>
       </q-card-section>
-      <q-card-actions align="right">
-        <q-btn flat rounded label="Cancelar" @click="$emit('input', false)" />
-        <q-btn rounded color="primary" label="Salvar" :disable="!clienteValido" :loading="saving" @click="salvarCliente" />
+
+      <q-separator />
+
+      <q-card-actions class="cliente-modal__actions">
+        <div class="cliente-modal__hint">
+          Campos marcados com * sao obrigatorios.
+        </div>
+        <div class="row q-gutter-sm">
+          <q-btn flat label="Cancelar" @click="$emit('input', false)" />
+          <q-btn unelevated color="primary" label="Salvar cliente" :disable="!clienteValido" :loading="saving" @click="salvarCliente" />
+        </div>
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -213,3 +269,135 @@ export default {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.cliente-modal {
+  width: 980px;
+  max-width: 96vw;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.cliente-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 18px;
+}
+
+.cliente-modal__eyebrow {
+  color: var(--color-primary-600);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 750;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.cliente-modal__title {
+  color: var(--text-primary);
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 750;
+  margin-top: 2px;
+}
+
+.cliente-modal__subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 22px;
+  margin-top: 4px;
+}
+
+.cliente-modal__body {
+  padding: 22px 24px;
+  overflow-y: auto;
+}
+
+.cliente-section {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.cliente-section + .cliente-section {
+  margin-top: 16px;
+}
+
+.cliente-section__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.cliente-section__header .q-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
+  font-size: 20px;
+}
+
+.cliente-section__title {
+  color: var(--text-primary);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 750;
+}
+
+.cliente-section__description {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.cliente-modal__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--surface-muted);
+}
+
+.cliente-modal__hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+@media (max-width: 700px) {
+  .cliente-modal {
+    max-width: 100vw;
+    max-height: 100vh;
+  }
+
+  .cliente-modal__header,
+  .cliente-modal__body,
+  .cliente-modal__actions {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .cliente-section {
+    padding: 14px;
+  }
+
+  .cliente-modal__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cliente-modal__actions .row {
+    justify-content: flex-end;
+  }
+}
+</style>
