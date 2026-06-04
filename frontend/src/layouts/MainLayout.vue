@@ -44,6 +44,7 @@
           clearable
           class="app-search q-ml-lg"
           placeholder="Buscar contatos, tickets, campanhas..."
+          @focus="commandPaletteOpen = true"
           @keyup.enter="executarBuscaGlobal"
         >
           <template v-slot:prepend>
@@ -355,6 +356,64 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+    <q-dialog v-model="commandPaletteOpen">
+      <q-card class="command-palette app-card">
+        <q-card-section class="q-pb-sm">
+          <q-input
+            v-model="globalSearch"
+            autofocus
+            borderless
+            placeholder="Buscar ou executar uma acao..."
+            @keyup.enter="executarBuscaGlobal"
+          >
+            <template v-slot:prepend>
+              <q-icon name="mdi-magnify" />
+            </template>
+          </q-input>
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="q-pa-sm">
+          <q-list>
+            <q-item-label header>Acoes rapidas</q-item-label>
+            <q-item clickable v-close-popup @click="$router.push({ name: 'atendimento' })">
+              <q-item-section avatar><q-icon name="mdi-forum-outline" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Abrir atendimentos</q-item-label>
+                <q-item-label caption>Conversas, tickets e filas</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="$router.push({ name: 'contatos' })">
+              <q-item-section avatar><q-icon name="mdi-account-multiple-outline" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Buscar contatos</q-item-label>
+                <q-item-label caption>Clientes, telefones e canais</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="$router.push({ name: 'clientes' })">
+              <q-item-section avatar><q-icon name="mdi-account-cash-outline" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Central de clientes</q-item-label>
+                <q-item-label caption>Dados comerciais e endereco</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="$router.push({ name: 'campanhas' })">
+              <q-item-section avatar><q-icon name="mdi-message-bookmark-outline" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Campanhas</q-item-label>
+                <q-item-label caption>Disparos, contatos e performance</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="executarBuscaGlobal">
+              <q-item-section avatar><q-icon name="mdi-text-search" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Pesquisar "{{ globalSearch || 'termo' }}"</q-item-label>
+                <q-item-label caption>Envia a busca para contatos</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </q-layout>
 </template>
 
@@ -546,6 +605,7 @@ export default {
       notificationPromptOpen: false,
       notificationPermission: 'Notification' in window ? Notification.permission : 'unsupported',
       globalSearch: '',
+      commandPaletteOpen: false,
       usuario: {},
       alertSound,
       leftDrawerOpen: false,
@@ -600,6 +660,7 @@ export default {
     executarBuscaGlobal () {
       const searchParam = (this.globalSearch || '').trim()
       if (!searchParam) return
+      this.commandPaletteOpen = false
       this.$router.push({ name: 'contatos', query: { searchParam } })
     },
     atualizarLogoCabecalho (event) {

@@ -1,11 +1,56 @@
 <template>
-  <div>
+  <div class="app-page campanhas-page">
+    <div class="app-page-header">
+      <div>
+        <h1 class="app-page-title">Campanhas</h1>
+        <div class="app-page-subtitle">Monitore disparos, contatos, entregas e leitura das campanhas.</div>
+      </div>
+      <div class="row q-gutter-sm">
+        <q-btn
+          flat
+          class="app-icon-btn"
+          icon="refresh"
+          @click="listarCampanhas"
+        >
+          <q-tooltip>Atualizar listagem</q-tooltip>
+        </q-btn>
+        <q-btn
+          unelevated
+          color="primary"
+          icon="mdi-plus"
+          label="Nova campanha"
+          @click="campanhaEdicao = {}; modalCampanha = true"
+        />
+      </div>
+    </div>
+
+    <section class="campanhas-kpis q-mb-md">
+      <q-card flat bordered class="app-card campanhas-kpi-card">
+        <div class="app-kpi-label">Total</div>
+        <div class="app-kpi-value">{{ campanhas.length }}</div>
+        <div class="app-kpi-context">campanhas cadastradas</div>
+      </q-card>
+      <q-card flat bordered class="app-card campanhas-kpi-card">
+        <div class="app-kpi-label">Programadas</div>
+        <div class="app-kpi-value">{{ campanhasPorStatus.scheduled }}</div>
+        <div class="app-kpi-context">aguardando envio</div>
+      </q-card>
+      <q-card flat bordered class="app-card campanhas-kpi-card">
+        <div class="app-kpi-label">Processando</div>
+        <div class="app-kpi-value">{{ campanhasPorStatus.processing }}</div>
+        <div class="app-kpi-context">em andamento</div>
+      </q-card>
+      <q-card flat bordered class="app-card campanhas-kpi-card">
+        <div class="app-kpi-label">Leitura</div>
+        <div class="app-kpi-value">{{ taxaLeitura }}%</div>
+        <div class="app-kpi-context">mensagens lidas sobre recebidas</div>
+      </q-card>
+    </section>
+
     <q-table
       flat
-      square
       hide-bottom
-      class="my-sticky-dynamic q-ma-lg"
-      title="Campanhas"
+      class="app-card my-sticky-dynamic"
       :data="campanhas"
       :columns="columns"
       :loading="loading"
@@ -13,24 +58,19 @@
       :pagination.sync="pagination"
       :rows-per-page-options="[0]"
     >
-      <template v-slot:top-right>
-        <q-btn
-          class="q-mr-md"
-          color="black"
-          icon="refresh"
-          rounded
-          @click="listarCampanhas"
-        >
-          <q-tooltip>
-            Atualizar Listagem
-          </q-tooltip>
-        </q-btn>
-        <q-btn
-          rounded
-          color="primary"
-          label="Adicionar"
-          @click="campanhaEdicao = {}; modalCampanha = true"
-        />
+      <template v-slot:top>
+        <div>
+          <div class="app-chart-title">Lista de campanhas</div>
+          <div class="app-chart-subtitle">Acompanhe status, contatos e resultados operacionais</div>
+        </div>
+        <q-space />
+      </template>
+      <template v-slot:body-cell-status="props">
+        <q-td class="text-center">
+          <q-badge :color="statusColor(props.row.status)">
+            {{ status[props.row.status] || props.row.status }}
+          </q-badge>
+        </q-td>
       </template>
       <template v-slot:body-cell-color="props">
         <q-td class="text-center">
@@ -166,6 +206,20 @@ export default {
       }
     }
   },
+  computed: {
+    campanhasPorStatus () {
+      return this.campanhas.reduce((acc, campanha) => {
+        acc[campanha.status] = (acc[campanha.status] || 0) + 1
+        return acc
+      }, { pending: 0, scheduled: 0, processing: 0, canceled: 0, finished: 0 })
+    },
+    taxaLeitura () {
+      const recebidas = this.campanhas.reduce((acc, campanha) => acc + Number(campanha.recebidas || 0), 0)
+      const lidas = this.campanhas.reduce((acc, campanha) => acc + Number(campanha.lidas || 0), 0)
+      if (!recebidas) return 0
+      return Math.round((lidas / recebidas) * 100)
+    }
+  },
   methods: {
     async listarCampanhas () {
       const { data } = await ListarCampanhas()
@@ -173,6 +227,15 @@ export default {
     },
     isValidDate (v) {
       return startOfDay(new Date(parseISO(v))).getTime() >= startOfDay(new Date()).getTime()
+    },
+    statusColor (status) {
+      return {
+        pending: 'grey',
+        scheduled: 'primary',
+        processing: 'warning',
+        canceled: 'negative',
+        finished: 'positive'
+      }[status] || 'grey'
     },
     campanhaCriada (campanha) {
       this.listarCampanhas()
@@ -284,4 +347,25 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.campanhas-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.campanhas-kpi-card {
+  padding: 18px;
+}
+
+@media (max-width: 900px) {
+  .campanhas-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .campanhas-kpis {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

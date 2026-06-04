@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-white no-scroll hide-scrollbar overflow-hidden"
+    class="chat-workspace no-scroll hide-scrollbar overflow-hidden"
     :style="style"
   >
     <InforCabecalhoChat
@@ -102,7 +102,7 @@
       </transition>
     </div>
 
-    <q-footer class="bg-white">
+    <q-footer class="chat-composer-footer">
       <q-separator class="bg-grey-4" />
       <q-list
         v-if="replyingMessage"
@@ -589,6 +589,35 @@ audio {
   display: flex;
   cursor: pointer;
   z-index: 99;
+}
+
+.chat-workspace {
+  background: var(--app-bg) !important;
+}
+
+.chat-workspace .q-scrollarea {
+  background: var(--app-bg);
+}
+
+.chat-composer-footer {
+  background: var(--surface) !important;
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -8px 24px rgba(15, 23, 42, .04);
+}
+
+.chat-composer-footer .q-separator {
+  display: none;
+}
+
+.chat-composer-footer .q-field__control,
+.chat-composer-footer textarea {
+  border-radius: var(--radius-md) !important;
+}
+
+.chat-workspace .q-banner {
+  background: var(--surface) !important;
+  color: var(--text-secondary) !important;
+  border-top: 1px solid var(--border);
 }
 
 // /* CSS Logilcs */

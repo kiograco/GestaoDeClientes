@@ -1,10 +1,10 @@
 <template>
   <div
-    class="WAL position-relative bg-grey-3"
+    class="WAL atendimento-workspace position-relative"
     :style="style"
   >
     <q-layout
-      class="WAL__layout shadow-3"
+      class="WAL__layout atendimento-layout"
       container
       view="lHr LpR lFr"
     >
@@ -17,16 +17,17 @@
         :breakpoint="769"
         bordered
         :width="$q.screen.lt.md ? $q.screen.width : 380"
-        content-class="hide-scrollbar full-width"
+        content-class="atendimento-ticket-drawer hide-scrollbar full-width"
       >
         <q-toolbar
-          class="q-gutter-xs full-width"
+          class="atendimento-inbox-header q-gutter-xs full-width"
           style="height: 64px"
         >
           <q-btn-dropdown
             no-caps
-            color="black"
-            class="text-bold btn-rounded"
+            unelevated
+            color="primary"
+            class="text-bold"
             ripple
           >
             <template v-slot:label>
@@ -71,8 +72,8 @@
           </q-btn-dropdown>
           <q-space />
           <q-btn
-            color="black"
-            class="btn-rounded"
+            flat
+            class="app-icon-btn"
             icon="mdi-home"
             @click="() => $router.push({ name: 'home-dashboard' })"
           >
@@ -87,12 +88,12 @@
         />
         <q-toolbar
           v-show="toolbarSearch"
-          class="row q-gutter-sm q-py-sm items-center"
+          class="atendimento-searchbar row q-gutter-sm q-py-sm items-center"
         >
           <q-separator class="absolute-top" />
           <q-btn
             :icon="!cFiltroSelecionado ? 'mdi-filter-outline' : 'mdi-filter-plus'"
-            class="btn-rounded "
+            class="app-icon-btn"
             :color="cFiltroSelecionado ? 'deep-orange-9' : 'primary'"
           >
             <q-menu
@@ -232,7 +233,6 @@
             v-model="pesquisaTickets.searchParam"
             dense
             outlined
-            rounded
             type="search"
             class="col-grow"
             :debounce="700"
@@ -244,7 +244,7 @@
           </q-input>
           <q-btn
             color="primary"
-            class="btn-rounded"
+            unelevated
             icon="mdi-book-account-outline"
             @click="$q.screen.lt.md ? modalNovoTicket = true : $router.push({ name: 'chat-contatos' })"
           >
@@ -282,25 +282,10 @@
         </q-scroll-area>
         <!-- <q-separator /> -->
         <div
-          class="absolute-bottom row justify-between"
+          class="atendimento-channel-strip absolute-bottom row justify-between"
           style="height: 50px"
         >
-          <q-toggle
-            size="xl"
-            keep-color
-            dense
-            class="text-bold q-ml-md flex flex-block"
-            :icon-color="$q.dark.isActive ? 'black' : 'white'"
-            :value="$q.dark.isActive"
-            :color="$q.dark.isActive ? 'grey-3' : 'black'"
-            checked-icon="mdi-white-balance-sunny"
-            unchecked-icon="mdi-weather-sunny"
-            @input="$setConfigsUsuario({ isDark: !$q.dark.isActive })"
-          >
-            <q-tooltip content-class="text-body1">
-              {{ $q.dark.isActive ? 'Desativar' : 'Ativar' }} Modo Escuro (Dark Mode)
-            </q-tooltip>
-          </q-toggle>
+          <div class="atendimento-channel-label">Canais</div>
           <div class="flex flex-inline q-pt-xs">
             <q-scroll-area
               horizontal
@@ -346,21 +331,21 @@
         show-if-above
         bordered
         side="right"
-        content-class="bg-grey-1"
+        content-class="atendimento-context-panel"
       >
         <div
-          class="bg-white full-width no-border-radius q-pa-sm"
+          class="atendimento-context-header full-width no-border-radius q-pa-sm"
           style="height:60px;"
         >
           <span class="q-ml-md text-h6">
-            Dados Contato
+            Contexto do cliente
           </span>
         </div>
         <q-separator />
         <q-scroll-area style="height: calc(100vh - 70px)">
           <div class="q-pa-sm">
             <q-card
-              class="bg-white btn-rounded"
+              class="app-card atendimento-context-card"
               style="width: 100%"
               bordered
               flat
@@ -411,7 +396,7 @@
                 </div>
                 <q-btn
                   color="primary"
-                  class="q-mt-sm bg-padrao btn-rounded"
+                  class="q-mt-sm"
                   flat
                   icon="edit"
                   label="Editar Contato"
@@ -419,7 +404,7 @@
                 />
                 <q-btn
                   color="primary"
-                  class="q-mt-sm bg-padrao btn-rounded"
+                  class="q-mt-sm"
                   flat
                   icon="mdi-account-cash-outline"
                   label="Cadastrar ou editar cliente"
@@ -427,7 +412,7 @@
                 />
                 <q-btn
                   color="primary"
-                  class="q-mt-sm bg-padrao btn-rounded"
+                  class="q-mt-sm"
                   flat
                   icon="mdi-account-plus-outline"
                   label="Novo cliente"
@@ -437,7 +422,7 @@
             </q-card>
             <q-card
               v-if="deliveryHabilitado"
-              class="bg-white btn-rounded q-mt-sm"
+              class="app-card atendimento-context-card q-mt-sm"
               style="width: 100%"
               bordered
               flat
@@ -454,7 +439,7 @@
               </q-card-section>
             </q-card>
             <q-card
-              class="bg-white btn-rounded q-mt-sm"
+              class="app-card atendimento-context-card q-mt-sm"
               style="width: 100%"
               bordered
               flat
@@ -471,7 +456,7 @@
               </q-card-section>
             </q-card>
             <q-card
-              class="bg-white q-mt-sm btn-rounded"
+              class="app-card atendimento-context-card q-mt-sm"
               style="width: 100%"
               bordered
               flat
@@ -1247,4 +1232,73 @@ export default {
 .conversation__more
   margin-top: 0!important
   font-size: 1.4rem
+
+.atendimento-workspace
+  background: var(--app-bg) !important
+
+.atendimento-workspace:before
+  display: none
+
+.atendimento-layout
+  box-shadow: none !important
+  background: var(--app-bg)
+
+.atendimento-ticket-drawer
+  background: var(--surface) !important
+  border-right: 1px solid var(--border)
+
+.atendimento-inbox-header
+  min-height: 64px
+  padding: 12px
+  border-bottom: 1px solid var(--border)
+  background: var(--surface)
+
+.atendimento-searchbar
+  padding: 12px
+  border-bottom: 1px solid var(--border)
+  background: var(--surface)
+
+.atendimento-searchbar .q-field__control
+  background: var(--surface-muted)
+  border-radius: var(--radius-md)
+
+.atendimento-channel-strip
+  align-items: center
+  padding: 6px 12px
+  border-top: 1px solid var(--border)
+  background: var(--surface)
+
+.atendimento-channel-label
+  color: var(--text-muted)
+  font-size: 12px
+  font-weight: 750
+  text-transform: uppercase
+  letter-spacing: .06em
+
+.atendimento-context-panel
+  background: var(--app-bg) !important
+  border-left: 1px solid var(--border)
+
+.atendimento-context-header
+  display: flex
+  align-items: center
+  height: 64px !important
+  background: var(--surface) !important
+  border-bottom: 1px solid var(--border)
+  color: var(--text-primary)
+  font-weight: 750
+
+.atendimento-context-card
+  border-radius: var(--radius-md) !important
+  box-shadow: var(--shadow-xs) !important
+
+.atendimento-context-card .q-card__section
+  padding: 16px
+
+.atendimento-context-panel .q-btn
+  border-radius: var(--radius-sm)
+  font-weight: 700
+
+.atendimento-context-panel .q-chip
+  border-radius: var(--radius-sm)
 </style>

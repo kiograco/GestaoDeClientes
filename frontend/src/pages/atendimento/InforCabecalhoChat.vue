@@ -1,6 +1,6 @@
 <template>
   <div>
-    <q-header class="bg-white text-grey-10 no-border-radius">
+    <q-header class="chat-header no-border-radius">
       <q-toolbar
         style="min-height: 60px; height: 60px;"
         class="no-border-radius q-pa-none "
@@ -18,7 +18,7 @@
         <q-item
           clickable
           v-ripple
-          class="q-ma-none q-pa-none full"
+          class="chat-header__identity q-ma-none q-pa-none full"
           style="min-height: 60px; height: 60px; width: 300px;"
           @click="$root.$emit('update-ticket:info-contato')"
         >
@@ -37,7 +37,7 @@
             </q-btn>
           </q-item-section>
           <q-item-section id="InfoCabecalhoChat">
-            <q-item-label class="text-bold">
+            <q-item-label class="chat-header__name">
               {{ Value(cticket.contact, 'name') }}
               <q-skeleton
                 v-if="!Value(cticket.contact, 'name')"
@@ -80,8 +80,8 @@
           <q-btn
             @click="$emit('abrir:modalAgendamentoMensagem')"
             icon="mdi-message-text-clock-outline"
-            color="black"
-            rounded
+            flat
+            class="app-icon-btn"
             :disable="cticket.status == 'closed'"
           >
             <q-tooltip content-class="bg-grey-9 text-bold">
@@ -93,7 +93,7 @@
             split
             color="positive"
             no-caps
-            rounded
+            unelevated
             @click="$emit('updateTicket:resolver')"
             icon="mdi-comment-check"
             label="Resolver"
@@ -369,4 +369,24 @@ export default {
 #InfoCabecalhoChat
   .q-item__label + .q-item__label
     margin-top: 1.5px
+
+.chat-header
+  background: var(--surface) !important
+  color: var(--text-primary) !important
+  border-bottom: 1px solid var(--border)
+
+.chat-header__identity
+  border-radius: var(--radius-md)
+  padding-right: 8px !important
+
+.chat-header__identity:hover
+  background: var(--surface-muted)
+
+.chat-header__name
+  color: var(--text-primary)
+  font-weight: 750
+  font-size: 15px
+
+.chat-header .q-toolbar
+  padding: 0 12px
 </style>
