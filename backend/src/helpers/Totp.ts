@@ -21,7 +21,10 @@ const base32Encode = (buffer: Buffer): string => {
 };
 
 const base32Decode = (secret: string): Buffer => {
-  const cleanSecret = secret.replace(/=+$/g, "").replace(/\s/g, "").toUpperCase();
+  const cleanSecret = secret
+    .replace(/=+$/g, "")
+    .replace(/\s/g, "")
+    .toUpperCase();
   let bits = "";
 
   cleanSecret.split("").forEach(char => {
@@ -47,15 +50,11 @@ export const generateTotpCode = (
   const counter = Math.floor(timestamp / 1000 / STEP_SECONDS);
   const buffer = Buffer.alloc(8);
   buffer.writeUInt32BE(Math.floor(counter / 0x100000000), 0);
-  buffer.writeUInt32BE(counter & 0xffffffff, 4);
+  buffer.writeUInt32BE(counter % 0x100000000, 4);
 
   const hmac = createHmac("sha1", base32Decode(secret)).update(buffer).digest();
-  const offset = hmac[hmac.length - 1] & 0x0f;
-  const binary =
-    ((hmac[offset] & 0x7f) << 24) |
-    ((hmac[offset + 1] & 0xff) << 16) |
-    ((hmac[offset + 2] & 0xff) << 8) |
-    (hmac[offset + 3] & 0xff);
+  const offset = hmac[hmac.length - 1] % 16;
+  const binary = hmac.readUInt32BE(offset) % 0x80000000;
 
   return String(binary % 10 ** DIGITS).padStart(DIGITS, "0");
 };
@@ -80,4 +79,6 @@ export const createTotpUri = (
 ): string =>
   `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(
     account
-  )}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=${DIGITS}&period=${STEP_SECONDS}`;
+  )}?secret=${secret}&issuer=${encodeURIComponent(
+    issuer
+  )}&algorithm=SHA1&digits=${DIGITS}&period=${STEP_SECONDS}`;

@@ -27,13 +27,15 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 
   const { token, user, refreshToken, usuariosOnline, mfaRequired } =
     await AuthUserService({
-    email,
-    password,
-    mfaCode
+      email,
+      password,
+      mfaCode
     });
 
   if (mfaRequired) {
-    return res.status(401).json({ error: "ERR_MFA_REQUIRED", mfaRequired: true });
+    return res
+      .status(401)
+      .json({ error: "ERR_MFA_REQUIRED", mfaRequired: true });
   }
 
   SendRefreshToken(res, refreshToken);

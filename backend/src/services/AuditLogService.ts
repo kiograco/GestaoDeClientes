@@ -9,7 +9,7 @@ interface AuditLogData {
   resourceId?: string | number | null;
   ip?: string | null;
   userAgent?: string | null;
-  metadata?: object | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 const createAuditLog = async (data: AuditLogData): Promise<void> => {

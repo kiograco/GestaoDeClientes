@@ -23,7 +23,7 @@ export const isMfaEnabled = (user: User): boolean =>
 export const verifyUserMfaCode = (user: User, code?: string): void => {
   if (!isMfaEnabled(user)) return;
 
-  const secret = getMfaConfig(user).secret;
+  const { secret } = getMfaConfig(user);
   if (!secret || !code || !verifyTotpCode(secret, code)) {
     throw new AppError("ERR_MFA_REQUIRED", 401);
   }

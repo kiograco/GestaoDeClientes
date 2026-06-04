@@ -47,5 +47,6 @@ module.exports = {
       }
     }),
 
-  down: (queryInterface: QueryInterface) => queryInterface.dropTable("AuditLogs")
+  down: (queryInterface: QueryInterface) =>
+    queryInterface.dropTable("AuditLogs")
 };

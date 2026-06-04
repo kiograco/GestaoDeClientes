@@ -58,7 +58,8 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   }
 
   const validToken =
-    typeof receivedToken === "string" && safeEqual(receivedToken, configuredToken);
+    typeof receivedToken === "string" &&
+    safeEqual(receivedToken, configuredToken);
 
   if (!validToken) {
     throw new AppError("ERR_INVALID_ASAAS_WEBHOOK_TOKEN", 401);

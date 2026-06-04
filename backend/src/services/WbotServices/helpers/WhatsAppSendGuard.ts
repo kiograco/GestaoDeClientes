@@ -26,8 +26,7 @@ const numberEnv = (key: string, defaultValue: number): number => {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : defaultValue;
 };
 
-const isEnabled = (): boolean =>
-  process.env.WAPP_ANTISPAM_ENABLED !== "false";
+const isEnabled = (): boolean => process.env.WAPP_ANTISPAM_ENABLED !== "false";
 
 const sleep = (milliseconds: number): Promise<void> =>
   new Promise(resolve => setTimeout(resolve, milliseconds));
@@ -138,9 +137,7 @@ const applyGuard = async (params: GuardParams): Promise<void> => {
   }
 };
 
-export const guardWhatsAppSend = async (
-  params: GuardParams
-): Promise<void> => {
+export const guardWhatsAppSend = async (params: GuardParams): Promise<void> => {
   if (!isEnabled()) return;
   await lockSession(String(params.whatsappId), () => applyGuard(params));
 };
