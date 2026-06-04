@@ -7,8 +7,11 @@
   "private": false,
   "license": "AGPL-3.0-or-later",
   "scripts": {
+    "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider quasar build",
     "lint": "eslint --ext .js,.vue ./",
-    "test": "echo \"No test specified\" && exit 0"
+    "test": "npm run test:e2e",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@quasar/extras": "^1.15.6",
@@ -44,6 +47,7 @@
     "@babel/plugin-proposal-optional-chaining": "^7.18.9",
     "@quasar/app": "^2.4.3",
     "babel-eslint": "^10.0.1",
+    "cross-env": "^7.0.3",
     "eslint": "^6.8.0",
     "eslint-config-standard": "^14.1.0",
     "eslint-loader": "^3.0.3",
@@ -53,7 +57,8 @@
     "eslint-plugin-standard": "^4.0.0",
     "eslint-plugin-vue": "^6.1.2",
     "quasar-app-extension-qdatetimepicker": "^1.0.0-rc.17",
-    "workbox-webpack-plugin": "^5.1.4"
+    "workbox-webpack-plugin": "^5.1.4",
+    "@playwright/test": "^1.44.1"
   },
   "browserslist": [
     "last 10 Chrome versions",

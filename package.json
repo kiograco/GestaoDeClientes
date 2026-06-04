@@ -5,6 +5,13 @@
   "main": "index.js",
   "private": true,
   "scripts": {
+    "lint": "npm --prefix backend run lint && npm --prefix frontend run lint",
+    "test": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:unit": "npm --prefix backend run test:unit",
+    "test:integration": "npm --prefix backend run test:integration",
+    "test:e2e": "npm --prefix frontend run test:e2e",
+    "test:coverage": "npm --prefix backend run test:coverage",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
     "release": "semantic-release --no-ci",
     "husk": "husky install"
   },
