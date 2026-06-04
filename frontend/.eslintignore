@@ -4,5 +4,7 @@
 /src-cordova
 /.quasar
 /node_modules
+/playwright-report
+/test-results
 
 /src/components/ccFlowBuilder/jsplumb.js
