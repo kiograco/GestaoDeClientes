@@ -3,9 +3,9 @@
     clickable
     v-ripple
     :active="routeName == cRouterName"
-    active-class="bg-blue-1 text-grey-8 text-bold menu-link-active-item-top"
+    active-class="app-menu-link-active"
     @click=" () => !(routeName == cRouterName) ? $router.push({ name: routeName }) : ''"
-    class="houverList"
+    class="app-menu-link"
     :class="{'text-negative text-bolder': color === 'negative'}"
   >
     <q-item-section
@@ -17,7 +17,11 @@
 
     <q-item-section>
       <q-item-label>{{ title }}</q-item-label>
-      <q-item-label caption>
+      <q-item-label
+        v-if="caption"
+        caption
+      >
+        {{ caption }}
       </q-item-label>
     </q-item-section>
   </q-item>
@@ -66,11 +70,7 @@ export default {
 </script>
 <style lang="sass">
 .menu-link-active-item-top
-  border-left: 3px solid rgb(21, 120, 173)
-  border-right: 3px solid rgb(21, 120, 173)
-  // border-radius: 20px
-  border-top-right-radius: 20px
-  border-bottom-right-radius: 20px
+  border-left: 3px solid var(--color-primary-600)
   position: relative
   height: 100%
 </style>

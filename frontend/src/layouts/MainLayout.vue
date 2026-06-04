@@ -2,18 +2,19 @@
   <q-layout view="hHh Lpr lFf">
 
     <q-header
-      class="bg-white text-grey-8 q-py-xs "
+      class="app-shell-header q-py-sm"
       height-hint="58"
       bordered
     >
-      <q-toolbar>
+      <q-toolbar class="q-px-md">
         <q-btn
           flat
           dense
-          round
+          unelevated
           @click="leftDrawerOpen = !leftDrawerOpen"
           aria-label="Menu"
           icon="menu"
+          class="app-icon-btn"
         >
           <q-tooltip>Menu</q-tooltip>
         </q-btn>
@@ -30,29 +31,71 @@
             :src="tenantLogoUrl"
             spinner-color="primary"
             contain
-            style="height: 48px; width: 192px"
+            style="height: 40px; width: 172px"
           />
         </q-btn>
+
+        <q-input
+          v-if="$q.screen.gt.sm"
+          v-model="globalSearch"
+          dense
+          outlined
+          borderless
+          clearable
+          class="app-search q-ml-lg"
+          placeholder="Buscar contatos, tickets, campanhas..."
+          @keyup.enter="executarBuscaGlobal"
+        >
+          <template v-slot:prepend>
+            <q-icon name="mdi-magnify" />
+          </template>
+          <template v-slot:append>
+            <span class="text-caption text-grey-6">Enter</span>
+          </template>
+        </q-input>
 
         <q-space />
 
         <div class="q-gutter-sm row items-center no-wrap">
+          <q-btn-dropdown
+            v-if="$q.screen.gt.xs"
+            unelevated
+            no-caps
+            color="primary"
+            icon="mdi-plus"
+            label="Criar"
+          >
+            <q-list style="min-width: 220px">
+              <q-item clickable v-close-popup @click="$router.push({ name: 'atendimento' })">
+                <q-item-section avatar><q-icon name="mdi-forum-plus-outline" /></q-item-section>
+                <q-item-section>Novo atendimento</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="$router.push({ name: 'contatos' })">
+                <q-item-section avatar><q-icon name="mdi-account-plus-outline" /></q-item-section>
+                <q-item-section>Novo contato</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="$router.push({ name: 'campanhas' })">
+                <q-item-section avatar><q-icon name="mdi-message-bookmark-outline" /></q-item-section>
+                <q-item-section>Nova campanha</q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
           <q-btn
             v-if="userProfile === 'admin'"
-            round
             dense
             flat
-            color="grey-8"
+            unelevated
+            class="app-icon-btn"
             icon="mdi-clipboard-check-outline"
             @click="onboardingOpen = true"
           >
             <q-tooltip>Configuração inicial</q-tooltip>
           </q-btn>
           <q-btn
-            round
             dense
             flat
-            color="grey-8"
+            unelevated
+            class="app-icon-btn"
             icon="notifications"
           >
             <q-badge
@@ -140,7 +183,7 @@
           <q-avatar
             :color="usuario.status === 'offline' ? 'negative' : 'positive'"
             text-color="white"
-            size="25px"
+            size="28px"
             :icon="usuario.status === 'offline' ? 'mdi-account-off' : 'mdi-account-check'"
             rounded
             class="q-ml-lg"
@@ -150,13 +193,19 @@
             </q-tooltip>
           </q-avatar>
           <q-btn
-            round
             flat
-            class="bg-padrao text-bold q-mx-sm q-ml-lg"
+            no-caps
+            class="app-user-button q-ml-sm q-px-sm"
           >
             <q-avatar size="26px">
               {{ $iniciaisString(username) }}
             </q-avatar>
+            <span
+              v-if="$q.screen.gt.sm"
+              class="q-ml-sm"
+            >
+              {{ username }}
+            </span>
             <q-menu>
               <q-list style="min-width: 100px">
                 <q-item-label header> Olá! <b> {{ username }} </b> </q-item-label>
@@ -211,7 +260,7 @@
       @mouseover="miniState = false"
       @mouseout="miniState = true"
       mini-to-overlay
-      content-class="bg-white text-grey-9"
+      content-class="app-sidebar"
     >
       <q-scroll-area class="fit">
         <q-list
@@ -230,7 +279,7 @@
                 <q-item-label
                   v-show="!miniState"
                   header
-                  class="text-uppercase text-grey-7 text-weight-bold q-pb-xs"
+                  class="app-nav-group"
                 >
                   {{ group.title }}
                 </q-item-label>
@@ -249,8 +298,7 @@
       </q-scroll-area>
       <div
         class="absolute-bottom text-center row justify-start"
-        :class="{ 'bg-grey-3': $q.dark.isActive }"
-        style="height: 40px"
+        style="height: 52px; border-top: 1px solid var(--border); background: var(--surface);"
       >
         <q-toggle
           size="xl"
@@ -272,7 +320,7 @@
     </q-drawer>
 
     <q-page-container>
-      <q-page class="q-pa-xs">
+      <q-page>
         <router-view />
       </q-page>
     </q-page-container>
@@ -506,6 +554,7 @@ export default {
       onboardingOpen: false,
       notificationPromptOpen: false,
       notificationPermission: 'Notification' in window ? Notification.permission : 'unsupported',
+      globalSearch: '',
       usuario: {},
       alertSound,
       leftDrawerOpen: false,
@@ -557,6 +606,11 @@ export default {
     }
   },
   methods: {
+    executarBuscaGlobal () {
+      const searchParam = (this.globalSearch || '').trim()
+      if (!searchParam) return
+      this.$router.push({ name: 'contatos', query: { searchParam } })
+    },
     atualizarLogoCabecalho (event) {
       this.tenantLogoUrl = resolveTenantLogoUrl(event.detail)
     },

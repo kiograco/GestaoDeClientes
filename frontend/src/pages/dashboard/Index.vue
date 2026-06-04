@@ -1,6 +1,15 @@
 <template>
-  <div class="q-pa-sm">
-    <q-card class="q-my-md">
+  <div class="app-page dashboard-page">
+    <div class="app-page-header">
+      <div>
+        <h1 class="app-page-title">Dashboard</h1>
+        <div class="app-page-subtitle">
+          Visao executiva de atendimentos, canais, filas e performance da equipe.
+        </div>
+      </div>
+      <span class="app-soft-badge">Atualizado em tempo real</span>
+    </div>
+    <q-card class="app-card dashboard-filter-card q-mb-md">
       <q-card-section class="row justify-between items-center">
         <div class="col-12 justify-center flex q-gutter-sm">
           <q-datetime-picker
@@ -62,14 +71,14 @@
 
       </q-card-section>
     </q-card>
-    <q-card class="q-my-md q-pa-sm">
+    <q-card class="app-card dashboard-kpi-shell q-mb-md">
       <q-card-section class="q-pa-md">
         <div class="row q-gutter-md justify-center">
           <div class="col-xs-12 col-sm-shrink">
             <q-card
               flat
               bordered
-              class="my-card full-height"
+              class="app-card dashboard-kpi-card full-height"
               style="min-width: 200px"
             >
               <q-card-section class="text-center ">
@@ -82,7 +91,7 @@
             <q-card
               flat
               bordered
-              class="my-card full-height"
+              class="app-card dashboard-kpi-card full-height"
               style="min-width: 200px"
             >
               <q-card-section class="text-center">
@@ -95,7 +104,7 @@
             <q-card
               flat
               bordered
-              class="my-card full-height"
+              class="app-card dashboard-kpi-card full-height"
               style="min-width: 200px"
             >
               <q-card-section class="text-center">
@@ -108,7 +117,7 @@
             <q-card
               flat
               bordered
-              class="my-card full-height"
+              class="app-card dashboard-kpi-card full-height"
               style="min-width: 200px"
             >
               <q-card-section class="text-center">
@@ -121,7 +130,7 @@
             <q-card
               flat
               bordered
-              class="my-card full-height"
+              class="app-card dashboard-kpi-card full-height"
             >
               <q-card-section class="text-center">
                 <p class="text-h5 text-bold text-center"> {{ cTmaFormat }} </p>
@@ -133,7 +142,7 @@
             <q-card
               flat
               bordered
-              class="my-card full-height"
+              class="app-card dashboard-kpi-card full-height"
             >
               <q-card-section class="text-center">
                 <p class="text-h5 text-bold text-center"> {{ cTmeFormat }} </p>
@@ -148,7 +157,7 @@
 
     <div class="row q-col-gutter-md">
       <div class="col-xs-12 col-sm-6">
-        <q-card>
+        <q-card class="app-card dashboard-chart-card">
           <q-card-section class="q-pa-md">
             <ApexChart
               ref="ChartTicketsChannels"
@@ -162,7 +171,7 @@
         </q-card>
       </div>
       <div class="col-xs-12 col-sm-6">
-        <q-card>
+        <q-card class="app-card dashboard-chart-card">
           <q-card-section class="q-pa-md">
             <ApexChart
               ref="ChartTicketsQueue"
@@ -176,7 +185,7 @@
         </q-card>
       </div>
     </div>
-    <q-card class="q-my-md">
+    <q-card class="app-card dashboard-chart-card q-my-md">
       <q-card-section>
         <ApexChart
           ref="ChartTicketsEvolutionChannels"
@@ -188,7 +197,7 @@
         />
       </q-card-section>
     </q-card>
-    <q-card class="q-my-md">
+    <q-card class="app-card dashboard-chart-card q-my-md">
       <q-card-section class="q-pa-md">
         <ApexChart
           ref="ChartTicketsEvolutionByPeriod"
@@ -200,7 +209,7 @@
       </q-card-section>
     </q-card>
 
-    <q-card class="q-my-md q-pa-sm">
+    <q-card class="app-card dashboard-table-card q-my-md">
       <q-card-section class="q-pa-md">
         <q-table
           title="Performance Usuários"
@@ -812,9 +821,9 @@ export default {
       palette: 'palette1',
       monochrome: {
         enabled: true,
-        color: '#0288d1',
+        color: '#1d4ed8',
         shadeTo: mode,
-        shadeIntensity: 0.95
+        shadeIntensity: 0.65
       }
 
     }
@@ -833,5 +842,120 @@ export default {
 <style lang="scss" >
 .apexcharts-theme-dark svg {
   background: none !important;
+}
+
+.dashboard-page {
+  .dashboard-filter-card {
+    .q-card__section {
+      padding: 18px 20px;
+    }
+
+    .col-12 {
+      justify-content: flex-start !important;
+      gap: 12px;
+    }
+
+    .q-field {
+      min-width: 180px;
+    }
+
+    .q-select {
+      min-width: 280px;
+    }
+  }
+
+  .dashboard-kpi-shell {
+    padding: 4px !important;
+
+    > .q-card__section {
+      padding: 16px !important;
+    }
+
+    .row.q-gutter-md {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(150px, 1fr));
+      gap: 16px;
+      justify-content: stretch !important;
+
+      > div {
+        width: auto;
+        max-width: none;
+      }
+    }
+  }
+
+  .dashboard-kpi-card {
+    min-width: 0 !important;
+    min-height: 136px;
+    border-color: var(--border) !important;
+
+    .q-card__section {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+      padding: 18px !important;
+      text-align: left !important;
+    }
+
+    p {
+      margin: 0;
+      color: var(--text-primary);
+      font-size: 30px;
+      line-height: 36px;
+      font-weight: 750;
+      text-align: left !important;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .q-card__section {
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+  }
+
+  .dashboard-chart-card {
+    min-height: 360px;
+
+    .q-card__section {
+      padding: 20px !important;
+    }
+  }
+
+  .dashboard-table-card {
+    .q-card__section {
+      padding: 20px !important;
+    }
+  }
+}
+
+@media (max-width: 1200px) {
+  .dashboard-page .dashboard-kpi-shell .row.q-gutter-md {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .dashboard-page {
+    .dashboard-filter-card .col-12 {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .dashboard-filter-card .q-field,
+    .dashboard-filter-card .q-select,
+    .dashboard-filter-card .q-btn {
+      width: 100% !important;
+    }
+
+    .dashboard-kpi-shell .row.q-gutter-md {
+      grid-template-columns: 1fr;
+    }
+  }
 }
 </style>
