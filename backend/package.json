@@ -15,7 +15,7 @@
     "test:integration": "cross-env NODE_ENV=test POSTGRES_HOST=localhost POSTGRES_DB=wchats_test POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres DB_PORT=5432 jest --selectProjects integration --runInBand",
     "test:coverage": "cross-env NODE_ENV=test POSTGRES_HOST=localhost POSTGRES_DB=wchats_test POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres DB_PORT=5432 jest --coverage --runInBand",
     "test:db:create": "cross-env NODE_ENV=test POSTGRES_HOST=localhost POSTGRES_DB=wchats_test POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres DB_PORT=5432 node scripts/create-test-database.js",
-    "test:migrate": "cross-env NODE_ENV=test POSTGRES_HOST=localhost POSTGRES_DB=wchats_test POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres DB_PORT=5432 sequelize db:migrate",
+    "test:migrate": "npm run build && cross-env NODE_ENV=test POSTGRES_HOST=localhost POSTGRES_DB=wchats_test POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres DB_PORT=5432 sequelize db:migrate",
     "test:seed": "cross-env NODE_ENV=test POSTGRES_HOST=localhost POSTGRES_DB=wchats_test POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres DB_PORT=5432 sequelize db:seed:all",
     "test:db:prepare": "npm run test:db:create && npm run test:migrate",
     "test:db:reset": "cross-env NODE_ENV=test POSTGRES_HOST=localhost POSTGRES_DB=wchats_test POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres DB_PORT=5432 sequelize db:migrate:undo:all && npm run test:migrate && npm run test:seed",
