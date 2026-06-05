@@ -97,6 +97,206 @@
             label="Esqueci a senha"
             @click="modalEsqueciSenha=true"
           />
+          <q-btn
+            outline
+            color="primary"
+            no-caps
+            rounded
+            class="full-width q-mt-md"
+            label="Criar conta e contratar plano"
+            @click="abrirCadastro"
+          />
+
+          <q-dialog v-model="modalCadastro" persistent maximized>
+            <q-card class="signup-dialog">
+              <q-card-section class="row items-center q-col-gutter-md">
+                <div class="col">
+                  <div class="text-h6">Criar conta e contratar plano</div>
+                  <div class="text-caption text-grey-7">
+                    Informe os dados cadastrais para liberar a empresa e gerar a cobrança.
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <q-btn flat round dense icon="close" color="grey-8" @click="modalCadastro=false" />
+                </div>
+              </q-card-section>
+
+              <q-separator />
+
+              <q-card-section class="q-pa-md">
+                <div class="row q-col-gutter-md">
+                  <div class="col-12 col-md-4">
+                    <q-option-group
+                      v-model="cadastro.personType"
+                      :options="tipoPessoaOptions"
+                      color="primary"
+                      inline
+                      @input="sincronizarPessoa"
+                    />
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <q-select
+                      v-model="cadastro.businessType"
+                      :options="tipoNegocioOptions"
+                      emit-value
+                      map-options
+                      outlined
+                      dense
+                      label="Tipo de negocio"
+                    />
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <q-select
+                      v-model="cadastro.paymentMethod"
+                      :options="metodosPagamentoOptions"
+                      emit-value
+                      map-options
+                      outlined
+                      dense
+                      label="Forma de pagamento"
+                    />
+                  </div>
+                </div>
+
+                <div class="text-subtitle2 q-mt-lg q-mb-sm">Plano</div>
+                <div class="row q-col-gutter-md">
+                  <div
+                    v-for="plano in planosCadastro"
+                    :key="plano.id"
+                    class="col-12 col-md-4"
+                  >
+                    <q-card
+                      bordered
+                      flat
+                      class="plan-card cursor-pointer"
+                      :class="{ 'plan-card--active': cadastro.planId === plano.id }"
+                      @click="cadastro.planId = plano.id"
+                    >
+                      <q-card-section>
+                        <div class="text-subtitle1 text-weight-medium">{{ plano.name }}</div>
+                        <div class="text-h6 text-primary">{{ formatarPrecoPlano(plano) }}</div>
+                        <div class="text-caption text-grey-7">{{ plano.durationDays }} dias de acesso</div>
+                        <div class="text-caption text-grey-7 q-mt-xs">
+                          {{ plano.limits && plano.limits.maxUsers ? plano.limits.maxUsers : 'Sem limite definido' }} usuarios
+                          <span v-if="plano.limits && plano.limits.maxConnections">
+                            - {{ plano.limits.maxConnections }} conexoes
+                          </span>
+                        </div>
+                      </q-card-section>
+                    </q-card>
+                  </div>
+                  <div v-if="!planosCadastro.length" class="col-12">
+                    <q-banner class="bg-grey-2 text-grey-8">
+                      Nenhum plano ativo foi encontrado. Entre em contato com o suporte.
+                    </q-banner>
+                  </div>
+                </div>
+
+                <div class="text-subtitle2 q-mt-lg q-mb-sm">
+                  {{ cadastro.personType === 'pj' ? 'Dados da empresa' : 'Dados da pessoa fisica' }}
+                </div>
+                <div class="row q-col-gutter-md">
+                  <div class="col-12 col-md-6">
+                    <q-input v-model.trim="cadastro.company.name" outlined dense :label="cadastro.personType === 'pj' ? 'Razao social' : 'Nome completo'" />
+                  </div>
+                  <div v-if="cadastro.personType === 'pj'" class="col-12 col-md-6">
+                    <q-input v-model.trim="cadastro.company.tradeName" outlined dense label="Nome fantasia" />
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <q-input v-model.trim="cadastro.company.document" outlined dense :label="cadastro.personType === 'pj' ? 'CNPJ' : 'CPF'" />
+                  </div>
+                  <div v-if="cadastro.personType === 'pj'" class="col-12 col-md-3">
+                    <q-input v-model.trim="cadastro.company.stateRegistration" outlined dense label="Inscricao estadual" />
+                  </div>
+                  <div v-if="cadastro.personType === 'pj'" class="col-12 col-md-3">
+                    <q-input v-model.trim="cadastro.company.municipalRegistration" outlined dense label="Inscricao municipal" />
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <q-input v-model.trim="cadastro.company.segment" outlined dense label="Segmento" />
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <q-input v-model.trim="cadastro.company.phone" outlined dense label="Telefone comercial" />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <q-input v-model.trim="cadastro.company.email" outlined dense label="E-mail comercial" />
+                  </div>
+                </div>
+
+                <div class="text-subtitle2 q-mt-lg q-mb-sm">Responsavel financeiro</div>
+                <div class="row q-col-gutter-md">
+                  <div class="col-12 col-md-4">
+                    <q-input v-model.trim="cadastro.responsible.name" outlined dense label="Nome do responsavel" />
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <q-input v-model.trim="cadastro.responsible.document" outlined dense label="CPF do responsavel" />
+                  </div>
+                  <div class="col-12 col-md-2">
+                    <q-input v-model.trim="cadastro.responsible.phone" outlined dense label="Telefone" />
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <q-input v-model.trim="cadastro.responsible.email" outlined dense label="E-mail" />
+                  </div>
+                </div>
+
+                <div class="text-subtitle2 q-mt-lg q-mb-sm">Endereco de cobranca</div>
+                <div class="row q-col-gutter-md">
+                  <div class="col-12 col-md-2">
+                    <q-input v-model.trim="cadastro.address.zipCode" outlined dense label="CEP" />
+                  </div>
+                  <div class="col-12 col-md-5">
+                    <q-input v-model.trim="cadastro.address.street" outlined dense label="Logradouro" />
+                  </div>
+                  <div class="col-12 col-md-2">
+                    <q-input v-model.trim="cadastro.address.number" outlined dense label="Numero" />
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <q-input v-model.trim="cadastro.address.complement" outlined dense label="Complemento" />
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <q-input v-model.trim="cadastro.address.district" outlined dense label="Bairro" />
+                  </div>
+                  <div class="col-12 col-md-5">
+                    <q-input v-model.trim="cadastro.address.city" outlined dense label="Cidade" />
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <q-input v-model.trim="cadastro.address.state" outlined dense label="UF" maxlength="2" />
+                  </div>
+                </div>
+
+                <div class="text-subtitle2 q-mt-lg q-mb-sm">Usuario administrador</div>
+                <div class="row q-col-gutter-md">
+                  <div class="col-12 col-md-4">
+                    <q-input v-model.trim="cadastro.admin.name" outlined dense label="Nome do admin" />
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <q-input v-model.trim="cadastro.admin.email" outlined dense label="E-mail de acesso" />
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <q-input v-model="cadastro.admin.password" outlined dense label="Senha" type="password" />
+                  </div>
+                </div>
+
+                <q-checkbox
+                  v-model="cadastro.acceptedTerms"
+                  class="q-mt-md"
+                  color="primary"
+                  label="Confirmo que os dados informados estao corretos e autorizo a criacao da conta."
+                />
+              </q-card-section>
+
+              <q-card-actions align="right" class="q-pa-md">
+                <q-btn flat rounded label="Cancelar" color="negative" @click="modalCadastro=false" />
+                <q-btn
+                  rounded
+                  color="primary"
+                  label="Criar conta"
+                  :loading="loadingCadastro"
+                  :disable="!planosCadastro.length"
+                  @click="criarContaContratar"
+                />
+              </q-card-actions>
+            </q-card>
+          </q-dialog>
 
           <q-inner-loading :showing="loading" />
         </q-card>
@@ -186,8 +386,52 @@
 
 <script>
 import { required, email } from 'vuelidate/lib/validators'
-import { ConsultarIdentidadeVisual, RedefinirSenha, SolicitarRedefinicaoSenha } from 'src/service/login'
+import {
+  ConsultarIdentidadeVisual,
+  CriarContaContratarPlano,
+  ListarPlanosCadastro,
+  RedefinirSenha,
+  SolicitarRedefinicaoSenha
+} from 'src/service/login'
 import { resolveTenantLogoUrl } from 'src/utils/tenantLogo'
+
+const cadastroInicial = () => ({
+  personType: 'pj',
+  planId: null,
+  paymentMethod: 'PIX',
+  businessType: 'generic',
+  company: {
+    name: '',
+    tradeName: '',
+    document: '',
+    stateRegistration: '',
+    municipalRegistration: '',
+    phone: '',
+    email: '',
+    segment: ''
+  },
+  responsible: {
+    name: '',
+    document: '',
+    phone: '',
+    email: ''
+  },
+  address: {
+    zipCode: '',
+    street: '',
+    number: '',
+    complement: '',
+    district: '',
+    city: '',
+    state: ''
+  },
+  admin: {
+    name: '',
+    email: '',
+    password: ''
+  },
+  acceptedTerms: false
+})
 
 export default {
   name: 'Login',
@@ -200,6 +444,22 @@ export default {
       confirmacaoNovaSenha: '',
       isPwdNovaSenha: true,
       loadingRedefinicao: false,
+      modalCadastro: false,
+      loadingCadastro: false,
+      planosCadastro: [],
+      cadastro: cadastroInicial(),
+      tipoPessoaOptions: [
+        { label: 'Pessoa juridica', value: 'pj' },
+        { label: 'Pessoa fisica', value: 'pf' }
+      ],
+      tipoNegocioOptions: [
+        { label: 'Atendimento geral', value: 'generic' },
+        { label: 'Delivery / restaurante', value: 'food_delivery' }
+      ],
+      metodosPagamentoOptions: [
+        { label: 'Pix', value: 'PIX' },
+        { label: 'Cartao ou boleto', value: 'CARD' }
+      ],
       logoUrl: resolveTenantLogoUrl(localStorage.getItem('tenantLogoUrl')),
       form: {
         email: null,
@@ -218,6 +478,115 @@ export default {
     emailRedefinicao: { required, email }
   },
   methods: {
+    async abrirCadastro () {
+      this.modalCadastro = true
+      if (this.planosCadastro.length) return
+
+      try {
+        const { data } = await ListarPlanosCadastro()
+        this.planosCadastro = data || []
+        if (this.planosCadastro.length) {
+          this.cadastro.planId = this.planosCadastro[0].id
+        }
+      } catch (error) {
+        this.$q.notify({
+          type: 'negative',
+          position: 'top',
+          message: 'Nao foi possivel carregar os planos ativos.'
+        })
+      }
+    },
+    sincronizarPessoa () {
+      if (this.cadastro.personType === 'pf') {
+        this.cadastro.company.tradeName = ''
+        this.cadastro.company.stateRegistration = ''
+        this.cadastro.company.municipalRegistration = ''
+      }
+    },
+    formatarPrecoPlano (plano) {
+      const valor = Number(plano.price || 0)
+      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    },
+    validarCadastro () {
+      const somenteDigitos = value => String(value || '').replace(/\D/g, '')
+      const camposObrigatorios = [
+        this.cadastro.planId,
+        this.cadastro.paymentMethod,
+        this.cadastro.company.name,
+        this.cadastro.company.document,
+        this.cadastro.company.phone,
+        this.cadastro.company.email,
+        this.cadastro.company.segment,
+        this.cadastro.responsible.name,
+        this.cadastro.responsible.document,
+        this.cadastro.responsible.phone,
+        this.cadastro.responsible.email,
+        this.cadastro.address.zipCode,
+        this.cadastro.address.street,
+        this.cadastro.address.number,
+        this.cadastro.address.district,
+        this.cadastro.address.city,
+        this.cadastro.address.state,
+        this.cadastro.admin.name,
+        this.cadastro.admin.email,
+        this.cadastro.admin.password
+      ]
+
+      if (camposObrigatorios.some(campo => !campo)) {
+        return 'Preencha todos os campos obrigatorios.'
+      }
+      const documento = somenteDigitos(this.cadastro.company.document)
+      const tamanhoDocumentoEsperado = this.cadastro.personType === 'pj' ? 14 : 11
+      if (documento.length !== tamanhoDocumentoEsperado) {
+        return this.cadastro.personType === 'pj' ? 'Informe um CNPJ valido.' : 'Informe um CPF valido.'
+      }
+      if (somenteDigitos(this.cadastro.responsible.document).length !== 11) {
+        return 'Informe o CPF do responsavel.'
+      }
+      if (!/.+@.+\..+/.test(this.cadastro.company.email) || !/.+@.+\..+/.test(this.cadastro.responsible.email) || !/.+@.+\..+/.test(this.cadastro.admin.email)) {
+        return 'Informe e-mails validos.'
+      }
+      if (this.cadastro.admin.password.length < 6) {
+        return 'A senha do administrador deve ter pelo menos 6 caracteres.'
+      }
+      if (!this.cadastro.acceptedTerms) {
+        return 'Confirme a autorizacao para criar a conta.'
+      }
+      return null
+    },
+    async criarContaContratar () {
+      const erroValidacao = this.validarCadastro()
+      if (erroValidacao) {
+        this.$q.notify({ type: 'warning', position: 'top', message: erroValidacao })
+        return
+      }
+
+      this.loadingCadastro = true
+      try {
+        const { data } = await CriarContaContratarPlano(this.cadastro)
+        if (data.payment?.paymentUrl) {
+          window.open(data.payment.paymentUrl, '_blank')
+        }
+        this.$q.notify({
+          type: data.payment ? 'positive' : 'warning',
+          position: 'top',
+          message: data.payment
+            ? 'Conta criada. A cobranca do plano foi gerada.'
+            : 'Conta criada, mas a cobranca nao foi gerada automaticamente.'
+        })
+        this.form.email = this.cadastro.admin.email
+        this.modalCadastro = false
+        this.cadastro = cadastroInicial()
+      } catch (error) {
+        this.$q.notify({
+          type: 'negative',
+          position: 'top',
+          message: 'Nao foi possivel criar a conta. Verifique os dados e tente novamente.'
+        })
+      } finally {
+        this.loadingCadastro = false
+      }
+    },
     async consultarIdentidadeVisual () {
       if (!this.form.email || this.$v.form.email.$invalid) return
       try {
@@ -370,6 +739,21 @@ export default {
 .card {
   width: 100%;
   max-width: 430px;
+}
+
+.signup-dialog {
+  min-height: 100vh;
+}
+
+.plan-card {
+  border-radius: 8px;
+  min-height: 135px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.plan-card--active {
+  border-color: #3E72AF;
+  box-shadow: 0 0 0 2px rgba(62, 114, 175, 0.16);
 }
 
 .login-layout {
