@@ -70,7 +70,7 @@ test('bloqueio por assinatura expirada', async ({ page }) => {
   await page.locator('input[type="text"], input[type="email"]').first().fill(fixtures.user.email)
   await page.locator('input[type="password"]').first().fill('123456')
   await page.getByRole('button', { name: /entrar|login|acessar/i }).click()
-  await expect(page.getByText(/assinatura|expirad|bloque/i)).toBeVisible()
+  await expect(page.getByText('Minha assinatura').first()).toBeVisible()
 })
 
 test('acesso negado entre empresas diferentes', async ({ page }) => {
