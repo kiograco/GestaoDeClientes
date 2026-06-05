@@ -46,6 +46,9 @@ class Tenant extends Model<Tenant> {
   @Column(DataType.JSONB)
   enabledModules: { delivery: boolean };
 
+  @Column(DataType.JSONB)
+  registrationData: Record<string, unknown>;
+
   @ForeignKey(() => User)
   @Column
   ownerId: number;

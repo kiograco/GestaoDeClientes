@@ -46,3 +46,18 @@ export function RedefinirSenha (token, password) {
     data: { token, password }
   })
 }
+
+export function ListarPlanosCadastro () {
+  return request({
+    url: '/auth/signup/plans',
+    method: 'get'
+  })
+}
+
+export function CriarContaContratarPlano (data) {
+  return request({
+    url: '/auth/signup',
+    method: 'post',
+    data
+  })
+}
