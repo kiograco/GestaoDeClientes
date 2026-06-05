@@ -159,6 +159,18 @@
                 </div>
 
                 <div class="text-subtitle2 q-mt-lg q-mb-sm">Plano</div>
+                <q-select
+                  v-model="cadastro.planId"
+                  :options="opcoesPlanosCadastro"
+                  emit-value
+                  map-options
+                  outlined
+                  dense
+                  label="Selecione um plano"
+                  :disable="loadingPlanosCadastro || !planosCadastro.length"
+                  :loading="loadingPlanosCadastro"
+                  class="q-mb-md"
+                />
                 <div class="row q-col-gutter-md">
                   <div
                     v-for="plano in planosCadastro"
@@ -170,11 +182,25 @@
                       flat
                       class="plan-card cursor-pointer"
                       :class="{ 'plan-card--active': cadastro.planId === plano.id }"
+                      tabindex="0"
                       @click="cadastro.planId = plano.id"
+                      @keyup.enter="cadastro.planId = plano.id"
+                      @keyup.space="cadastro.planId = plano.id"
                     >
                       <q-card-section>
-                        <div class="text-subtitle1 text-weight-medium">{{ plano.name }}</div>
-                        <div class="text-h6 text-primary">{{ formatarPrecoPlano(plano) }}</div>
+                        <div class="row no-wrap items-start">
+                          <q-radio
+                            v-model="cadastro.planId"
+                            :val="plano.id"
+                            color="primary"
+                            dense
+                            class="q-mr-sm"
+                          />
+                          <div class="col">
+                            <div class="text-subtitle1 text-weight-medium">{{ plano.name }}</div>
+                            <div class="text-h6 text-primary">{{ formatarPrecoPlano(plano) }}</div>
+                          </div>
+                        </div>
                         <div class="text-caption text-grey-7">{{ plano.durationDays }} dias de acesso</div>
                         <div class="text-caption text-grey-7 q-mt-xs">
                           {{ plano.limits && plano.limits.maxUsers ? plano.limits.maxUsers : 'Sem limite definido' }} usuarios
@@ -291,7 +317,7 @@
                   color="primary"
                   label="Criar conta"
                   :loading="loadingCadastro"
-                  :disable="!planosCadastro.length"
+                  :disable="!planosCadastro.length || !cadastro.planId"
                   @click="criarContaContratar"
                 />
               </q-card-actions>
@@ -446,6 +472,7 @@ export default {
       loadingRedefinicao: false,
       modalCadastro: false,
       loadingCadastro: false,
+      loadingPlanosCadastro: false,
       planosCadastro: [],
       cadastro: cadastroInicial(),
       tipoPessoaOptions: [
@@ -477,14 +504,26 @@ export default {
     },
     emailRedefinicao: { required, email }
   },
+  computed: {
+    opcoesPlanosCadastro () {
+      return this.planosCadastro.map(plano => ({
+        label: `${plano.name} - ${this.formatarPrecoPlano(plano)}`,
+        value: plano.id
+      }))
+    }
+  },
   methods: {
     async abrirCadastro () {
       this.modalCadastro = true
       if (this.planosCadastro.length) return
 
+      this.loadingPlanosCadastro = true
       try {
         const { data } = await ListarPlanosCadastro()
-        this.planosCadastro = data || []
+        this.planosCadastro = (data || []).map(plano => ({
+          ...plano,
+          id: Number(plano.id)
+        }))
         if (this.planosCadastro.length) {
           this.cadastro.planId = this.planosCadastro[0].id
         }
@@ -494,6 +533,8 @@ export default {
           position: 'top',
           message: 'Nao foi possivel carregar os planos ativos.'
         })
+      } finally {
+        this.loadingPlanosCadastro = false
       }
     },
     sincronizarPessoa () {
@@ -563,7 +604,10 @@ export default {
 
       this.loadingCadastro = true
       try {
-        const { data } = await CriarContaContratarPlano(this.cadastro)
+        const { data } = await CriarContaContratarPlano({
+          ...this.cadastro,
+          planId: Number(this.cadastro.planId)
+        })
         if (data.payment?.paymentUrl) {
           window.open(data.payment.paymentUrl, '_blank')
         }
