@@ -22,6 +22,8 @@ import Queue from "./Queue";
 import UsersQueues from "./UsersQueues";
 import Tenant from "./Tenant";
 import Contact from "./Contact";
+import ServiceOrder from "./ServiceOrder";
+import ServiceOrderLog from "./ServiceOrderLog";
 
 @Table
 class User extends Model<User> {
@@ -73,6 +75,12 @@ class User extends Model<User> {
 
   @BelongsToMany(() => Contact, () => Ticket, "userId", "contactId")
   Contact: Contact[];
+
+  @HasMany(() => ServiceOrder)
+  createdServiceOrders: ServiceOrder[];
+
+  @HasMany(() => ServiceOrderLog)
+  serviceOrderLogs: ServiceOrderLog[];
 
   @ForeignKey(() => Tenant)
   @Column

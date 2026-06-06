@@ -28,6 +28,7 @@ import User from "./User";
 import CustomerAddress from "./CustomerAddress";
 import Order from "./Order";
 import CustomerProfile from "./CustomerProfile";
+import ServiceOrder from "./ServiceOrder";
 
 @Table
 class Contact extends Model<Contact> {
@@ -115,6 +116,9 @@ class Contact extends Model<Contact> {
 
   @HasOne(() => CustomerProfile)
   salesProfile: CustomerProfile;
+
+  @HasMany(() => ServiceOrder)
+  serviceOrders: ServiceOrder[];
 
   @BelongsToMany(
     () => Campaign,

@@ -42,6 +42,9 @@ import OrderStatusHistory from "../models/OrderStatusHistory";
 import OrderPayment from "../models/OrderPayment";
 import CustomerProfile from "../models/CustomerProfile";
 import AuditLog from "../models/AuditLog";
+import ServiceAttendant from "../models/ServiceAttendant";
+import ServiceOrder from "../models/ServiceOrder";
+import ServiceOrderLog from "../models/ServiceOrderLog";
 import * as QueueJobs from "../libs/Queue";
 import { logger } from "../utils/logger";
 
@@ -99,7 +102,10 @@ const models = [
   OrderStatusHistory,
   OrderPayment,
   CustomerProfile,
-  AuditLog
+  AuditLog,
+  ServiceAttendant,
+  ServiceOrder,
+  ServiceOrderLog
 ];
 
 sequelize.addModels(models);

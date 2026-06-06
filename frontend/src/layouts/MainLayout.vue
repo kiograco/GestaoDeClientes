@@ -469,6 +469,12 @@ const objMenu = [
     caption: 'Cadastro comercial',
     icon: 'mdi-account-cash-outline',
     routeName: 'clientes'
+  },
+  {
+    title: 'Ordens de Serviço',
+    caption: 'Agenda e técnicos',
+    icon: 'mdi-calendar-check-outline',
+    routeName: 'ordens-servico'
   }
 ]
 
