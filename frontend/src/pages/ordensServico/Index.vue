@@ -161,7 +161,31 @@
             emit-value map-options
             :options="clientes"
             @filter="filtrarClientes"
-          />
+          >
+            <template v-slot:before-options>
+              <q-item clickable @click.stop="abrirCadastroCliente">
+                <q-item-section avatar>
+                  <q-icon color="primary" name="mdi-account-plus-outline" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-primary text-weight-medium">Cadastrar novo cliente</q-item-label>
+                  <q-item-label caption>Abre o cadastro sem fechar esta ordem</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-separator />
+            </template>
+            <template v-slot:no-option>
+              <q-item clickable @click.stop="abrirCadastroCliente">
+                <q-item-section avatar>
+                  <q-icon color="primary" name="mdi-account-plus-outline" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-primary text-weight-medium">Cadastrar novo cliente</q-item-label>
+                  <q-item-label caption>Nenhum cliente encontrado para a busca</q-item-label>
+                </q-item-section>
+              </q-item>
+            </template>
+          </q-select>
           <q-select dense outlined emit-value map-options class="col-12 col-md-6" label="Técnico" v-model="form.attendantId" :options="opcoesAtendentes" />
           <q-input dense outlined class="col-12 col-md-6" label="Título" v-model="form.title" />
           <q-input dense outlined class="col-12 col-md-6" label="Tipo de serviço" v-model="form.serviceType" />
@@ -223,12 +247,19 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <ClienteModal
+      v-model="modalCliente"
+      :contactId="selectedContactId"
+      @saved="clienteSalvo"
+    />
   </q-page>
 </template>
 
 <script>
 import { socketIO } from 'src/utils/socket'
 import { ListarClientes } from 'src/service/clientes'
+import ClienteModal from 'src/pages/clientes/ClienteModal'
 import {
   ListarAtendentesServico,
   CriarAtendenteServico,
@@ -264,6 +295,7 @@ const emptyForm = () => ({
 
 export default {
   name: 'OrdensServico',
+  components: { ClienteModal },
   data () {
     return {
       visao: 'dia',
@@ -272,6 +304,8 @@ export default {
       modalOrdem: false,
       modalAtendente: false,
       modalNotificacao: false,
+      modalCliente: false,
+      selectedContactId: null,
       form: emptyForm(),
       atendente: { active: true },
       notificacao: { channels: ['internal'], message: '' },
@@ -331,8 +365,25 @@ export default {
     async filtrarClientes (val, update) {
       const { data } = await ListarClientes({ searchParam: val })
       update(() => {
-        this.clientes = data.map(item => ({ label: `${item.name} - ${item.number || item.email || ''}`, value: item.id }))
+        this.clientes = data.map(this.formatarOpcaoCliente)
       })
+    },
+    formatarOpcaoCliente (cliente) {
+      return {
+        label: `${cliente.name} - ${cliente.number || cliente.email || ''}`,
+        value: cliente.id
+      }
+    },
+    abrirCadastroCliente () {
+      this.selectedContactId = null
+      this.modalCliente = true
+    },
+    clienteSalvo (cliente) {
+      const opcao = this.formatarOpcaoCliente(cliente)
+      const index = this.clientes.findIndex(item => item.value === opcao.value)
+      if (index === -1) this.clientes.unshift(opcao)
+      else this.$set(this.clientes, index, opcao)
+      this.form.contactId = opcao.value
     },
     abrirOrdem (ordem) {
       this.form = ordem

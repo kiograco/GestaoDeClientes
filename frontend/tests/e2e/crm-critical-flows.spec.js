@@ -36,6 +36,35 @@ test('criacao manual de pedido no chat e finalizacao', async ({ page }) => {
   await expect(page.getByText(/burger e2e|58,00|58.00/i)).toBeVisible()
 })
 
+test('cadastro de cliente dentro da nova ordem preserva dados preenchidos', async ({ page }) => {
+  await login(page)
+  await page.goto('/#/ordens-servico')
+
+  await page.getByRole('button', { name: /nova ordem/i }).click()
+  const ordemDialog = page.getByRole('dialog').filter({ hasText: /nova ordem/i })
+  await ordemDialog.getByLabel(/titulo|título/i).fill('Ordem com cliente rapido E2E')
+  await ordemDialog.getByLabel(/tipo de servico|tipo de serviço/i).fill('Instalacao E2E')
+  await ordemDialog.getByLabel(/descrição|descricao/i).fill('Descricao antes do cadastro do cliente')
+
+  await ordemDialog.getByRole('combobox', { name: 'Cliente' }).click()
+  await page.getByText(/cadastrar novo cliente/i).click()
+
+  await page.getByLabel(/nome \*/i).fill(fixtures.newCustomer.name)
+  await page.getByLabel(/whatsapp ou telefone \*/i).fill(fixtures.newCustomer.number)
+  await page.getByLabel(/cep \*/i).fill(fixtures.newCustomer.addresses[0].zipCode)
+  await page.getByLabel(/logradouro \*/i).fill(fixtures.newCustomer.addresses[0].street)
+  await page.getByLabel(/numero \*/i).fill(fixtures.newCustomer.addresses[0].number)
+  await page.getByLabel(/bairro \*/i).fill(fixtures.newCustomer.addresses[0].district)
+  await page.getByLabel(/cidade \*/i).fill(fixtures.newCustomer.addresses[0].city)
+  await page.getByLabel(/uf \*/i).fill(fixtures.newCustomer.addresses[0].state)
+  await page.getByRole('button', { name: /salvar cliente/i }).click()
+
+  await expect(page.getByText(fixtures.newCustomer.name).first()).toBeVisible()
+  await expect(ordemDialog.getByLabel(/titulo|título/i)).toHaveValue('Ordem com cliente rapido E2E')
+  await expect(ordemDialog.getByLabel(/tipo de servico|tipo de serviço/i)).toHaveValue('Instalacao E2E')
+  await expect(ordemDialog.getByLabel(/descrição|descricao/i)).toHaveValue('Descricao antes do cadastro do cliente')
+})
+
 test('alteracao de status do pedido', async ({ page }) => {
   await login(page)
   await page.goto('/#/delivery/pedidos')

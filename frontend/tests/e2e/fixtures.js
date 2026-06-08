@@ -78,6 +78,63 @@ const order = {
   ]
 }
 
+const serviceAttendant = {
+  id: 60,
+  name: 'Tecnico E2E',
+  email: 'tecnico@example.test',
+  phone: '5511988880000',
+  specialty: 'Instalacao',
+  active: true
+}
+
+const serviceOrder = {
+  id: 70,
+  contactId: contact.id,
+  attendantId: serviceAttendant.id,
+  title: 'Visita E2E',
+  description: 'Descricao da visita E2E',
+  serviceType: 'Instalacao',
+  priority: 'baixa',
+  status: 'agendada',
+  scheduledStart: '2099-12-31T10:00:00.000Z',
+  scheduledEnd: '2099-12-31T11:00:00.000Z',
+  address: 'Rua E2E, 100',
+  city: 'Sao Paulo',
+  state: 'SP',
+  zipCode: '01001000',
+  publicObservation: '',
+  internalObservation: '',
+  contact,
+  attendant: serviceAttendant
+}
+
+const newCustomer = {
+  id: 80,
+  name: 'Cliente Novo OS E2E',
+  number: '5511977770000',
+  email: 'novo-os@example.test',
+  tenantId: 1,
+  salesProfile: {
+    salesStatus: 'CUSTOMER',
+    companyName: 'Empresa Nova OS'
+  },
+  addresses: [
+    {
+      id: 81,
+      contactId: 80,
+      label: 'Principal',
+      zipCode: '01001000',
+      street: 'Rua Nova OS',
+      number: '123',
+      district: 'Centro',
+      city: 'Sao Paulo',
+      state: 'SP',
+      complement: '',
+      reference: ''
+    }
+  ]
+}
+
 module.exports = {
   token,
   user,
@@ -86,5 +143,8 @@ module.exports = {
   ticket,
   category,
   product,
-  order
+  order,
+  serviceAttendant,
+  serviceOrder,
+  newCustomer
 }

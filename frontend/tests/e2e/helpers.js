@@ -27,9 +27,47 @@ async function mockApi (page, overrides = {}) {
     }
     return json(route, { message: 'Contact deleted' })
   })
+  await page.route('**/sales/address/cep/*', route =>
+    json(route, {
+      logradouro: 'Rua Nova OS',
+      bairro: 'Centro',
+      localidade: 'Sao Paulo',
+      uf: 'SP',
+      complemento: ''
+    })
+  )
+  await page.route('**/sales/customers**', async route => {
+    const method = route.request().method()
+    if (method === 'GET') return json(route, [state.contact])
+    if (method === 'POST') return json(route, state.newCustomer, 201)
+    if (method === 'PUT') return json(route, state.newCustomer)
+    return json(route, state.newCustomer)
+  })
   await page.route('**/tickets**', route =>
     json(route, { tickets: [state.ticket], count: 1, hasMore: false })
   )
+  await page.route('**/service/attendants**', route => {
+    if (route.request().method() === 'GET') return json(route, [state.serviceAttendant])
+    return json(route, state.serviceAttendant, 201)
+  })
+  await page.route('**/service/orders-dashboard**', route =>
+    json(route, {
+      total: 1,
+      scheduled: 1,
+      completed: 0,
+      canceled: 0,
+      late: 0,
+      averageServiceMinutes: 60,
+      cancellationRate: 0,
+      byStatus: { agendada: 1 },
+      byAttendant: { [state.serviceAttendant.name]: 1 },
+      byServiceType: { [state.serviceOrder.serviceType]: 1 }
+    })
+  )
+  await page.route('**/service/orders**', route => {
+    if (route.request().method() === 'GET') return json(route, [state.serviceOrder])
+    return json(route, state.serviceOrder, 201)
+  })
   await page.route('**/delivery/categories**', route => {
     if (route.request().method() === 'GET') return json(route, [state.category])
     return json(route, state.category, 201)
