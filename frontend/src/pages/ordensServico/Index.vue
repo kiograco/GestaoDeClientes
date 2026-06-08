@@ -160,12 +160,34 @@
                       <div><strong>Recorrência:</strong> {{ formatarRecorrencia(ordem) }}</div>
                       <div v-if="ordem.address"><strong>Endereço:</strong> {{ ordem.address }} {{ ordem.city }}/{{ ordem.state }}</div>
                       <div v-if="ordem.description"><strong>Descrição:</strong> {{ ordem.description }}</div>
+                      <div v-if="ordem.publicObservation"><strong>Observação cliente:</strong> {{ ordem.publicObservation }}</div>
+                      <div v-if="ordem.internalObservation"><strong>Observação interna:</strong> {{ ordem.internalObservation }}</div>
                     </div>
                     <q-separator class="q-my-sm" />
-                    <div class="row q-gutter-xs justify-end">
+                    <div class="order-popover-actions">
                       <q-btn dense flat color="primary" icon="mdi-pencil" label="Editar" v-close-popup @click="abrirOrdem(ordem)" />
                       <q-btn dense flat color="amber-9" icon="mdi-play" label="Iniciar" v-close-popup @click="alterarStatusOrdem(ordem, 'em_atendimento')" />
                       <q-btn dense flat color="positive" icon="mdi-check" label="Concluir" v-close-popup @click="alterarStatusOrdem(ordem, 'concluida')" />
+                      <q-btn dense flat color="negative" icon="mdi-cancel" label="Cancelar" v-close-popup @click="cancelarOrdem(ordem)" />
+                      <q-btn dense flat color="primary" icon="mdi-file-pdf-box" label="PDF cliente" v-close-popup @click="abrirPdfOrdem(ordem, false)" />
+                      <q-btn v-if="podeVerObservacaoInterna" dense flat color="primary" icon="mdi-file-document-alert-outline" label="PDF interno" v-close-popup @click="abrirPdfOrdem(ordem, true)" />
+                      <q-btn dense flat color="primary" icon="mdi-send" label="Notificar" v-close-popup @click="abrirNotificacao(ordem)" />
+                    </div>
+                    <q-separator class="q-my-sm" />
+                    <div class="text-caption text-grey-7 q-mb-xs">Trocar técnico</div>
+                    <div class="order-popover-actions">
+                      <q-btn
+                        v-for="tecnico in atendentes"
+                        :key="tecnico.id"
+                        dense
+                        flat
+                        color="primary"
+                        icon="mdi-account-hard-hat-outline"
+                        :label="tecnico.name"
+                        :disable="tecnico.id === ordem.attendantId"
+                        v-close-popup
+                        @click="moverOrdemParaTecnico(ordem, tecnico)"
+                      />
                     </div>
                   </div>
                 </q-menu>
@@ -219,34 +241,6 @@
               <span>{{ formatarData(ordem.scheduledStart) }} - {{ formatarData(ordem.scheduledEnd) }}</span>
               <span>{{ ordem.contact ? ordem.contact.name : '' }}</span>
             </button>
-          </div>
-        </q-card-section>
-      </q-card>
-
-      <q-card flat bordered>
-        <q-card-section>
-          <div class="text-subtitle1 text-weight-medium">Detalhes</div>
-          <div v-if="!ordemSelecionada" class="text-grey-7 q-mt-sm">Selecione uma visita no calendário.</div>
-          <div v-else class="details-grid q-mt-sm">
-            <div><strong>Cliente:</strong> {{ ordemSelecionada.contact && ordemSelecionada.contact.name }}</div>
-            <div><strong>Técnico:</strong> {{ ordemSelecionada.attendant && ordemSelecionada.attendant.name }}</div>
-            <div><strong>Status:</strong> {{ ordemSelecionada.status }}</div>
-            <div><strong>Horário:</strong> {{ formatarData(ordemSelecionada.scheduledStart) }} - {{ formatarHora(ordemSelecionada.scheduledEnd) }}</div>
-            <div><strong>Recorrência:</strong> {{ formatarRecorrencia(ordemSelecionada) }}</div>
-            <div><strong>Endereço:</strong> {{ ordemSelecionada.address }} {{ ordemSelecionada.city }}/{{ ordemSelecionada.state }}</div>
-            <div><strong>Descrição:</strong> {{ ordemSelecionada.description }}</div>
-            <div><strong>Observação cliente:</strong> {{ ordemSelecionada.publicObservation }}</div>
-            <div v-if="ordemSelecionada.internalObservation"><strong>Observação interna:</strong> {{ ordemSelecionada.internalObservation }}</div>
-            <q-separator class="col-12" />
-            <div class="row q-gutter-sm col-12">
-              <q-btn dense flat color="primary" icon="mdi-pencil" label="Editar" @click="abrirOrdem(ordemSelecionada)" />
-              <q-btn dense flat color="amber-9" icon="mdi-play" label="Iniciar" @click="alterarStatus('em_atendimento')" />
-              <q-btn dense flat color="positive" icon="mdi-check" label="Concluir" @click="alterarStatus('concluida')" />
-              <q-btn dense flat color="negative" icon="mdi-cancel" label="Cancelar" @click="confirmarCancelamento" />
-              <q-btn dense flat color="primary" icon="mdi-file-pdf-box" label="PDF cliente" @click="abrirPdf(false)" />
-              <q-btn v-if="podeVerObservacaoInterna" dense flat color="primary" icon="mdi-file-document-alert-outline" label="PDF interno" @click="abrirPdf(true)" />
-              <q-btn dense flat color="primary" icon="mdi-send" label="Notificar" @click="modalNotificacao = true" />
-            </div>
           </div>
         </q-card-section>
       </q-card>
@@ -677,15 +671,24 @@ export default {
     },
     async abrirPdf (interno) {
       if (!this.ordemSelecionada) return
+      await this.abrirPdfOrdem(this.ordemSelecionada, interno)
+    },
+    async abrirPdfOrdem (ordem, interno) {
+      if (!ordem) return
+      this.ordemSelecionada = ordem
       try {
         const { data } = interno
-          ? await DocumentoInternoOrdemServico(this.ordemSelecionada.id)
-          : await DocumentoOrdemServico(this.ordemSelecionada.id)
+          ? await DocumentoInternoOrdemServico(ordem.id)
+          : await DocumentoOrdemServico(ordem.id)
         const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
         window.open(url, '_blank')
       } catch (error) {
         this.$notificarErro('Não foi possível gerar o PDF', error)
       }
+    },
+    abrirNotificacao (ordem) {
+      this.ordemSelecionada = ordem
+      this.modalNotificacao = true
     },
     async enviarNotificacao () {
       if (!this.ordemSelecionada) return
@@ -1042,13 +1045,8 @@ export default {
   display: grid;
   gap: 8px;
 }
-.details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 8px 16px;
-}
 .order-popover {
-  width: min(360px, calc(100vw - 32px));
+  width: min(440px, calc(100vw - 32px));
   padding: 12px;
   background: #fff;
 }
@@ -1058,6 +1056,12 @@ export default {
   color: #334155;
   font-size: 13px;
   line-height: 1.35;
+}
+.order-popover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
 }
 .status-em_atendimento { border-left-color: #d97706; background: #fffbeb; }
 .status-concluida { border-left-color: #16a34a; background: #f0fdf4; }
