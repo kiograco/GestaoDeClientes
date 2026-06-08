@@ -8,6 +8,18 @@ async function selecionarHora (page, dialog, label, hora) {
   await page.locator('.q-menu').last().getByText(hora, { exact: true }).click()
 }
 
+async function selecionarProximoHorario (page, dialog, label) {
+  const field = campoHora(dialog, label)
+  const currentText = await field.innerText()
+  const currentMatch = currentText.match(/\d{2}:\d{2}/)
+  const current = currentMatch ? currentMatch[0] : '00:00'
+  const [hour, minute] = current.split(':').map(Number)
+  const nextMinutes = ((hour * 60) + minute + 15) % (24 * 60)
+  const next = `${String(Math.floor(nextMinutes / 60)).padStart(2, '0')}:${String(nextMinutes % 60).padStart(2, '0')}`
+  await selecionarHora(page, dialog, label, next)
+  return next
+}
+
 function campoHora (dialog, label) {
   return dialog
     .getByRole('combobox', { name: label })
@@ -114,14 +126,14 @@ test('edicao de ordem envia horario alterado com timezone', async ({ page }) => 
   await page.getByRole('button', { name: /editar/i }).click()
   const ordemDialog = page.getByRole('dialog').filter({ hasText: /editar ordem/i })
   await ordemDialog.getByLabel(/data/i).fill('2099-12-31')
-  await selecionarHora(page, ordemDialog, /hora início/i, '07:15')
-  await selecionarHora(page, ordemDialog, /hora fim/i, '08:15')
+  const startTime = await selecionarProximoHorario(page, ordemDialog, /hora início/i)
+  const endTime = await selecionarProximoHorario(page, ordemDialog, /hora fim/i)
   await ordemDialog.getByRole('button', { name: /agendar/i }).click()
 
-  const esperado = await page.evaluate(() => ({
-    start: new Date('2099-12-31T07:15').toISOString(),
-    end: new Date('2099-12-31T08:15').toISOString()
-  }))
+  const esperado = await page.evaluate(({ startTime, endTime }) => ({
+    start: new Date(`2099-12-31T${startTime}`).toISOString(),
+    end: new Date(`2099-12-31T${endTime}`).toISOString()
+  }), { startTime, endTime })
   await expect.poll(() => payloadEnviado && payloadEnviado.scheduledStart).toBe(esperado.start)
   expect(payloadEnviado.scheduledEnd).toBe(esperado.end)
 })
