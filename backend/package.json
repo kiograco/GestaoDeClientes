@@ -21,7 +21,8 @@
     "test:db:reset": "cross-env NODE_ENV=test POSTGRES_HOST=localhost POSTGRES_DB=wchats_test POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres DB_PORT=5432 sequelize db:migrate:undo:all && npm run test:migrate && npm run test:seed",
     "privacy:retention": "node scripts/run-privacy-retention.js",
     "db:migrate": "rm -Rf dist && npm run build && npx sequelize db:migrate",
-    "db:seed": "npx sequelize db:seed:all"
+    "db:seed": "npx sequelize db:seed:all",
+    "db:seed:demo": "npx sequelize db:seed --seed 20260608130000-create-demo-service-order-account.js"
   },
   "author": "Durans (lumardyelson@gmail.com)",
   "private": true,
