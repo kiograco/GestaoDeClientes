@@ -122,7 +122,7 @@ test('edicao de ordem envia horario alterado com timezone', async ({ page }) => 
   await page.locator('input[type="date"]').fill('2099-12-31')
 
   await page.getByRole('button', { name: /#70 visita e2e/i }).click()
-  await page.getByRole('button', { name: /editar/i }).click()
+  await page.locator('.details-grid').getByRole('button', { name: /editar/i }).click()
   const ordemDialog = page.getByRole('dialog').filter({ hasText: /editar ordem/i })
   await ordemDialog.getByLabel(/data/i).fill('2099-12-31')
   const startTime = await selecionarProximoHorario(page, ordemDialog, /hora início/i)
@@ -166,6 +166,19 @@ test('menu contextual da agenda troca tecnico da ordem', async ({ page }) => {
   await page.locator('.q-menu').getByText(fixtures.serviceAttendant2.name).click()
 
   await expect.poll(() => payloadEnviado && payloadEnviado.attendantId).toBe(fixtures.serviceAttendant2.id)
+})
+
+test('clique na agenda exibe balao de detalhes da ordem', async ({ page }) => {
+  await login(page)
+  await page.goto('/#/ordens-servico')
+  await page.locator('input[type="date"]').fill('2099-12-31')
+
+  await page.getByRole('button', { name: /#70 visita e2e/i }).click()
+
+  const popover = page.locator('.order-details-popover')
+  await expect(popover.getByText(/detalhes da ordem #70/i)).toBeVisible()
+  await expect(popover.getByText(/cliente e2e/i)).toBeVisible()
+  await expect(popover.getByText(/tecnico e2e/i)).toBeVisible()
 })
 
 test('menu contextual da agenda reserva horario livre', async ({ page }) => {

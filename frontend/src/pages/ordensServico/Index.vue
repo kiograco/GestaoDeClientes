@@ -137,6 +137,38 @@
                 <strong>#{{ ordem.id }} {{ ordem.title }}</strong>
                 <span>{{ formatarHora(ordem.scheduledStart) }} - {{ formatarHora(ordem.scheduledEnd) }}</span>
                 <span>{{ ordem.contact ? ordem.contact.name : 'Sem cliente' }}</span>
+                <q-menu
+                  anchor="center right"
+                  self="center left"
+                  :offset="[10, 0]"
+                  content-class="order-details-popover"
+                  @before-show="selecionarOrdem(ordem)"
+                >
+                  <div class="order-popover">
+                    <div class="row items-start no-wrap q-mb-sm">
+                      <div>
+                        <div class="text-subtitle2 text-weight-medium">Detalhes da ordem #{{ ordem.id }}</div>
+                        <div class="text-caption text-grey-7">{{ ordem.title }}</div>
+                      </div>
+                      <q-space />
+                      <q-badge outline color="primary" :label="ordem.status" />
+                    </div>
+                    <div class="order-popover-grid">
+                      <div><strong>Cliente:</strong> {{ ordem.contact ? ordem.contact.name : 'Sem cliente' }}</div>
+                      <div><strong>Técnico:</strong> {{ ordem.attendant ? ordem.attendant.name : 'Sem técnico' }}</div>
+                      <div><strong>Horário:</strong> {{ formatarData(ordem.scheduledStart) }} - {{ formatarHora(ordem.scheduledEnd) }}</div>
+                      <div><strong>Recorrência:</strong> {{ formatarRecorrencia(ordem) }}</div>
+                      <div v-if="ordem.address"><strong>Endereço:</strong> {{ ordem.address }} {{ ordem.city }}/{{ ordem.state }}</div>
+                      <div v-if="ordem.description"><strong>Descrição:</strong> {{ ordem.description }}</div>
+                    </div>
+                    <q-separator class="q-my-sm" />
+                    <div class="row q-gutter-xs justify-end">
+                      <q-btn dense flat color="primary" icon="mdi-pencil" label="Editar" v-close-popup @click="abrirOrdem(ordem)" />
+                      <q-btn dense flat color="amber-9" icon="mdi-play" label="Iniciar" v-close-popup @click="alterarStatusOrdem(ordem, 'em_atendimento')" />
+                      <q-btn dense flat color="positive" icon="mdi-check" label="Concluir" v-close-popup @click="alterarStatusOrdem(ordem, 'concluida')" />
+                    </div>
+                  </div>
+                </q-menu>
                 <q-menu context-menu>
                   <q-list dense style="min-width: 260px">
                     <q-item-label header>Ordem #{{ ordem.id }}</q-item-label>
@@ -1015,6 +1047,18 @@ export default {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 8px 16px;
 }
+.order-popover {
+  width: min(360px, calc(100vw - 32px));
+  padding: 12px;
+  background: #fff;
+}
+.order-popover-grid {
+  display: grid;
+  gap: 6px;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.35;
+}
 .status-em_atendimento { border-left-color: #d97706; background: #fffbeb; }
 .status-concluida { border-left-color: #16a34a; background: #f0fdf4; }
 .status-cancelada { border-left-color: #dc2626; background: #fef2f2; }
@@ -1030,5 +1074,13 @@ export default {
   .agenda-date {
     width: 100%;
   }
+}
+</style>
+
+<style>
+.order-details-popover {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, .18);
 }
 </style>
