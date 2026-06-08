@@ -1,9 +1,9 @@
-FROM node:18-bookworm-slim as global-deps-stage
+FROM node:20-bookworm-slim as global-deps-stage
 
 WORKDIR /app
 
 RUN apt-get update \
-  && apt-get install -y wget gnupg nano ffmpeg \
+  && apt-get install -y wget gnupg nano ffmpeg python3 make g++ \
   && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
   && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
   && apt-get update \
@@ -17,7 +17,7 @@ ENV CHROME_BIN=/usr/bin/google-chrome-stable
 
 FROM global-deps-stage as develop-stage
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 FROM develop-stage as build-stage
 COPY . .

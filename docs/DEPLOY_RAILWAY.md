@@ -446,6 +446,13 @@ You can only have 3 volumes per project
 
 Confirme se os volumes estão restritos a PostgreSQL, Redis e `backend-api`. Não crie volume para RabbitMQ.
 
+### Build do backend falha no Railway com `re2` ou `node-gyp`
+
+Confirme que o serviço `backend-api` está com **Root Directory** em `/backend`,
+pois o Railway precisa usar `backend/Dockerfile`. Esse Dockerfile usa Node 20 e
+instala `python3`, `make` e `g++`, necessários quando dependências nativas como
+`re2` precisam ser compiladas.
+
 ### Build falha no Vercel
 
 Confirme:
