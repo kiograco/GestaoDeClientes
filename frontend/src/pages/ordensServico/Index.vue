@@ -59,89 +59,164 @@
       </q-card>
     </div>
 
-    <div v-else class="row q-col-gutter-md">
-      <div class="col-12 col-lg-7">
-        <q-card flat bordered>
+    <div v-else class="agenda-workspace">
+      <q-card flat bordered class="agenda-card">
+        <q-card-section class="agenda-toolbar">
           <q-tabs v-model="visao" dense active-color="primary" indicator-color="primary" align="left">
             <q-tab name="dia" icon="mdi-calendar-today" label="Dia" />
             <q-tab name="semana" icon="mdi-calendar-week" label="Semana" />
             <q-tab name="mes" icon="mdi-calendar-month" label="Mês" />
           </q-tabs>
-          <q-separator />
-          <q-card-section>
-            <div v-if="!ordens.length" class="empty-state">
+          <q-space />
+          <q-btn flat round dense icon="mdi-chevron-left" @click="alterarDataAgenda(-1)">
+            <q-tooltip>Dia anterior</q-tooltip>
+          </q-btn>
+          <q-input dense outlined type="date" class="agenda-date" v-model="dataAgenda" @input="carregarTudo" />
+          <q-btn flat round dense icon="mdi-chevron-right" @click="alterarDataAgenda(1)">
+            <q-tooltip>Próximo dia</q-tooltip>
+          </q-btn>
+          <q-btn flat color="primary" icon="mdi-calendar-today" label="Hoje" @click="irParaHoje" />
+        </q-card-section>
+        <q-separator />
+        <q-card-section>
+          <div v-if="visao === 'dia'" class="technician-schedule">
+            <div class="schedule-grid schedule-header" :style="gridAgendaStyle">
+              <div class="technician-heading">Técnico</div>
+              <div v-for="hour in agendaHours" :key="hour" class="hour-heading">{{ hourLabel(hour) }}</div>
+            </div>
+            <div v-if="!linhasTecnicos.length" class="empty-state">
               <q-icon name="mdi-calendar-blank-outline" size="42px" color="grey-6" />
-              <div>Nenhuma visita agendada para os filtros atuais.</div>
+              <div>Nenhum técnico ativo para exibir na agenda.</div>
             </div>
-            <div v-else-if="visao === 'dia'" class="day-grid">
-              <div v-for="hour in hours" :key="hour" class="time-row">
-                <div class="time-label">{{ hour }}:00</div>
-                <div class="time-slot" @dragover.prevent @drop="soltarOrdem(hour)">
-                  <button
-                    v-for="ordem in ordensPorHora(hour)"
-                    :key="ordem.id"
-                    class="visit-block"
-                    :class="[`status-${ordem.status}`, { urgente: ordem.priority === 'urgente' }]"
-                    :style="estiloBloco(ordem)"
-                    draggable="true"
-                    @dragstart="arrastarOrdem(ordem)"
-                    @click="selecionarOrdem(ordem)"
-                  >
-                    <strong>#{{ ordem.id }} {{ ordem.title }}</strong>
-                    <span>{{ formatarHora(ordem.scheduledStart) }} - {{ formatarHora(ordem.scheduledEnd) }}</span>
-                    <span>{{ ordem.attendant ? ordem.attendant.name : 'Sem técnico' }}</span>
-                    <span class="resize-actions" @click.stop>
-                      <q-btn dense flat round size="sm" icon="mdi-minus" @click="redimensionarOrdem(ordem, -30)" />
-                      <q-btn dense flat round size="sm" icon="mdi-plus" @click="redimensionarOrdem(ordem, 30)" />
-                    </span>
-                  </button>
-                </div>
+            <div
+              v-for="linha in linhasTecnicos"
+              :key="linha.id || 'sem-tecnico'"
+              class="schedule-grid schedule-row"
+              :style="gridAgendaStyle"
+            >
+              <div class="technician-name" :style="{ backgroundColor: linha.color }">
+                <strong>{{ linha.name }}</strong>
+                <span>{{ ordensDaLinha(linha.id).length }} ordem(ns)</span>
               </div>
-            </div>
-            <div v-else class="calendar-list">
+              <div
+                v-for="hour in agendaHours"
+                :key="`${linha.id || 'sem'}-${hour}`"
+                class="hour-cell"
+                role="button"
+                :aria-label="`Reservar ${linha.name} ${hourLabel(hour)}`"
+                @contextmenu="prepararMenuHorario(linha, hour)"
+                @dblclick="reservarHorario(linha, hour)"
+                @dragover.prevent
+                @drop="soltarOrdem(linha, hour)"
+              >
+                <q-menu context-menu>
+                  <q-list dense style="min-width: 220px">
+                    <q-item clickable v-close-popup @click="reservarHorario(linha, hour)">
+                      <q-item-section avatar><q-icon name="mdi-calendar-plus" /></q-item-section>
+                      <q-item-section>Reservar horário</q-item-section>
+                    </q-item>
+                    <q-item clickable v-close-popup @click="abrirOrdemNoHorario(linha, hour)">
+                      <q-item-section avatar><q-icon name="mdi-clipboard-plus-outline" /></q-item-section>
+                      <q-item-section>Nova ordem neste horário</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-menu>
+              </div>
               <button
-                v-for="ordem in ordens"
+                v-for="ordem in ordensDaLinha(linha.id)"
                 :key="ordem.id"
-                class="calendar-item"
+                class="schedule-order"
+                :aria-label="`#${ordem.id} ${ordem.title}`"
                 :class="[`status-${ordem.status}`, { urgente: ordem.priority === 'urgente' }]"
+                :style="estiloOrdemAgenda(ordem)"
+                draggable="true"
+                @dragstart="arrastarOrdem(ordem)"
                 @click="selecionarOrdem(ordem)"
+                @contextmenu="prepararMenuOrdem(ordem)"
               >
                 <strong>#{{ ordem.id }} {{ ordem.title }}</strong>
-                <span>{{ formatarData(ordem.scheduledStart) }} - {{ formatarData(ordem.scheduledEnd) }}</span>
-                <span>{{ ordem.contact ? ordem.contact.name : '' }}</span>
+                <span>{{ formatarHora(ordem.scheduledStart) }} - {{ formatarHora(ordem.scheduledEnd) }}</span>
+                <span>{{ ordem.contact ? ordem.contact.name : 'Sem cliente' }}</span>
+                <q-menu context-menu>
+                  <q-list dense style="min-width: 260px">
+                    <q-item-label header>Ordem #{{ ordem.id }}</q-item-label>
+                    <q-item clickable v-close-popup @click="abrirOrdem(ordem)">
+                      <q-item-section avatar><q-icon name="mdi-pencil" /></q-item-section>
+                      <q-item-section>Editar ordem</q-item-section>
+                    </q-item>
+                    <q-item clickable v-close-popup @click="alterarStatusOrdem(ordem, 'em_atendimento')">
+                      <q-item-section avatar><q-icon name="mdi-play" /></q-item-section>
+                      <q-item-section>Iniciar atendimento</q-item-section>
+                    </q-item>
+                    <q-item clickable v-close-popup @click="alterarStatusOrdem(ordem, 'concluida')">
+                      <q-item-section avatar><q-icon name="mdi-check" /></q-item-section>
+                      <q-item-section>Concluir</q-item-section>
+                    </q-item>
+                    <q-item clickable v-close-popup @click="cancelarOrdem(ordem)">
+                      <q-item-section avatar><q-icon name="mdi-cancel" /></q-item-section>
+                      <q-item-section>Cancelar</q-item-section>
+                    </q-item>
+                    <q-separator />
+                    <q-item-label header>Trocar técnico</q-item-label>
+                    <q-item
+                      v-for="tecnico in atendentes"
+                      :key="tecnico.id"
+                      clickable
+                      v-close-popup
+                      :disable="tecnico.id === ordem.attendantId"
+                      @click="moverOrdemParaTecnico(ordem, tecnico)"
+                    >
+                      <q-item-section avatar><q-icon name="mdi-account-hard-hat-outline" /></q-item-section>
+                      <q-item-section>{{ tecnico.name }}</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-menu>
               </button>
             </div>
-          </q-card-section>
-        </q-card>
-      </div>
+          </div>
+          <div v-else class="calendar-list">
+            <button
+              v-for="ordem in ordens"
+              :key="ordem.id"
+              class="calendar-item"
+              :class="[`status-${ordem.status}`, { urgente: ordem.priority === 'urgente' }]"
+              @click="selecionarOrdem(ordem)"
+              @contextmenu.prevent="prepararMenuOrdem(ordem)"
+            >
+              <strong>#{{ ordem.id }} {{ ordem.title }}</strong>
+              <span>{{ formatarData(ordem.scheduledStart) }} - {{ formatarData(ordem.scheduledEnd) }}</span>
+              <span>{{ ordem.contact ? ordem.contact.name : '' }}</span>
+            </button>
+          </div>
+        </q-card-section>
+      </q-card>
 
-      <div class="col-12 col-lg-5">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="text-subtitle1 text-weight-medium">Detalhes</div>
-            <div v-if="!ordemSelecionada" class="text-grey-7 q-mt-sm">Selecione uma visita no calendário.</div>
-            <div v-else class="q-gutter-sm q-mt-sm">
-              <div><strong>Cliente:</strong> {{ ordemSelecionada.contact && ordemSelecionada.contact.name }}</div>
-              <div><strong>Técnico:</strong> {{ ordemSelecionada.attendant && ordemSelecionada.attendant.name }}</div>
-              <div><strong>Status:</strong> {{ ordemSelecionada.status }}</div>
-              <div><strong>Endereço:</strong> {{ ordemSelecionada.address }} {{ ordemSelecionada.city }}/{{ ordemSelecionada.state }}</div>
-              <div><strong>Descrição:</strong> {{ ordemSelecionada.description }}</div>
-              <div><strong>Observação cliente:</strong> {{ ordemSelecionada.publicObservation }}</div>
-              <div v-if="ordemSelecionada.internalObservation"><strong>Observação interna:</strong> {{ ordemSelecionada.internalObservation }}</div>
-              <q-separator />
-              <div class="row q-gutter-sm">
-                <q-btn dense flat color="primary" icon="mdi-pencil" label="Editar" @click="abrirOrdem(ordemSelecionada)" />
-                <q-btn dense flat color="amber-9" icon="mdi-play" label="Iniciar" @click="alterarStatus('em_atendimento')" />
-                <q-btn dense flat color="positive" icon="mdi-check" label="Concluir" @click="alterarStatus('concluida')" />
-                <q-btn dense flat color="negative" icon="mdi-cancel" label="Cancelar" @click="confirmarCancelamento" />
-                <q-btn dense flat color="primary" icon="mdi-file-pdf-box" label="PDF cliente" @click="abrirPdf(false)" />
-                <q-btn v-if="podeVerObservacaoInterna" dense flat color="primary" icon="mdi-file-document-alert-outline" label="PDF interno" @click="abrirPdf(true)" />
-                <q-btn dense flat color="primary" icon="mdi-send" label="Notificar" @click="modalNotificacao = true" />
-              </div>
+      <q-card flat bordered>
+        <q-card-section>
+          <div class="text-subtitle1 text-weight-medium">Detalhes</div>
+          <div v-if="!ordemSelecionada" class="text-grey-7 q-mt-sm">Selecione uma visita no calendário.</div>
+          <div v-else class="details-grid q-mt-sm">
+            <div><strong>Cliente:</strong> {{ ordemSelecionada.contact && ordemSelecionada.contact.name }}</div>
+            <div><strong>Técnico:</strong> {{ ordemSelecionada.attendant && ordemSelecionada.attendant.name }}</div>
+            <div><strong>Status:</strong> {{ ordemSelecionada.status }}</div>
+            <div><strong>Horário:</strong> {{ formatarData(ordemSelecionada.scheduledStart) }} - {{ formatarHora(ordemSelecionada.scheduledEnd) }}</div>
+            <div><strong>Endereço:</strong> {{ ordemSelecionada.address }} {{ ordemSelecionada.city }}/{{ ordemSelecionada.state }}</div>
+            <div><strong>Descrição:</strong> {{ ordemSelecionada.description }}</div>
+            <div><strong>Observação cliente:</strong> {{ ordemSelecionada.publicObservation }}</div>
+            <div v-if="ordemSelecionada.internalObservation"><strong>Observação interna:</strong> {{ ordemSelecionada.internalObservation }}</div>
+            <q-separator class="col-12" />
+            <div class="row q-gutter-sm col-12">
+              <q-btn dense flat color="primary" icon="mdi-pencil" label="Editar" @click="abrirOrdem(ordemSelecionada)" />
+              <q-btn dense flat color="amber-9" icon="mdi-play" label="Iniciar" @click="alterarStatus('em_atendimento')" />
+              <q-btn dense flat color="positive" icon="mdi-check" label="Concluir" @click="alterarStatus('concluida')" />
+              <q-btn dense flat color="negative" icon="mdi-cancel" label="Cancelar" @click="confirmarCancelamento" />
+              <q-btn dense flat color="primary" icon="mdi-file-pdf-box" label="PDF cliente" @click="abrirPdf(false)" />
+              <q-btn v-if="podeVerObservacaoInterna" dense flat color="primary" icon="mdi-file-document-alert-outline" label="PDF interno" @click="abrirPdf(true)" />
+              <q-btn dense flat color="primary" icon="mdi-send" label="Notificar" @click="modalNotificacao = true" />
             </div>
-          </q-card-section>
-        </q-card>
-      </div>
+          </div>
+        </q-card-section>
+      </q-card>
     </div>
 
     <q-dialog v-model="modalOrdem" persistent>
@@ -275,6 +350,12 @@ import {
 
 const socket = socketIO()
 
+const localDateInput = (value = new Date()) => {
+  const date = new Date(value)
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+  return date.toISOString().slice(0, 10)
+}
+
 const emptyForm = () => ({
   contactId: null,
   attendantId: null,
@@ -301,6 +382,7 @@ export default {
       visao: 'dia',
       aba: 'agenda',
       salvando: false,
+      dataAgenda: localDateInput(),
       modalOrdem: false,
       modalAtendente: false,
       modalNotificacao: false,
@@ -314,6 +396,7 @@ export default {
       clientes: [],
       ordemSelecionada: null,
       ordemArrastada: null,
+      contextHorario: null,
       dashboard: {},
       filtros: {},
       priorityOptions: ['baixa', 'media', 'alta', 'urgente'],
@@ -323,12 +406,35 @@ export default {
         { label: 'E-mail', value: 'email' },
         { label: 'WhatsApp', value: 'whatsapp' }
       ],
-      hours: Array.from({ length: 15 }, (_, index) => index + 7)
+      agendaStartHour: 0,
+      agendaEndHour: 23
     }
   },
   computed: {
     opcoesAtendentes () {
       return this.atendentes.map(item => ({ label: item.name, value: item.id }))
+    },
+    agendaHours () {
+      return Array.from(
+        { length: this.agendaEndHour - this.agendaStartHour + 1 },
+        (_, index) => index + this.agendaStartHour
+      )
+    },
+    gridAgendaStyle () {
+      return {
+        gridTemplateColumns: `150px repeat(${this.agendaHours.length}, minmax(48px, 1fr))`
+      }
+    },
+    linhasTecnicos () {
+      const colors = ['#bae6fd', '#bbf7d0', '#fed7aa', '#fde68a', '#99f6e4', '#fbcfe8', '#ddd6fe', '#fecaca']
+      const linhas = this.atendentes.map((item, index) => ({
+        ...item,
+        color: colors[index % colors.length]
+      }))
+      if (this.ordens.some(ordem => this.mesmoDiaAgenda(ordem.scheduledStart) && !ordem.attendantId)) {
+        linhas.push({ id: null, name: 'Sem técnico', color: '#e5e7eb' })
+      }
+      return linhas
     },
     dashboardCards () {
       return [
@@ -354,7 +460,14 @@ export default {
       this.atendentes = data
     },
     async carregarOrdens () {
-      const { data } = await ListarOrdensServico(this.filtros)
+      const params = { ...this.filtros }
+      if (this.visao === 'dia') {
+        const start = this.dataHoraAgenda(this.agendaStartHour)
+        const end = this.dataHoraAgenda(this.agendaEndHour + 1)
+        params.start = start.toISOString()
+        params.end = end.toISOString()
+      }
+      const { data } = await ListarOrdensServico(params)
       this.ordens = data
       await this.carregarDashboard()
     },
@@ -435,6 +548,10 @@ export default {
       if (!this.ordemSelecionada) return
       await this.salvarStatus({ ...this.ordemSelecionada, status })
     },
+    async alterarStatusOrdem (ordem, status) {
+      this.ordemSelecionada = ordem
+      await this.salvarStatus({ ...ordem, status })
+    },
     confirmarCancelamento () {
       this.$q.dialog({
         title: 'Cancelar ordem',
@@ -442,6 +559,10 @@ export default {
         cancel: true,
         persistent: true
       }).onOk(() => this.salvarStatus({ ...this.ordemSelecionada, status: 'cancelada' }))
+    },
+    cancelarOrdem (ordem) {
+      this.ordemSelecionada = ordem
+      this.confirmarCancelamento()
     },
     async salvarStatus (payload) {
       try {
@@ -484,21 +605,56 @@ export default {
     arrastarOrdem (ordem) {
       this.ordemArrastada = ordem
     },
-    async soltarOrdem (hour) {
+    async soltarOrdem (linha, hour) {
       if (!this.ordemArrastada) return
       const originalStart = new Date(this.ordemArrastada.scheduledStart)
       const originalEnd = new Date(this.ordemArrastada.scheduledEnd)
       const duration = originalEnd - originalStart
-      const nextStart = new Date(originalStart)
-      nextStart.setHours(hour, 0, 0, 0)
+      const nextStart = this.dataHoraAgenda(hour)
       const nextEnd = new Date(nextStart.getTime() + duration)
       await this.salvarStatus({
         ...this.ordemArrastada,
+        attendantId: linha.id,
         scheduledStart: this.toInputDate(nextStart),
         scheduledEnd: this.toInputDate(nextEnd),
         status: this.ordemArrastada.status === 'agendada' ? 'reagendada' : this.ordemArrastada.status
       })
       this.ordemArrastada = null
+    },
+    async moverOrdemParaTecnico (ordem, tecnico) {
+      await this.salvarStatus({
+        ...ordem,
+        attendantId: tecnico.id,
+        attendant: tecnico,
+        status: ordem.status === 'agendada' ? 'reagendada' : ordem.status
+      })
+    },
+    prepararMenuHorario (linha, hour) {
+      this.contextHorario = { linha, hour }
+      this.ordemSelecionada = null
+    },
+    prepararMenuOrdem (ordem) {
+      this.ordemSelecionada = ordem
+    },
+    reservarHorario (linha, hour) {
+      this.abrirOrdemNoHorario(linha, hour, {
+        title: 'Reserva de horário',
+        serviceType: 'Reserva',
+        status: 'rascunho'
+      })
+    },
+    abrirOrdemNoHorario (linha, hour, overrides = {}) {
+      const start = this.dataHoraAgenda(hour)
+      const end = new Date(start.getTime())
+      end.setHours(end.getHours() + 1)
+      this.form = {
+        ...emptyForm(),
+        ...overrides,
+        attendantId: linha.id,
+        scheduledStart: this.toInputDate(start),
+        scheduledEnd: this.toInputDate(end)
+      }
+      this.modalOrdem = true
     },
     async redimensionarOrdem (ordem, minutes) {
       const end = new Date(ordem.scheduledEnd)
@@ -512,14 +668,46 @@ export default {
         .sort((a, b) => b.value - a.value)
         .slice(0, 8)
     },
-    ordensPorHora (hour) {
-      return this.ordens.filter(ordem => new Date(ordem.scheduledStart).getHours() === hour)
+    mesmoDiaAgenda (value) {
+      if (!value) return false
+      return localDateInput(value) === this.dataAgenda
     },
-    estiloBloco (ordem) {
+    ordensDaLinha (attendantId) {
+      return this.ordens.filter(ordem => (
+        this.mesmoDiaAgenda(ordem.scheduledStart) &&
+        (ordem.attendantId || null) === (attendantId || null)
+      ))
+    },
+    estiloOrdemAgenda (ordem) {
       const start = new Date(ordem.scheduledStart)
       const end = new Date(ordem.scheduledEnd)
-      const duration = Math.max(30, (end - start) / 60000)
-      return { minHeight: `${Math.min(160, duration)}px` }
+      const startHour = start.getHours() + (start.getMinutes() / 60)
+      const durationHours = Math.max(0.5, (end - start) / 3600000)
+      const clampedStart = Math.max(this.agendaStartHour, Math.floor(startHour))
+      const offset = Math.max(0, startHour - clampedStart)
+      const span = Math.max(1, Math.ceil(offset + durationHours))
+      return {
+        gridColumn: `${clampedStart - this.agendaStartHour + 2} / span ${span}`,
+        marginLeft: `${offset * 100}%`
+      }
+    },
+    dataHoraAgenda (hour) {
+      const date = new Date(`${this.dataAgenda}T00:00:00`)
+      date.setHours(hour, 0, 0, 0)
+      return date
+    },
+    alterarDataAgenda (days) {
+      const date = new Date(`${this.dataAgenda}T00:00:00`)
+      date.setDate(date.getDate() + days)
+      this.dataAgenda = localDateInput(date)
+      this.carregarTudo()
+    },
+    irParaHoje () {
+      this.dataAgenda = localDateInput()
+      this.carregarTudo()
+    },
+    hourLabel (hour) {
+      return `${String(hour).padStart(2, '0')}:00`
     },
     formatarHora (value) {
       if (!value) return ''
@@ -586,30 +774,81 @@ export default {
   padding: 6px 0;
   border-bottom: 1px solid #eef2f7;
 }
-.day-grid {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+.agenda-workspace {
+  display: grid;
+  gap: 16px;
+}
+.agenda-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.agenda-date {
+  width: 168px;
+}
+.agenda-card {
   overflow: hidden;
 }
-.time-row {
-  display: grid;
-  grid-template-columns: 64px 1fr;
-  min-height: 72px;
-  border-bottom: 1px solid #eef2f7;
+.technician-schedule {
+  overflow-x: auto;
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
 }
-.time-label {
-  padding: 8px;
+.schedule-grid {
+  display: grid;
+  min-width: 1280px;
+}
+.schedule-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
   background: #f8fafc;
-  color: #64748b;
+  border-bottom: 1px solid #cbd5e1;
+}
+.technician-heading,
+.hour-heading {
+  min-height: 36px;
+  padding: 8px;
+  border-right: 1px solid #d7dde7;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+.technician-heading {
+  text-align: left;
+}
+.schedule-row {
+  min-height: 82px;
+  border-bottom: 1px solid #d7dde7;
+}
+.technician-name {
+  grid-column: 1;
+  grid-row: 1;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 10px;
+  border-right: 1px solid #cbd5e1;
+  color: #111827;
+}
+.technician-name span {
+  color: #475569;
   font-size: 12px;
 }
-.time-slot {
-  padding: 6px;
-  display: grid;
-  gap: 6px;
+.hour-cell {
+  grid-row: 1;
+  min-height: 82px;
+  border-right: 1px solid #d7dde7;
+  background: #fff;
+  cursor: context-menu;
+}
+.hour-cell:nth-child(even) {
+  background: #f8fafc;
 }
 .visit-block,
-.calendar-item {
+.calendar-item,
+.schedule-order {
   width: 100%;
   text-align: left;
   border: 0;
@@ -621,6 +860,15 @@ export default {
   background: #eff6ff;
   cursor: pointer;
 }
+.schedule-order {
+  grid-row: 1;
+  z-index: 3;
+  align-self: center;
+  min-height: 54px;
+  max-height: 72px;
+  overflow: hidden;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, .12);
+}
 .resize-actions {
   display: flex;
   justify-content: flex-end;
@@ -630,11 +878,25 @@ export default {
   display: grid;
   gap: 8px;
 }
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 16px;
+}
 .status-em_atendimento { border-left-color: #d97706; background: #fffbeb; }
 .status-concluida { border-left-color: #16a34a; background: #f0fdf4; }
 .status-cancelada { border-left-color: #dc2626; background: #fef2f2; }
 .status-reagendada { border-left-color: #7c3aed; background: #f5f3ff; }
 .urgente {
   box-shadow: inset 0 0 0 2px #dc2626;
+}
+@media (max-width: 700px) {
+  .agenda-toolbar {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .agenda-date {
+    width: 100%;
+  }
 }
 </style>

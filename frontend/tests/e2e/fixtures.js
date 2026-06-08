@@ -87,6 +87,15 @@ const serviceAttendant = {
   active: true
 }
 
+const serviceAttendant2 = {
+  id: 61,
+  name: 'Tecnico B E2E',
+  email: 'tecnico-b@example.test',
+  phone: '5511988880001',
+  specialty: 'Manutencao',
+  active: true
+}
+
 const serviceOrder = {
   id: 70,
   contactId: contact.id,
@@ -145,6 +154,8 @@ module.exports = {
   product,
   order,
   serviceAttendant,
+  serviceAttendant2,
+  serviceAttendants: [serviceAttendant, serviceAttendant2],
   serviceOrder,
   newCustomer
 }

@@ -84,6 +84,7 @@ test('edicao de ordem envia horario alterado com timezone', async ({ page }) => 
     })
   })
   await page.goto('/#/ordens-servico')
+  await page.locator('input[type="date"]').fill('2099-12-31')
 
   await page.getByRole('button', { name: /#70 visita e2e/i }).click()
   await page.getByRole('button', { name: /editar/i }).click()
@@ -98,6 +99,51 @@ test('edicao de ordem envia horario alterado com timezone', async ({ page }) => 
   }))
   await expect.poll(() => payloadEnviado && payloadEnviado.scheduledStart).toBe(esperado.start)
   expect(payloadEnviado.scheduledEnd).toBe(esperado.end)
+})
+
+test('menu contextual da agenda troca tecnico da ordem', async ({ page }) => {
+  await login(page)
+  let payloadEnviado = null
+  await page.route('**/service/orders/70', async route => {
+    if (route.request().method() === 'PUT') {
+      payloadEnviado = route.request().postDataJSON()
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ...fixtures.serviceOrder,
+          ...payloadEnviado,
+          attendant: fixtures.serviceAttendant2
+        })
+      })
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(fixtures.serviceOrder)
+    })
+  })
+  await page.goto('/#/ordens-servico')
+  await page.locator('input[type="date"]').fill('2099-12-31')
+
+  await page.getByRole('button', { name: /#70 visita e2e/i }).click({ button: 'right' })
+  await page.locator('.q-menu').getByText(fixtures.serviceAttendant2.name).click()
+
+  await expect.poll(() => payloadEnviado && payloadEnviado.attendantId).toBe(fixtures.serviceAttendant2.id)
+})
+
+test('menu contextual da agenda reserva horario livre', async ({ page }) => {
+  await login(page)
+  await page.goto('/#/ordens-servico')
+  await page.locator('input[type="date"]').fill('2099-12-31')
+
+  await page.getByRole('button', { name: /reservar tecnico b e2e 14:00/i }).click({ button: 'right' })
+  await page.locator('.q-menu').getByText(/reservar horário/i).click()
+
+  const ordemDialog = page.getByRole('dialog').filter({ hasText: /nova ordem/i })
+  await expect(ordemDialog.getByLabel(/titulo|título/i)).toHaveValue('Reserva de horário')
+  await expect(ordemDialog.locator('input[type="datetime-local"]').nth(0)).toHaveValue('2099-12-31T14:00')
+  await expect(ordemDialog.locator('input[type="datetime-local"]').nth(1)).toHaveValue('2099-12-31T15:00')
 })
 
 test('alteracao de status do pedido', async ({ page }) => {

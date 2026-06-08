@@ -47,7 +47,7 @@ async function mockApi (page, overrides = {}) {
     json(route, { tickets: [state.ticket], count: 1, hasMore: false })
   )
   await page.route('**/service/attendants**', route => {
-    if (route.request().method() === 'GET') return json(route, [state.serviceAttendant])
+    if (route.request().method() === 'GET') return json(route, state.serviceAttendants || [state.serviceAttendant])
     return json(route, state.serviceAttendant, 201)
   })
   await page.route('**/service/orders-dashboard**', route =>
