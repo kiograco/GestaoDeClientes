@@ -37,6 +37,67 @@ describe("ServiceOrderService regras", () => {
     ).toThrow(AppError);
   });
 
+  it("aceita ordem avulsa sem campos de recorrencia", () => {
+    expect(() =>
+      validateServiceOrderSchedule({
+        contactId: 1,
+        title: "Instalacao",
+        serviceType: "instalacao",
+        status: "agendada",
+        scheduledStart: "2026-06-05T10:00:00.000Z",
+        scheduledEnd: "2026-06-05T11:00:00.000Z",
+        recurrenceType: "single",
+        recurrenceActive: false
+      })
+    ).not.toThrow();
+  });
+
+  it("exige dia fixo do mes para recorrencia mensal", () => {
+    expect(() =>
+      validateServiceOrderSchedule({
+        contactId: 1,
+        title: "Instalacao",
+        serviceType: "instalacao",
+        status: "agendada",
+        scheduledStart: "2026-06-05T10:00:00.000Z",
+        scheduledEnd: "2026-06-05T11:00:00.000Z",
+        recurrenceType: "monthly_fixed_day",
+        recurrenceActive: true
+      })
+    ).toThrow(AppError);
+  });
+
+  it("exige intervalo em dias para recorrencia editavel", () => {
+    expect(() =>
+      validateServiceOrderSchedule({
+        contactId: 1,
+        title: "Instalacao",
+        serviceType: "instalacao",
+        status: "agendada",
+        scheduledStart: "2026-06-05T10:00:00.000Z",
+        scheduledEnd: "2026-06-05T11:00:00.000Z",
+        recurrenceType: "custom_interval",
+        recurrenceActive: true
+      })
+    ).toThrow(AppError);
+  });
+
+  it("aceita recorrencia editavel a cada 30 dias", () => {
+    expect(() =>
+      validateServiceOrderSchedule({
+        contactId: 1,
+        title: "Instalacao",
+        serviceType: "instalacao",
+        status: "agendada",
+        scheduledStart: "2026-06-05T10:00:00.000Z",
+        scheduledEnd: "2026-06-05T11:00:00.000Z",
+        recurrenceType: "custom_interval",
+        recurrenceActive: true,
+        recurrenceIntervalDays: 30
+      })
+    ).not.toThrow();
+  });
+
   it("nao inclui observacao interna no documento publico", () => {
     const html = buildPublicServiceOrderDocumentHTML({
       tenantName: "Empresa Teste",

@@ -15,4 +15,9 @@ if [ -n "$PERSISTENT_DATA_DIR" ]; then
 fi
 
 npx sequelize db:migrate
+
+if [ "$ENABLE_DEMO_SERVICE_ORDER_SEED" = "true" ]; then
+  npx sequelize db:seed --seed 20260608130000-create-demo-service-order-account.js
+fi
+
 pm2-docker start ./dist/server.js

@@ -200,6 +200,7 @@
             <div><strong>Técnico:</strong> {{ ordemSelecionada.attendant && ordemSelecionada.attendant.name }}</div>
             <div><strong>Status:</strong> {{ ordemSelecionada.status }}</div>
             <div><strong>Horário:</strong> {{ formatarData(ordemSelecionada.scheduledStart) }} - {{ formatarHora(ordemSelecionada.scheduledEnd) }}</div>
+            <div><strong>Recorrência:</strong> {{ formatarRecorrencia(ordemSelecionada) }}</div>
             <div><strong>Endereço:</strong> {{ ordemSelecionada.address }} {{ ordemSelecionada.city }}/{{ ordemSelecionada.state }}</div>
             <div><strong>Descrição:</strong> {{ ordemSelecionada.description }}</div>
             <div><strong>Observação cliente:</strong> {{ ordemSelecionada.publicObservation }}</div>
@@ -268,6 +269,39 @@
           <q-select dense outlined class="col-12 col-md-3" label="Status" v-model="form.status" :options="statusOptions" />
           <q-input dense outlined type="datetime-local" class="col-12 col-md-3" label="Início" v-model="form.scheduledStart" />
           <q-input dense outlined type="datetime-local" class="col-12 col-md-3" label="Fim" v-model="form.scheduledEnd" />
+          <div class="col-12">
+            <q-toggle
+              v-model="form.recurrenceActive"
+              label="Ordem recorrente"
+              @input="alternarRecorrencia"
+            />
+          </div>
+          <q-select
+            v-if="form.recurrenceActive"
+            dense outlined emit-value map-options
+            class="col-12 col-md-6"
+            label="Tipo de recorrência"
+            v-model="form.recurrenceType"
+            :options="recurrenceOptions"
+          />
+          <q-input
+            v-if="form.recurrenceActive && form.recurrenceType === 'monthly_fixed_day'"
+            dense outlined type="number"
+            class="col-12 col-md-3"
+            label="Dia fixo do mês"
+            v-model.number="form.recurrenceDayOfMonth"
+            min="1"
+            max="31"
+          />
+          <q-input
+            v-if="form.recurrenceActive && form.recurrenceType === 'custom_interval'"
+            dense outlined type="number"
+            class="col-12 col-md-3"
+            label="A cada (dias)"
+            v-model.number="form.recurrenceIntervalDays"
+            min="1"
+            max="365"
+          />
           <q-input dense outlined class="col-12 col-md-6" label="Endereço" v-model="form.address" />
           <q-input dense outlined class="col-12 col-md-3" label="Cidade" v-model="form.city" />
           <q-input dense outlined maxlength="2" class="col-12 col-md-1" label="UF" v-model="form.state" />
@@ -364,6 +398,10 @@ const emptyForm = () => ({
   serviceType: '',
   priority: 'baixa',
   status: 'rascunho',
+  recurrenceActive: false,
+  recurrenceType: 'single',
+  recurrenceDayOfMonth: null,
+  recurrenceIntervalDays: 30,
   scheduledStart: '',
   scheduledEnd: '',
   address: '',
@@ -401,6 +439,10 @@ export default {
       filtros: {},
       priorityOptions: ['baixa', 'media', 'alta', 'urgente'],
       statusOptions: ['rascunho', 'agendada', 'em_atendimento', 'concluida', 'cancelada', 'reagendada'],
+      recurrenceOptions: [
+        { label: 'Dia fixo todo mês', value: 'monthly_fixed_day' },
+        { label: 'Intervalo em dias', value: 'custom_interval' }
+      ],
       notificationOptions: [
         { label: 'Interna', value: 'internal' },
         { label: 'E-mail', value: 'email' },
@@ -501,7 +543,12 @@ export default {
     abrirOrdem (ordem) {
       this.form = ordem
         ? {
+          ...emptyForm(),
           ...ordem,
+          recurrenceActive: Boolean(ordem.recurrenceActive || (ordem.recurrenceType && ordem.recurrenceType !== 'single')),
+          recurrenceType: ordem.recurrenceType || 'single',
+          recurrenceDayOfMonth: ordem.recurrenceDayOfMonth || null,
+          recurrenceIntervalDays: ordem.recurrenceIntervalDays || 30,
           scheduledStart: this.toInputDate(ordem.scheduledStart),
           scheduledEnd: this.toInputDate(ordem.scheduledEnd)
         }
@@ -717,6 +764,26 @@ export default {
       if (!value) return ''
       return new Date(value).toLocaleString('pt-BR')
     },
+    formatarRecorrencia (ordem) {
+      if (!ordem || !ordem.recurrenceActive || ordem.recurrenceType === 'single') return 'Avulsa'
+      if (ordem.recurrenceType === 'monthly_fixed_day') return `Todo mês no dia ${ordem.recurrenceDayOfMonth}`
+      if (ordem.recurrenceType === 'custom_interval') return `A cada ${ordem.recurrenceIntervalDays} dia(s)`
+      return 'Avulsa'
+    },
+    alternarRecorrencia (active) {
+      if (!active) {
+        this.form.recurrenceType = 'single'
+        this.form.recurrenceDayOfMonth = null
+        this.form.recurrenceIntervalDays = null
+        return
+      }
+      if (this.form.recurrenceType === 'single') this.form.recurrenceType = 'monthly_fixed_day'
+      if (!this.form.recurrenceDayOfMonth) {
+        const start = this.form.scheduledStart ? new Date(this.form.scheduledStart) : new Date()
+        this.form.recurrenceDayOfMonth = start.getDate()
+      }
+      if (!this.form.recurrenceIntervalDays) this.form.recurrenceIntervalDays = 30
+    },
     toInputDate (value) {
       if (!value) return ''
       const date = new Date(value)
@@ -730,8 +797,33 @@ export default {
     normalizarDatasPayload (payload) {
       return {
         ...payload,
+        ...this.normalizarRecorrenciaPayload(payload),
         scheduledStart: this.toApiDate(payload.scheduledStart),
         scheduledEnd: this.toApiDate(payload.scheduledEnd)
+      }
+    },
+    normalizarRecorrenciaPayload (payload) {
+      if (!payload.recurrenceActive || payload.recurrenceType === 'single') {
+        return {
+          recurrenceActive: false,
+          recurrenceType: 'single',
+          recurrenceDayOfMonth: null,
+          recurrenceIntervalDays: null
+        }
+      }
+      if (payload.recurrenceType === 'custom_interval') {
+        return {
+          recurrenceActive: true,
+          recurrenceType: 'custom_interval',
+          recurrenceDayOfMonth: null,
+          recurrenceIntervalDays: Number(payload.recurrenceIntervalDays)
+        }
+      }
+      return {
+        recurrenceActive: true,
+        recurrenceType: 'monthly_fixed_day',
+        recurrenceDayOfMonth: Number(payload.recurrenceDayOfMonth),
+        recurrenceIntervalDays: null
       }
     },
     conectarSocket () {

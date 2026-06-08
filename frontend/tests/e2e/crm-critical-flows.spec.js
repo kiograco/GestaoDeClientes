@@ -146,6 +146,46 @@ test('menu contextual da agenda reserva horario livre', async ({ page }) => {
   await expect(ordemDialog.locator('input[type="datetime-local"]').nth(1)).toHaveValue('2099-12-31T15:00')
 })
 
+test('nova ordem recorrente envia intervalo editavel', async ({ page }) => {
+  await login(page)
+  let payloadEnviado = null
+  await page.route('**/service/orders', async route => {
+    if (route.request().method() === 'POST') {
+      payloadEnviado = route.request().postDataJSON()
+      return route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...fixtures.serviceOrder, ...payloadEnviado, id: 71 })
+      })
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([fixtures.serviceOrder])
+    })
+  })
+  await page.goto('/#/ordens-servico')
+
+  await page.getByRole('button', { name: /nova ordem/i }).click()
+  const ordemDialog = page.getByRole('dialog').filter({ hasText: /nova ordem/i })
+  await ordemDialog.getByRole('combobox', { name: 'Cliente' }).click()
+  await page.getByText(/cliente e2e/i).click()
+  await ordemDialog.getByLabel(/titulo|título/i).fill('Ordem recorrente E2E')
+  await ordemDialog.getByLabel(/tipo de servico|tipo de serviço/i).fill('Manutencao preventiva')
+  await ordemDialog.locator('input[type="datetime-local"]').nth(0).fill('2099-12-31T09:00')
+  await ordemDialog.locator('input[type="datetime-local"]').nth(1).fill('2099-12-31T10:00')
+  await ordemDialog.getByText(/ordem recorrente/i).click()
+  await ordemDialog.getByRole('combobox', { name: /tipo de recorrência/i }).click()
+  await page.getByText(/intervalo em dias/i).click()
+  await ordemDialog.getByLabel(/a cada/i).fill('30')
+  await ordemDialog.getByRole('button', { name: /agendar/i }).click()
+
+  await expect.poll(() => payloadEnviado && payloadEnviado.recurrenceType).toBe('custom_interval')
+  expect(payloadEnviado.recurrenceActive).toBe(true)
+  expect(payloadEnviado.recurrenceIntervalDays).toBe(30)
+  expect(payloadEnviado.recurrenceDayOfMonth).toBeNull()
+})
+
 test('alteracao de status do pedido', async ({ page }) => {
   await login(page)
   await page.goto('/#/delivery/pedidos')

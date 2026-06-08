@@ -25,6 +25,12 @@ export const SERVICE_ORDER_STATUSES = [
   "reagendada"
 ];
 
+export const SERVICE_ORDER_RECURRENCE_TYPES = [
+  "single",
+  "monthly_fixed_day",
+  "custom_interval"
+];
+
 export interface ServiceAttendantData {
   name: string;
   email?: string | null;
@@ -42,6 +48,10 @@ export interface ServiceOrderData {
   serviceType: string;
   priority?: string;
   status?: string;
+  recurrenceType?: string;
+  recurrenceActive?: boolean;
+  recurrenceDayOfMonth?: number | null;
+  recurrenceIntervalDays?: number | null;
   scheduledStart?: string | Date | null;
   scheduledEnd?: string | Date | null;
   address?: string | null;
@@ -82,6 +92,15 @@ const normalizeDigits = (value?: string | null): string | null =>
 
 const normalizeDate = (value?: string | Date | null): Date | null =>
   value ? new Date(value) : null;
+
+const resolveRecurrenceType = (data: ServiceOrderData): string => {
+  const hasRecurringType =
+    data.recurrenceType && data.recurrenceType !== "single";
+  const isRecurring =
+    data.recurrenceActive === true ||
+    (data.recurrenceActive === undefined && hasRecurringType);
+  return isRecurring ? data.recurrenceType || "monthly_fixed_day" : "single";
+};
 
 const canSeeInternalObservation = (profile: string): boolean =>
   internalProfiles.includes(profile);
@@ -168,6 +187,7 @@ export const validateServiceOrderSchedule = (data: ServiceOrderData): void => {
   const start = normalizeDate(data.scheduledStart);
   const end = normalizeDate(data.scheduledEnd);
   const status = data.status || "rascunho";
+  const recurrenceType = resolveRecurrenceType(data);
 
   if (status !== "rascunho" && (!start || !end)) {
     throw new AppError("Informe inicio e fim do agendamento");
@@ -176,6 +196,67 @@ export const validateServiceOrderSchedule = (data: ServiceOrderData): void => {
   if (start && end && end.getTime() <= start.getTime()) {
     throw new AppError("Horario final deve ser maior que o horario inicial");
   }
+
+  if (!SERVICE_ORDER_RECURRENCE_TYPES.includes(recurrenceType)) {
+    throw new AppError("Tipo de recorrencia invalido");
+  }
+
+  if (recurrenceType === "monthly_fixed_day") {
+    const day = Number(data.recurrenceDayOfMonth);
+    if (!Number.isInteger(day) || day < 1 || day > 31) {
+      throw new AppError("Informe um dia do mes entre 1 e 31");
+    }
+  }
+
+  if (recurrenceType === "custom_interval") {
+    const intervalDays = Number(data.recurrenceIntervalDays);
+    if (
+      !Number.isInteger(intervalDays) ||
+      intervalDays < 1 ||
+      intervalDays > 365
+    ) {
+      throw new AppError(
+        "Informe o intervalo de recorrencia entre 1 e 365 dias"
+      );
+    }
+  }
+};
+
+const normalizeRecurrence = (
+  data: ServiceOrderData
+): Pick<
+  ServiceOrderData,
+  | "recurrenceType"
+  | "recurrenceActive"
+  | "recurrenceDayOfMonth"
+  | "recurrenceIntervalDays"
+> => {
+  const recurrenceType = resolveRecurrenceType(data);
+
+  if (recurrenceType === "monthly_fixed_day") {
+    return {
+      recurrenceType,
+      recurrenceActive: data.recurrenceActive !== false,
+      recurrenceDayOfMonth: Number(data.recurrenceDayOfMonth),
+      recurrenceIntervalDays: null
+    };
+  }
+
+  if (recurrenceType === "custom_interval") {
+    return {
+      recurrenceType,
+      recurrenceActive: data.recurrenceActive !== false,
+      recurrenceDayOfMonth: null,
+      recurrenceIntervalDays: Number(data.recurrenceIntervalDays)
+    };
+  }
+
+  return {
+    recurrenceType: "single",
+    recurrenceActive: false,
+    recurrenceDayOfMonth: null,
+    recurrenceIntervalDays: null
+  };
 };
 
 const ensureNoScheduleConflict = async (
@@ -423,29 +504,33 @@ const buildOrderPayload = (
   tenantId: string | number,
   userId: string | number,
   data: ServiceOrderData
-): LegacyAny => ({
-  tenantId,
-  contactId: data.contactId,
-  attendantId: data.attendantId || null,
-  createdByUserId: Number(userId),
-  title: cleanText(data.title),
-  description: cleanText(data.description),
-  serviceType: cleanText(data.serviceType),
-  priority: data.priority || "baixa",
-  status: data.status || "rascunho",
-  scheduledStart: normalizeDate(data.scheduledStart),
-  scheduledEnd: normalizeDate(data.scheduledEnd),
-  address: cleanText(data.address),
-  addressComplement: cleanText(data.addressComplement),
-  city: cleanText(data.city),
-  state: cleanText(data.state)?.toUpperCase() || null,
-  zipCode: normalizeDigits(data.zipCode),
-  publicObservation: cleanText(data.publicObservation),
-  internalObservation: cleanText(data.internalObservation),
-  customerSignatureUrl: cleanText(data.customerSignatureUrl),
-  attachmentUrls: data.attachmentUrls || [],
-  cancelReason: cleanText(data.cancelReason)
-});
+): LegacyAny => {
+  const recurrence = normalizeRecurrence(data);
+  return {
+    tenantId,
+    contactId: data.contactId,
+    attendantId: data.attendantId || null,
+    createdByUserId: Number(userId),
+    title: cleanText(data.title),
+    description: cleanText(data.description),
+    serviceType: cleanText(data.serviceType),
+    priority: data.priority || "baixa",
+    status: data.status || "rascunho",
+    ...recurrence,
+    scheduledStart: normalizeDate(data.scheduledStart),
+    scheduledEnd: normalizeDate(data.scheduledEnd),
+    address: cleanText(data.address),
+    addressComplement: cleanText(data.addressComplement),
+    city: cleanText(data.city),
+    state: cleanText(data.state)?.toUpperCase() || null,
+    zipCode: normalizeDigits(data.zipCode),
+    publicObservation: cleanText(data.publicObservation),
+    internalObservation: cleanText(data.internalObservation),
+    customerSignatureUrl: cleanText(data.customerSignatureUrl),
+    attachmentUrls: data.attachmentUrls || [],
+    cancelReason: cleanText(data.cancelReason)
+  };
+};
 
 export const createOrder = async (
   tenantId: string | number,
@@ -511,7 +596,10 @@ export const updateOrder = async (
         status: serviceOrder.status,
         attendantId: serviceOrder.attendantId,
         scheduledStart: serviceOrder.scheduledStart,
-        scheduledEnd: serviceOrder.scheduledEnd
+        scheduledEnd: serviceOrder.scheduledEnd,
+        recurrenceType: serviceOrder.recurrenceType,
+        recurrenceDayOfMonth: serviceOrder.recurrenceDayOfMonth,
+        recurrenceIntervalDays: serviceOrder.recurrenceIntervalDays
       };
       const payload = buildOrderPayload(tenantId, userId, data);
       payload.createdByUserId = serviceOrder.createdByUserId;
@@ -540,7 +628,10 @@ export const updateOrder = async (
           status: serviceOrder.status,
           attendantId: serviceOrder.attendantId,
           scheduledStart: serviceOrder.scheduledStart,
-          scheduledEnd: serviceOrder.scheduledEnd
+          scheduledEnd: serviceOrder.scheduledEnd,
+          recurrenceType: serviceOrder.recurrenceType,
+          recurrenceDayOfMonth: serviceOrder.recurrenceDayOfMonth,
+          recurrenceIntervalDays: serviceOrder.recurrenceIntervalDays
         },
         transaction
       );

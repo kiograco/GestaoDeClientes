@@ -35,3 +35,29 @@ O seed cria dados fake e idempotentes:
 Se estiver executando fora do container e o `.env` usa `POSTGRES_HOST=postgres`,
 rode o comando com `POSTGRES_HOST=localhost` quando o PostgreSQL estiver
 exposto localmente.
+
+## Railway
+
+No Railway, o deploy executa migrations automaticamente, mas não executa seeds
+por padrão. Para criar a conta demo no banco do Railway, defina a variável abaixo
+no serviço do backend e faça um redeploy:
+
+```text
+ENABLE_DEMO_SERVICE_ORDER_SEED=true
+```
+
+O seed é idempotente para a conta `demo@ncprogrammers.local`, então pode rodar
+mais de uma vez sem duplicar a empresa demo.
+
+Depois que a conta aparecer, remova ou altere a variável para evitar manter seed
+demo habilitado em ambiente público:
+
+```text
+ENABLE_DEMO_SERVICE_ORDER_SEED=false
+```
+
+Também é possível rodar manualmente pelo shell do serviço backend no Railway:
+
+```sh
+npm run db:seed:demo
+```

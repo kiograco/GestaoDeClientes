@@ -68,6 +68,18 @@ class ServiceOrder extends Model<ServiceOrder> {
   status: string;
 
   @Column
+  recurrenceType: string;
+
+  @Column
+  recurrenceActive: boolean;
+
+  @Column
+  recurrenceDayOfMonth: number;
+
+  @Column
+  recurrenceIntervalDays: number;
+
+  @Column
   scheduledStart: Date;
 
   @Column

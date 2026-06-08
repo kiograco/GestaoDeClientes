@@ -26,6 +26,12 @@ const orderSchema = Yup.object().shape({
   serviceType: Yup.string().trim().required(),
   priority: Yup.string().oneOf(ServiceOrder.SERVICE_ORDER_PRIORITIES),
   status: Yup.string().oneOf(ServiceOrder.SERVICE_ORDER_STATUSES),
+  recurrenceType: Yup.string().oneOf(
+    ServiceOrder.SERVICE_ORDER_RECURRENCE_TYPES
+  ),
+  recurrenceActive: Yup.boolean(),
+  recurrenceDayOfMonth: Yup.number().integer().min(1).max(31).nullable(),
+  recurrenceIntervalDays: Yup.number().integer().min(1).max(365).nullable(),
   scheduledStart: Yup.date().nullable(),
   scheduledEnd: Yup.date().nullable(),
   address: nullableString,
