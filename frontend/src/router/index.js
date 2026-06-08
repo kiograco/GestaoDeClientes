@@ -3,6 +3,7 @@ import VueRouter from 'vue-router'
 import axios from 'axios'
 import { Notify } from 'quasar'
 import { getAccessToken, setAccessToken } from 'src/utils/authToken'
+import { persistSessionData } from 'src/utils/session'
 
 import routes from './routes'
 
@@ -28,6 +29,7 @@ const tryRefreshToken = async () => {
     )
     if (data?.token) {
       setAccessToken(data.token)
+      persistSessionData(data)
       return true
     }
   } catch (err) {

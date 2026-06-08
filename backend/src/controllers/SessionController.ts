@@ -3,6 +3,7 @@ import AppError from "../errors/AppError";
 
 import AuthUserService from "../services/UserServices/AuthUserSerice";
 import { SendRefreshToken } from "../helpers/SendRefreshToken";
+import { getClearRefreshTokenCookieOptions } from "../helpers/RefreshTokenCookie";
 import { RefreshTokenService } from "../services/AuthServices/RefreshTokenService";
 import { getIO } from "../libs/socket";
 import User from "../models/User";
@@ -10,15 +11,12 @@ import { RequestPasswordResetService } from "../services/AuthServices/RequestPas
 import { ResetPasswordService } from "../services/AuthServices/ResetPasswordService";
 import ShowTenantBrandingService from "../services/TenantServices/ShowTenantBrandingService";
 import {
-  getTenantAccessDaysRemaining,
-  isTenantAccessActive
-} from "../helpers/TenantAccess";
-import {
   ConfirmMfaSetupService,
   DisableMfaService,
   StartMfaSetupService
 } from "../services/AuthServices/MfaService";
 import createAuditLog from "../services/AuditLogService";
+import buildSessionPayload from "../helpers/SessionPayload";
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const io = getIO();
@@ -41,33 +39,15 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   SendRefreshToken(res, refreshToken);
 
   const params = {
-    token,
-    username: user.name,
-    email: user.email,
-    profile: user.profile,
-    status: user.status,
-    userId: user.id,
-    tenantId: user.tenantId,
-    tenantName: user.tenant?.name,
-    logoUrl: user.tenant?.logoUrl,
-    accessExpiresAt: user.tenant?.accessExpiresAt,
-    businessType: user.tenant?.businessType,
-    enabledModules: user.tenant?.enabledModules,
-    accessDaysRemaining: getTenantAccessDaysRemaining(
-      user.tenant?.accessExpiresAt
-    ),
-    subscriptionExpired:
-      user.profile !== "superadmin" && !isTenantAccessActive(user.tenant),
-    queues: user.queues,
-    usuariosOnline,
-    configs: user.configs
+    ...buildSessionPayload(user, token),
+    usuariosOnline
   };
 
-  io.emit(`${params.tenantId}:users`, {
+  io.emit(`${user.tenantId}:users`, {
     action: "update",
     data: {
-      username: params.username,
-      email: params.email,
+      username: user.name,
+      email: user.email,
       isOnline: true,
       lastLogin: new Date()
     }
@@ -96,11 +76,11 @@ export const update = async (
     throw new AppError("ERR_SESSION_EXPIRED", 401);
   }
 
-  const { newToken, refreshToken } = await RefreshTokenService(token);
+  const { newToken, refreshToken, user } = await RefreshTokenService(token);
 
   SendRefreshToken(res, refreshToken);
 
-  return res.json({ token: newToken });
+  return res.json(buildSessionPayload(user, newToken));
 };
 
 export const logout = async (
@@ -126,11 +106,7 @@ export const logout = async (
     }
   });
 
-  res.clearCookie("jrt", {
-    httpOnly: true,
-    sameSite: "strict",
-    secure: process.env.NODE_ENV === "production"
-  });
+  res.clearCookie("jrt", getClearRefreshTokenCookieOptions());
 
   await createAuditLog({
     tenantId: userLogout?.tenantId,

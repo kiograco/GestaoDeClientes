@@ -3,6 +3,7 @@ import AppError from "../../errors/AppError";
 import User from "../../models/User";
 import authConfig from "../../config/auth";
 import Tenant from "../../models/Tenant";
+import Queue from "../../models/Queue";
 import {
   createAccessToken,
   createRefreshToken
@@ -17,6 +18,7 @@ interface RefreshTokenPayload {
 interface Response {
   newToken: string;
   refreshToken: string;
+  user: User;
 }
 
 export const RefreshTokenService = async (token: string): Promise<Response> => {
@@ -31,7 +33,21 @@ export const RefreshTokenService = async (token: string): Promise<Response> => {
   const { id, tokenVersion } = decoded as RefreshTokenPayload;
 
   const user = await User.findByPk(id, {
-    include: [{ model: Tenant, attributes: ["status", "accessExpiresAt"] }]
+    include: [
+      { model: Queue, as: "queues" },
+      {
+        model: Tenant,
+        attributes: [
+          "id",
+          "name",
+          "status",
+          "logoUrl",
+          "accessExpiresAt",
+          "businessType",
+          "enabledModules"
+        ]
+      }
+    ]
   });
 
   if (
@@ -46,5 +62,5 @@ export const RefreshTokenService = async (token: string): Promise<Response> => {
   const newToken = createAccessToken(user);
   const refreshToken = createRefreshToken(user);
 
-  return { newToken, refreshToken };
+  return { newToken, refreshToken, user };
 };

@@ -10,6 +10,7 @@ async function mockApi (page, overrides = {}) {
     })
 
   await page.route(/\/auth\/login\/?$/, route => json(route, state.user))
+  await page.route(/\/auth\/refresh_token\/?$/, route => json(route, state.user))
   await page.route(/\/auth\/branding(\?.*)?$/, route =>
     json(route, { logoUrl: state.user.logoUrl || null })
   )

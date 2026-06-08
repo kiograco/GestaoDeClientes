@@ -1,22 +1,10 @@
 import { RealizarLogin } from '../../service/login'
-import { Notify, Dark } from 'quasar'
+import { Notify } from 'quasar'
 import { socketIO } from 'src/utils/socket'
 import { setAccessToken } from 'src/utils/authToken'
+import { persistSessionData } from 'src/utils/session'
 
 const socket = socketIO()
-
-const pesquisaTicketsFiltroPadrao = {
-  searchParam: '',
-  pageNumber: 1,
-  status: ['open', 'pending'],
-  showAll: false,
-  count: null,
-  queuesIds: [],
-  withUnreadMessages: false,
-  isNotAssignedUser: false,
-  includeNotQueueDefined: true
-  // date: new Date(),
-}
 
 const user = {
   state: {
@@ -45,25 +33,7 @@ const user = {
       try {
         const { data } = await RealizarLogin(user)
         setAccessToken(data.token)
-        localStorage.setItem('username', data.username)
-        localStorage.setItem('profile', data.profile)
-        localStorage.setItem('userId', data.userId)
-        localStorage.setItem('usuario', JSON.stringify(data))
-        if (data.logoUrl) {
-          localStorage.setItem('tenantLogoUrl', data.logoUrl)
-        } else {
-          localStorage.removeItem('tenantLogoUrl')
-        }
-        localStorage.setItem('queues', JSON.stringify(data.queues))
-        localStorage.setItem('queues', JSON.stringify(data.queues))
-        localStorage.setItem('filtrosAtendimento', JSON.stringify(pesquisaTicketsFiltroPadrao))
-
-        if (data?.configs?.filtrosAtendimento) {
-          localStorage.setItem('filtrosAtendimento', JSON.stringify(data.configs.filtrosAtendimento))
-        }
-        if (data?.configs?.isDark) {
-          Dark.set(data.configs.isDark)
-        }
+        persistSessionData(data)
         commit('SET_IS_SUPORTE', data)
         commit('SET_IS_ADMIN', data)
 

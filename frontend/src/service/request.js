@@ -7,6 +7,7 @@ import { Notify } from 'quasar'
 import backendErrors from './erros'
 import { RefreshToken } from './login'
 import { clearAccessToken, getAccessToken, setAccessToken } from 'src/utils/authToken'
+import { persistSessionData } from 'src/utils/session'
 
 const service = axios.create({
   baseURL: process.env.VUE_URL_API,
@@ -97,6 +98,7 @@ service.interceptors.response.use(
       return RefreshToken().then(res => {
         if (res.data) {
           setAccessToken(res.data.token)
+          persistSessionData(res.data)
           error.config.headers.Authorization = 'Bearer ' + res.data.token
           return service(error.config)
         }

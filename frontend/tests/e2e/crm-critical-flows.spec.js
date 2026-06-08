@@ -12,6 +12,18 @@ test('login', async ({ page }) => {
     .toBe(fixtures.user.username)
 })
 
+test('refresh da pagina mantem usuario logado', async ({ page }) => {
+  await login(page)
+  await page.goto('/#/ordens-servico')
+  await page.reload()
+
+  await expect(page).not.toHaveURL(/\/login/)
+  await expect(page.getByRole('button', { name: /nova ordem/i })).toBeVisible()
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('username')))
+    .toBe(fixtures.user.username)
+})
+
 test('cadastro de cliente', async ({ page }) => {
   await login(page)
   await page.goto('/#/contatos')
