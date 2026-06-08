@@ -124,7 +124,7 @@
               </div>
               <button
                 v-for="ordem in ordensDaLinha(linha.id)"
-                :key="ordem.id"
+                :key="ordem.occurrenceKey || ordem.id"
                 class="schedule-order"
                 :aria-label="`#${ordem.id} ${ordem.title}`"
                 :class="[`status-${ordem.status}`, { urgente: ordem.priority === 'urgente' }]"
@@ -177,7 +177,7 @@
           <div v-else class="calendar-list">
             <button
               v-for="ordem in ordens"
-              :key="ordem.id"
+              :key="ordem.occurrenceKey || ordem.id"
               class="calendar-item"
               :class="[`status-${ordem.status}`, { urgente: ordem.priority === 'urgente' }]"
               @click="selecionarOrdem(ordem)"

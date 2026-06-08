@@ -155,6 +155,205 @@ const scrubOrder = (
   return data;
 };
 
+const addDays = (date: Date, days: number): Date => {
+  const next = new Date(date);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+};
+
+const daysInUTCMonth = (year: number, month: number): number =>
+  new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+
+const withOccurrenceDate = (
+  base: Date,
+  year: number,
+  month: number,
+  dayOfMonth: number
+): Date => {
+  const next = new Date(base);
+  next.setUTCFullYear(year, month, dayOfMonth);
+  return next;
+};
+
+const buildOccurrence = (
+  order: Record<string, unknown>,
+  occurrenceStart: Date,
+  baseStart: Date,
+  durationMs: number
+): Record<string, unknown> => {
+  const occurrenceEnd = new Date(occurrenceStart.getTime() + durationMs);
+  const isBaseOccurrence = occurrenceStart.getTime() === baseStart.getTime();
+  return {
+    ...order,
+    scheduledStart: occurrenceStart.toISOString(),
+    scheduledEnd: occurrenceEnd.toISOString(),
+    originalServiceOrderId: order.id,
+    recurringOccurrence: !isBaseOccurrence,
+    occurrenceKey: `${order.id}:${occurrenceStart.toISOString()}`
+  };
+};
+
+const occurrenceOverlaps = (
+  occurrenceStart: Date,
+  durationMs: number,
+  rangeStart: Date,
+  rangeEnd: Date
+): boolean => {
+  const occurrenceEnd = new Date(occurrenceStart.getTime() + durationMs);
+  return occurrenceStart < rangeEnd && occurrenceEnd > rangeStart;
+};
+
+const expandCustomIntervalOccurrences = (
+  order: Record<string, unknown>,
+  rangeStart: Date,
+  rangeEnd: Date,
+  baseStart: Date,
+  durationMs: number
+): Record<string, unknown>[] => {
+  const intervalDays = Number(order.recurrenceIntervalDays);
+  if (!Number.isInteger(intervalDays) || intervalDays < 1) return [];
+
+  const intervalMs = intervalDays * 24 * 60 * 60 * 1000;
+  const firstIndex = Math.max(
+    0,
+    Math.floor((rangeStart.getTime() - baseStart.getTime()) / intervalMs) - 1
+  );
+  const occurrences: Record<string, unknown>[] = [];
+
+  for (
+    let index = firstIndex;
+    baseStart.getTime() + index * intervalMs < rangeEnd.getTime();
+    index += 1
+  ) {
+    const occurrenceStart = addDays(baseStart, index * intervalDays);
+    if (occurrenceOverlaps(occurrenceStart, durationMs, rangeStart, rangeEnd)) {
+      occurrences.push(
+        buildOccurrence(order, occurrenceStart, baseStart, durationMs)
+      );
+    }
+  }
+
+  return occurrences;
+};
+
+const expandMonthlyFixedDayOccurrences = (
+  order: Record<string, unknown>,
+  rangeStart: Date,
+  rangeEnd: Date,
+  baseStart: Date,
+  durationMs: number
+): Record<string, unknown>[] => {
+  const dayOfMonth = Number(order.recurrenceDayOfMonth);
+  if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
+    return [];
+  }
+
+  const occurrences: Record<string, unknown>[] = [];
+  const cursor = new Date(
+    Date.UTC(rangeStart.getUTCFullYear(), rangeStart.getUTCMonth() - 1, 1)
+  );
+
+  while (cursor < rangeEnd) {
+    const year = cursor.getUTCFullYear();
+    const month = cursor.getUTCMonth();
+    if (dayOfMonth <= daysInUTCMonth(year, month)) {
+      const occurrenceStart = withOccurrenceDate(
+        baseStart,
+        year,
+        month,
+        dayOfMonth
+      );
+      if (
+        occurrenceStart >= baseStart &&
+        occurrenceOverlaps(occurrenceStart, durationMs, rangeStart, rangeEnd)
+      ) {
+        occurrences.push(
+          buildOccurrence(order, occurrenceStart, baseStart, durationMs)
+        );
+      }
+    }
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+
+  return occurrences;
+};
+
+export const expandServiceOrderOccurrences = (
+  orders: Record<string, unknown>[],
+  rangeStart?: Date | null,
+  rangeEnd?: Date | null
+): Record<string, unknown>[] => {
+  if (!rangeStart || !rangeEnd) {
+    return orders.map(order => ({
+      ...order,
+      originalServiceOrderId: order.id,
+      occurrenceKey: `${order.id}:${String(order.scheduledStart || "")}`,
+      recurringOccurrence: false
+    }));
+  }
+
+  return orders
+    .reduce<Record<string, unknown>[]>((occurrences, order) => {
+      const baseStart = normalizeDate(order.scheduledStart as string | Date);
+      const baseEnd = normalizeDate(order.scheduledEnd as string | Date);
+      if (!baseStart || !baseEnd) return [...occurrences, order];
+
+      const durationMs = baseEnd.getTime() - baseStart.getTime();
+      if (
+        !order.recurrenceActive ||
+        order.recurrenceType === "single" ||
+        durationMs <= 0
+      ) {
+        return [
+          ...occurrences,
+          ...(occurrenceOverlaps(baseStart, durationMs, rangeStart, rangeEnd)
+            ? [
+                {
+                  ...order,
+                  originalServiceOrderId: order.id,
+                  occurrenceKey: `${order.id}:${baseStart.toISOString()}`,
+                  recurringOccurrence: false
+                }
+              ]
+            : [])
+        ];
+      }
+
+      if (order.recurrenceType === "custom_interval") {
+        return [
+          ...occurrences,
+          ...expandCustomIntervalOccurrences(
+            order,
+            rangeStart,
+            rangeEnd,
+            baseStart,
+            durationMs
+          )
+        ];
+      }
+
+      if (order.recurrenceType === "monthly_fixed_day") {
+        return [
+          ...occurrences,
+          ...expandMonthlyFixedDayOccurrences(
+            order,
+            rangeStart,
+            rangeEnd,
+            baseStart,
+            durationMs
+          )
+        ];
+      }
+
+      return occurrences;
+    }, [])
+    .sort(
+      (a, b) =>
+        new Date(String(a.scheduledStart)).getTime() -
+        new Date(String(b.scheduledStart)).getTime()
+    );
+};
+
 const ensureCustomer = async (
   tenantId: string | number,
   contactId: number,
@@ -394,13 +593,23 @@ export const listOrders = async (
   filters: LegacyAny
 ): Promise<Record<string, unknown>[]> => {
   const where: LegacyAny = { tenantId };
+  const rangeStart = filters.start ? new Date(filters.start) : null;
+  const rangeEnd = filters.end ? new Date(filters.end) : null;
   if (filters.status) where.status = filters.status;
   if (filters.priority) where.priority = filters.priority;
   if (filters.serviceType) where.serviceType = filters.serviceType;
   if (filters.attendantId) where.attendantId = filters.attendantId;
-  if (filters.start && filters.end) {
-    where.scheduledStart = { [Op.lt]: new Date(filters.end) };
-    where.scheduledEnd = { [Op.gt]: new Date(filters.start) };
+  if (rangeStart && rangeEnd) {
+    where[Op.or] = [
+      {
+        scheduledStart: { [Op.lt]: rangeEnd },
+        scheduledEnd: { [Op.gt]: rangeStart }
+      },
+      {
+        recurrenceActive: true,
+        scheduledStart: { [Op.lt]: rangeEnd }
+      }
+    ];
   }
 
   const orders = await ServiceOrder.findAll({
@@ -408,7 +617,11 @@ export const listOrders = async (
     include: includeOrder,
     order: [["scheduledStart", "ASC"]]
   });
-  return orders.map(order => scrubOrder(order, profile));
+  return expandServiceOrderOccurrences(
+    orders.map(order => scrubOrder(order, profile)),
+    rangeStart,
+    rangeEnd
+  );
 };
 
 export const getDashboard = async (

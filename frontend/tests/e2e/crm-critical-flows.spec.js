@@ -4,21 +4,8 @@ const { login, mockApi } = require('./helpers')
 
 async function selecionarHora (page, dialog, label, hora) {
   const field = campoHora(dialog, label)
-  const currentText = await field.innerText()
-  const currentMatch = currentText.match(/\d{2}:\d{2}/)
-  const current = currentMatch ? currentMatch[0] : '00:00'
-  const [hour, minute] = hora.split(':').map(Number)
-  const [currentHour, currentMinute] = current.split(':').map(Number)
-  const targetIndex = ((hour * 60) + minute) / 15
-  const currentIndex = ((currentHour * 60) + currentMinute) / 15
-  const steps = targetIndex - currentIndex
-
   await field.click()
-  const key = steps >= 0 ? 'ArrowDown' : 'ArrowUp'
-  for (let index = 0; index < Math.abs(steps); index += 1) {
-    await page.keyboard.press(key)
-  }
-  await page.keyboard.press('Enter')
+  await page.locator('.q-menu').last().getByText(hora, { exact: true }).click()
 }
 
 function campoHora (dialog, label) {
@@ -212,8 +199,8 @@ test('nova ordem recorrente envia intervalo editavel', async ({ page }) => {
   await ordemDialog.getByLabel(/titulo|título/i).fill('Ordem recorrente E2E')
   await ordemDialog.getByLabel(/tipo de servico|tipo de serviço/i).fill('Manutencao preventiva')
   await ordemDialog.getByLabel(/data/i).fill('2099-12-31')
-  await selecionarHora(page, ordemDialog, /hora início/i, '09:00')
-  await selecionarHora(page, ordemDialog, /hora fim/i, '10:00')
+  await selecionarHora(page, ordemDialog, /hora início/i, '00:15')
+  await selecionarHora(page, ordemDialog, /hora fim/i, '01:00')
   await ordemDialog.getByText(/ordem recorrente/i).click()
   await ordemDialog.getByRole('combobox', { name: /tipo de recorrência/i }).click()
   await page.getByText(/intervalo em dias/i).click()

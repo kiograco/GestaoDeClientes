@@ -1,6 +1,7 @@
 import AppError from "../../../src/errors/AppError";
 import {
   buildPublicServiceOrderDocumentHTML,
+  expandServiceOrderOccurrences,
   validateServiceOrderSchedule
 } from "../../../src/services/ServiceOrderServices/ServiceOrderService";
 
@@ -96,6 +97,62 @@ describe("ServiceOrderService regras", () => {
         recurrenceIntervalDays: 30
       })
     ).not.toThrow();
+  });
+
+  it("expande recorrencia por intervalo nos dias da agenda", () => {
+    const occurrences = expandServiceOrderOccurrences(
+      [
+        {
+          id: 10,
+          tenantId: 1,
+          title: "Manutencao mensal",
+          recurrenceActive: true,
+          recurrenceType: "custom_interval",
+          recurrenceIntervalDays: 30,
+          scheduledStart: "2026-06-01T09:00:00.000Z",
+          scheduledEnd: "2026-06-01T10:00:00.000Z"
+        }
+      ],
+      new Date("2026-07-01T00:00:00.000Z"),
+      new Date("2026-07-02T00:00:00.000Z")
+    );
+
+    expect(occurrences).toHaveLength(1);
+    expect(occurrences[0]).toMatchObject({
+      id: 10,
+      originalServiceOrderId: 10,
+      recurringOccurrence: true,
+      scheduledStart: "2026-07-01T09:00:00.000Z",
+      scheduledEnd: "2026-07-01T10:00:00.000Z"
+    });
+  });
+
+  it("expande recorrencia mensal no dia fixo configurado", () => {
+    const occurrences = expandServiceOrderOccurrences(
+      [
+        {
+          id: 11,
+          tenantId: 1,
+          title: "Visita mensal",
+          recurrenceActive: true,
+          recurrenceType: "monthly_fixed_day",
+          recurrenceDayOfMonth: 15,
+          scheduledStart: "2026-06-10T14:30:00.000Z",
+          scheduledEnd: "2026-06-10T15:30:00.000Z"
+        }
+      ],
+      new Date("2026-08-15T00:00:00.000Z"),
+      new Date("2026-08-16T00:00:00.000Z")
+    );
+
+    expect(occurrences).toHaveLength(1);
+    expect(occurrences[0]).toMatchObject({
+      id: 11,
+      originalServiceOrderId: 11,
+      recurringOccurrence: true,
+      scheduledStart: "2026-08-15T14:30:00.000Z",
+      scheduledEnd: "2026-08-15T15:30:00.000Z"
+    });
   });
 
   it("nao inclui observacao interna no documento publico", () => {
