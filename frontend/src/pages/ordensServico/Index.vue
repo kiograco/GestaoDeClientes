@@ -267,8 +267,21 @@
           <q-input dense outlined class="col-12 col-md-6" label="Tipo de serviço" v-model="form.serviceType" />
           <q-select dense outlined class="col-12 col-md-3" label="Prioridade" v-model="form.priority" :options="priorityOptions" />
           <q-select dense outlined class="col-12 col-md-3" label="Status" v-model="form.status" :options="statusOptions" />
-          <q-input dense outlined type="datetime-local" class="col-12 col-md-3" label="Início" v-model="form.scheduledStart" />
-          <q-input dense outlined type="datetime-local" class="col-12 col-md-3" label="Fim" v-model="form.scheduledEnd" />
+          <q-input dense outlined type="date" class="col-12 col-md-4" label="Data" v-model="form.scheduledDate" />
+          <q-select
+            dense outlined emit-value map-options
+            class="col-12 col-md-4"
+            label="Hora início"
+            v-model="form.scheduledStartTime"
+            :options="timeOptions"
+          />
+          <q-select
+            dense outlined emit-value map-options
+            class="col-12 col-md-4"
+            label="Hora fim"
+            v-model="form.scheduledEndTime"
+            :options="timeOptions"
+          />
           <div class="col-12">
             <q-toggle
               v-model="form.recurrenceActive"
@@ -402,6 +415,9 @@ const emptyForm = () => ({
   recurrenceType: 'single',
   recurrenceDayOfMonth: null,
   recurrenceIntervalDays: 30,
+  scheduledDate: '',
+  scheduledStartTime: '',
+  scheduledEndTime: '',
   scheduledStart: '',
   scheduledEnd: '',
   address: '',
@@ -443,6 +459,13 @@ export default {
         { label: 'Dia fixo todo mês', value: 'monthly_fixed_day' },
         { label: 'Intervalo em dias', value: 'custom_interval' }
       ],
+      timeOptions: Array.from({ length: 24 * 4 }, (_, index) => {
+        const minutes = index * 15
+        const hour = Math.floor(minutes / 60)
+        const minute = minutes % 60
+        const value = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+        return { label: value, value }
+      }),
       notificationOptions: [
         { label: 'Interna', value: 'internal' },
         { label: 'E-mail', value: 'email' },
@@ -549,6 +572,9 @@ export default {
           recurrenceType: ordem.recurrenceType || 'single',
           recurrenceDayOfMonth: ordem.recurrenceDayOfMonth || null,
           recurrenceIntervalDays: ordem.recurrenceIntervalDays || 30,
+          scheduledDate: this.toInputDate(ordem.scheduledStart).slice(0, 10),
+          scheduledStartTime: this.toInputTime(ordem.scheduledStart),
+          scheduledEndTime: this.toInputTime(ordem.scheduledEnd),
           scheduledStart: this.toInputDate(ordem.scheduledStart),
           scheduledEnd: this.toInputDate(ordem.scheduledEnd)
         }
@@ -698,6 +724,9 @@ export default {
         ...emptyForm(),
         ...overrides,
         attendantId: linha.id,
+        scheduledDate: this.toInputDate(start).slice(0, 10),
+        scheduledStartTime: this.toInputTime(start),
+        scheduledEndTime: this.toInputTime(end),
         scheduledStart: this.toInputDate(start),
         scheduledEnd: this.toInputDate(end)
       }
@@ -779,7 +808,7 @@ export default {
       }
       if (this.form.recurrenceType === 'single') this.form.recurrenceType = 'monthly_fixed_day'
       if (!this.form.recurrenceDayOfMonth) {
-        const start = this.form.scheduledStart ? new Date(this.form.scheduledStart) : new Date()
+        const start = this.form.scheduledDate ? new Date(`${this.form.scheduledDate}T00:00:00`) : new Date()
         this.form.recurrenceDayOfMonth = start.getDate()
       }
       if (!this.form.recurrenceIntervalDays) this.form.recurrenceIntervalDays = 30
@@ -790,16 +819,26 @@ export default {
       date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
       return date.toISOString().slice(0, 16)
     },
+    toInputTime (value) {
+      if (!value) return ''
+      return this.toInputDate(value).slice(11, 16)
+    },
     toApiDate (value) {
       if (!value) return null
       return new Date(value).toISOString()
+    },
+    toApiScheduleDate (payload, field, timeField) {
+      if (payload.scheduledDate && payload[timeField]) {
+        return this.toApiDate(`${payload.scheduledDate}T${payload[timeField]}`)
+      }
+      return this.toApiDate(payload[field])
     },
     normalizarDatasPayload (payload) {
       return {
         ...payload,
         ...this.normalizarRecorrenciaPayload(payload),
-        scheduledStart: this.toApiDate(payload.scheduledStart),
-        scheduledEnd: this.toApiDate(payload.scheduledEnd)
+        scheduledStart: this.toApiScheduleDate(payload, 'scheduledStart', 'scheduledStartTime'),
+        scheduledEnd: this.toApiScheduleDate(payload, 'scheduledEnd', 'scheduledEndTime')
       }
     },
     normalizarRecorrenciaPayload (payload) {

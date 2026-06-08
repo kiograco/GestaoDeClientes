@@ -2,6 +2,31 @@ const { test, expect } = require('@playwright/test')
 const fixtures = require('./fixtures')
 const { login, mockApi } = require('./helpers')
 
+async function selecionarHora (page, dialog, label, hora) {
+  const field = campoHora(dialog, label)
+  const currentText = await field.innerText()
+  const currentMatch = currentText.match(/\d{2}:\d{2}/)
+  const current = currentMatch ? currentMatch[0] : '00:00'
+  const [hour, minute] = hora.split(':').map(Number)
+  const [currentHour, currentMinute] = current.split(':').map(Number)
+  const targetIndex = ((hour * 60) + minute) / 15
+  const currentIndex = ((currentHour * 60) + currentMinute) / 15
+  const steps = targetIndex - currentIndex
+
+  await field.click()
+  const key = steps >= 0 ? 'ArrowDown' : 'ArrowUp'
+  for (let index = 0; index < Math.abs(steps); index += 1) {
+    await page.keyboard.press(key)
+  }
+  await page.keyboard.press('Enter')
+}
+
+function campoHora (dialog, label) {
+  return dialog
+    .getByRole('combobox', { name: label })
+    .locator('xpath=ancestor::label[contains(@class, "q-field")]')
+}
+
 test('login', async ({ page }) => {
   await login(page)
   await expect
@@ -101,13 +126,14 @@ test('edicao de ordem envia horario alterado com timezone', async ({ page }) => 
   await page.getByRole('button', { name: /#70 visita e2e/i }).click()
   await page.getByRole('button', { name: /editar/i }).click()
   const ordemDialog = page.getByRole('dialog').filter({ hasText: /editar ordem/i })
-  await ordemDialog.locator('input[type="datetime-local"]').nth(0).fill('2099-12-31T14:30')
-  await ordemDialog.locator('input[type="datetime-local"]').nth(1).fill('2099-12-31T15:45')
+  await ordemDialog.getByLabel(/data/i).fill('2099-12-31')
+  await selecionarHora(page, ordemDialog, /hora início/i, '07:15')
+  await selecionarHora(page, ordemDialog, /hora fim/i, '08:15')
   await ordemDialog.getByRole('button', { name: /agendar/i }).click()
 
   const esperado = await page.evaluate(() => ({
-    start: new Date('2099-12-31T14:30').toISOString(),
-    end: new Date('2099-12-31T15:45').toISOString()
+    start: new Date('2099-12-31T07:15').toISOString(),
+    end: new Date('2099-12-31T08:15').toISOString()
   }))
   await expect.poll(() => payloadEnviado && payloadEnviado.scheduledStart).toBe(esperado.start)
   expect(payloadEnviado.scheduledEnd).toBe(esperado.end)
@@ -154,8 +180,9 @@ test('menu contextual da agenda reserva horario livre', async ({ page }) => {
 
   const ordemDialog = page.getByRole('dialog').filter({ hasText: /nova ordem/i })
   await expect(ordemDialog.getByLabel(/titulo|título/i)).toHaveValue('Reserva de horário')
-  await expect(ordemDialog.locator('input[type="datetime-local"]').nth(0)).toHaveValue('2099-12-31T14:00')
-  await expect(ordemDialog.locator('input[type="datetime-local"]').nth(1)).toHaveValue('2099-12-31T15:00')
+  await expect(ordemDialog.getByLabel(/data/i)).toHaveValue('2099-12-31')
+  await expect(campoHora(ordemDialog, /hora início/i)).toContainText('14:00')
+  await expect(campoHora(ordemDialog, /hora fim/i)).toContainText('15:00')
 })
 
 test('nova ordem recorrente envia intervalo editavel', async ({ page }) => {
@@ -184,8 +211,9 @@ test('nova ordem recorrente envia intervalo editavel', async ({ page }) => {
   await page.getByText(/cliente e2e/i).click()
   await ordemDialog.getByLabel(/titulo|título/i).fill('Ordem recorrente E2E')
   await ordemDialog.getByLabel(/tipo de servico|tipo de serviço/i).fill('Manutencao preventiva')
-  await ordemDialog.locator('input[type="datetime-local"]').nth(0).fill('2099-12-31T09:00')
-  await ordemDialog.locator('input[type="datetime-local"]').nth(1).fill('2099-12-31T10:00')
+  await ordemDialog.getByLabel(/data/i).fill('2099-12-31')
+  await selecionarHora(page, ordemDialog, /hora início/i, '09:00')
+  await selecionarHora(page, ordemDialog, /hora fim/i, '10:00')
   await ordemDialog.getByText(/ordem recorrente/i).click()
   await ordemDialog.getByRole('combobox', { name: /tipo de recorrência/i }).click()
   await page.getByText(/intervalo em dias/i).click()
