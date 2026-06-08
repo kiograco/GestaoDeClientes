@@ -13,9 +13,8 @@ async function selecionarProximoHorario (page, dialog, label) {
   const currentText = await field.innerText()
   const currentMatch = currentText.match(/\d{2}:\d{2}/)
   const current = currentMatch ? currentMatch[0] : '00:00'
-  const [hour, minute] = current.split(':').map(Number)
-  const nextMinutes = ((hour * 60) + minute + 15) % (24 * 60)
-  const next = `${String(Math.floor(nextMinutes / 60)).padStart(2, '0')}:${String(nextMinutes % 60).padStart(2, '0')}`
+  const [hour] = current.split(':').map(Number)
+  const next = `${String((hour + 1) % 24).padStart(2, '0')}:00`
   await selecionarHora(page, dialog, label, next)
   return next
 }
@@ -211,7 +210,7 @@ test('nova ordem recorrente envia intervalo editavel', async ({ page }) => {
   await ordemDialog.getByLabel(/titulo|título/i).fill('Ordem recorrente E2E')
   await ordemDialog.getByLabel(/tipo de servico|tipo de serviço/i).fill('Manutencao preventiva')
   await ordemDialog.getByLabel(/data/i).fill('2099-12-31')
-  await selecionarHora(page, ordemDialog, /hora início/i, '00:15')
+  await selecionarHora(page, ordemDialog, /hora início/i, '00:00')
   await selecionarHora(page, ordemDialog, /hora fim/i, '01:00')
   await ordemDialog.getByText(/ordem recorrente/i).click()
   await ordemDialog.getByRole('combobox', { name: /tipo de recorrência/i }).click()
