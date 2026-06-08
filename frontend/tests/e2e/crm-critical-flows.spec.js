@@ -65,6 +65,41 @@ test('cadastro de cliente dentro da nova ordem preserva dados preenchidos', asyn
   await expect(ordemDialog.getByLabel(/descrição|descricao/i)).toHaveValue('Descricao antes do cadastro do cliente')
 })
 
+test('edicao de ordem envia horario alterado com timezone', async ({ page }) => {
+  await login(page)
+  let payloadEnviado = null
+  await page.route('**/service/orders/70', async route => {
+    if (route.request().method() === 'PUT') {
+      payloadEnviado = route.request().postDataJSON()
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...fixtures.serviceOrder, ...payloadEnviado })
+      })
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(fixtures.serviceOrder)
+    })
+  })
+  await page.goto('/#/ordens-servico')
+
+  await page.getByRole('button', { name: /#70 visita e2e/i }).click()
+  await page.getByRole('button', { name: /editar/i }).click()
+  const ordemDialog = page.getByRole('dialog').filter({ hasText: /editar ordem/i })
+  await ordemDialog.locator('input[type="datetime-local"]').nth(0).fill('2099-12-31T14:30')
+  await ordemDialog.locator('input[type="datetime-local"]').nth(1).fill('2099-12-31T15:45')
+  await ordemDialog.getByRole('button', { name: /agendar/i }).click()
+
+  const esperado = await page.evaluate(() => ({
+    start: new Date('2099-12-31T14:30').toISOString(),
+    end: new Date('2099-12-31T15:45').toISOString()
+  }))
+  await expect.poll(() => payloadEnviado && payloadEnviado.scheduledStart).toBe(esperado.start)
+  expect(payloadEnviado.scheduledEnd).toBe(esperado.end)
+})
+
 test('alteracao de status do pedido', async ({ page }) => {
   await login(page)
   await page.goto('/#/delivery/pedidos')

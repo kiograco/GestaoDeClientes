@@ -416,7 +416,7 @@ export default {
     async salvarOrdem (status) {
       this.salvando = true
       try {
-        const payload = { ...this.form, status }
+        const payload = this.normalizarDatasPayload({ ...this.form, status })
         const response = payload.id ? await AlterarOrdemServico(payload) : await CriarOrdemServico(payload)
         this.$q.notify({ type: 'positive', message: 'Ordem de serviço salva.' })
         this.modalOrdem = false
@@ -445,7 +445,7 @@ export default {
     },
     async salvarStatus (payload) {
       try {
-        const { data } = await AlterarOrdemServico(payload)
+        const { data } = await AlterarOrdemServico(this.normalizarDatasPayload(payload))
         this.ordemSelecionada = data
         await this.carregarOrdens()
       } catch (error) {
@@ -534,6 +534,17 @@ export default {
       const date = new Date(value)
       date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
       return date.toISOString().slice(0, 16)
+    },
+    toApiDate (value) {
+      if (!value) return null
+      return new Date(value).toISOString()
+    },
+    normalizarDatasPayload (payload) {
+      return {
+        ...payload,
+        scheduledStart: this.toApiDate(payload.scheduledStart),
+        scheduledEnd: this.toApiDate(payload.scheduledEnd)
+      }
     },
     conectarSocket () {
       const usuario = JSON.parse(localStorage.getItem('usuario'))
