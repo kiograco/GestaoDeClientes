@@ -18,6 +18,25 @@ const attendantSchema = Yup.object().shape({
   workingHours: Yup.mixed().nullable()
 });
 
+const inventoryItemSchema = Yup.object().shape({
+  name: Yup.string().trim().required().min(2),
+  sku: nullableString,
+  description: nullableString,
+  unit: Yup.string().trim().max(20).nullable(),
+  quantity: Yup.number().min(0).default(0),
+  minQuantity: Yup.number().min(0).default(0),
+  costPrice: Yup.number().min(0).nullable(),
+  salePrice: Yup.number().min(0).nullable(),
+  active: Yup.boolean()
+});
+
+const serviceTypeSchema = Yup.object().shape({
+  name: Yup.string().trim().required().min(2),
+  description: nullableString,
+  defaultPrice: Yup.number().min(0).nullable(),
+  active: Yup.boolean()
+});
+
 const orderSchema = Yup.object().shape({
   contactId: Yup.number().integer().positive().required(),
   attendantId: Yup.number().integer().positive().nullable(),
@@ -100,6 +119,96 @@ export const updateAttendant = async (
       )
     )
   );
+
+export const listInventoryItems = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(await ServiceOrder.listInventoryItems(req.user.tenantId));
+
+export const createInventoryItem = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res
+    .status(201)
+    .json(
+      await ServiceOrder.createInventoryItem(
+        req.user.tenantId,
+        await validate<ServiceOrder.ServiceInventoryItemData>(
+          inventoryItemSchema,
+          req.body
+        )
+      )
+    );
+
+export const updateInventoryItem = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await ServiceOrder.updateInventoryItem(
+      req.user.tenantId,
+      req.params.itemId,
+      await validate<ServiceOrder.ServiceInventoryItemData>(
+        inventoryItemSchema,
+        req.body
+      )
+    )
+  );
+
+export const deleteInventoryItem = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  await ServiceOrder.deleteInventoryItem(req.user.tenantId, req.params.itemId);
+  return res.status(204).send();
+};
+
+export const listServiceTypes = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(await ServiceOrder.listServiceTypes(req.user.tenantId));
+
+export const createServiceType = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res
+    .status(201)
+    .json(
+      await ServiceOrder.createServiceType(
+        req.user.tenantId,
+        await validate<ServiceOrder.ServiceTypeData>(
+          serviceTypeSchema,
+          req.body
+        )
+      )
+    );
+
+export const updateServiceType = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await ServiceOrder.updateServiceType(
+      req.user.tenantId,
+      req.params.serviceTypeId,
+      await validate<ServiceOrder.ServiceTypeData>(serviceTypeSchema, req.body)
+    )
+  );
+
+export const deleteServiceType = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  await ServiceOrder.deleteServiceType(
+    req.user.tenantId,
+    req.params.serviceTypeId
+  );
+  return res.status(204).send();
+};
 
 export const listOrders = async (
   req: Request,

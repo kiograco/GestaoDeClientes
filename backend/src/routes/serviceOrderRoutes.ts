@@ -20,6 +20,46 @@ serviceOrderRoutes.put(
   ServiceOrderController.updateAttendant
 );
 serviceOrderRoutes.get(
+  "/service/inventory",
+  isAuth,
+  ServiceOrderController.listInventoryItems
+);
+serviceOrderRoutes.post(
+  "/service/inventory",
+  isAuth,
+  ServiceOrderController.createInventoryItem
+);
+serviceOrderRoutes.put(
+  "/service/inventory/:itemId",
+  isAuth,
+  ServiceOrderController.updateInventoryItem
+);
+serviceOrderRoutes.delete(
+  "/service/inventory/:itemId",
+  isAuth,
+  ServiceOrderController.deleteInventoryItem
+);
+serviceOrderRoutes.get(
+  "/service/types",
+  isAuth,
+  ServiceOrderController.listServiceTypes
+);
+serviceOrderRoutes.post(
+  "/service/types",
+  isAuth,
+  ServiceOrderController.createServiceType
+);
+serviceOrderRoutes.put(
+  "/service/types/:serviceTypeId",
+  isAuth,
+  ServiceOrderController.updateServiceType
+);
+serviceOrderRoutes.delete(
+  "/service/types/:serviceTypeId",
+  isAuth,
+  ServiceOrderController.deleteServiceType
+);
+serviceOrderRoutes.get(
   "/service/orders",
   isAuth,
   ServiceOrderController.listOrders

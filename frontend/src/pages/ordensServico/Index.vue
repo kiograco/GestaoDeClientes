@@ -6,6 +6,8 @@
         <div class="text-caption text-grey-7">Agenda de visitas, técnicos e histórico operacional</div>
       </div>
       <div class="col-12 col-md-auto row q-gutter-sm">
+        <q-btn unelevated color="primary" icon="mdi-package-variant-closed" label="Produto" @click="abrirEstoque()" />
+        <q-btn unelevated color="primary" icon="mdi-format-list-bulleted-type" label="Tipo" @click="abrirTipoServico()" />
         <q-btn unelevated color="primary" icon="mdi-account-hard-hat-outline" label="Técnico" @click="abrirAtendente()" />
         <q-btn unelevated color="primary" icon="mdi-calendar-plus" label="Nova ordem" @click="abrirOrdem()" />
       </div>
@@ -24,6 +26,8 @@
     <q-tabs v-model="aba" dense align="left" active-color="primary" indicator-color="primary" class="q-mb-md">
       <q-tab name="agenda" icon="mdi-calendar-clock" label="Agenda" />
       <q-tab name="dashboard" icon="mdi-chart-box-outline" label="Dashboard" />
+      <q-tab name="estoque" icon="mdi-package-variant-closed" label="Estoque" />
+      <q-tab name="tipos" icon="mdi-format-list-bulleted-type" label="Tipos de serviço" />
     </q-tabs>
 
     <div v-if="aba === 'dashboard'" class="dashboard-grid q-mb-md">
@@ -56,6 +60,85 @@
             <span>{{ item.label }}</span><strong>{{ item.value }}</strong>
           </div>
         </q-card-section>
+      </q-card>
+    </div>
+
+    <div v-else-if="aba === 'estoque'" class="q-mb-md">
+      <q-card flat bordered>
+        <q-card-section class="row items-center">
+          <div>
+            <div class="text-subtitle1 text-weight-medium">Estoque de produtos</div>
+            <div class="text-caption text-grey-7">Itens usados nas ordens de serviço</div>
+          </div>
+          <q-space />
+          <q-btn unelevated color="primary" icon="mdi-plus" label="Novo produto" @click="abrirEstoque()" />
+        </q-card-section>
+        <q-table
+          flat
+          :data="estoque"
+          :columns="colunasEstoque"
+          row-key="id"
+          :pagination="{ rowsPerPage: 15 }"
+        >
+          <template v-slot:body-cell-quantity="props">
+            <q-td :props="props">
+              <q-badge :color="Number(props.row.quantity) <= Number(props.row.minQuantity) ? 'negative' : 'positive'">
+                {{ props.row.quantity }} {{ props.row.unit }}
+              </q-badge>
+            </q-td>
+          </template>
+          <template v-slot:body-cell-active="props">
+            <q-td :props="props">
+              <q-badge :color="props.row.active ? 'positive' : 'grey'" :label="props.row.active ? 'Ativo' : 'Inativo'" />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-actions="props">
+            <q-td :props="props" auto-width>
+              <q-btn flat round dense icon="mdi-pencil" color="primary" @click="abrirEstoque(props.row)">
+                <q-tooltip>Editar produto</q-tooltip>
+              </q-btn>
+              <q-btn flat round dense icon="mdi-delete" color="negative" @click="confirmarExcluirEstoque(props.row)">
+                <q-tooltip>Excluir produto</q-tooltip>
+              </q-btn>
+            </q-td>
+          </template>
+        </q-table>
+      </q-card>
+    </div>
+
+    <div v-else-if="aba === 'tipos'" class="q-mb-md">
+      <q-card flat bordered>
+        <q-card-section class="row items-center">
+          <div>
+            <div class="text-subtitle1 text-weight-medium">Tipos de serviço</div>
+            <div class="text-caption text-grey-7">Opções usadas no cadastro das ordens</div>
+          </div>
+          <q-space />
+          <q-btn unelevated color="primary" icon="mdi-plus" label="Novo tipo" @click="abrirTipoServico()" />
+        </q-card-section>
+        <q-table
+          flat
+          :data="tiposServico"
+          :columns="colunasTiposServico"
+          row-key="id"
+          :pagination="{ rowsPerPage: 15 }"
+        >
+          <template v-slot:body-cell-active="props">
+            <q-td :props="props">
+              <q-badge :color="props.row.active ? 'positive' : 'grey'" :label="props.row.active ? 'Ativo' : 'Inativo'" />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-actions="props">
+            <q-td :props="props" auto-width>
+              <q-btn flat round dense icon="mdi-pencil" color="primary" @click="abrirTipoServico(props.row)">
+                <q-tooltip>Editar tipo</q-tooltip>
+              </q-btn>
+              <q-btn flat round dense icon="mdi-delete" color="negative" @click="confirmarExcluirTipoServico(props.row)">
+                <q-tooltip>Excluir tipo</q-tooltip>
+              </q-btn>
+            </q-td>
+          </template>
+        </q-table>
       </q-card>
     </div>
 
@@ -360,7 +443,14 @@
           </q-select>
           <q-select dense outlined emit-value map-options class="col-12 col-md-6" label="Técnico" v-model="form.attendantId" :options="opcoesAtendentes" />
           <q-input dense outlined class="col-12 col-md-6" label="Título" v-model="form.title" />
-          <q-input dense outlined class="col-12 col-md-6" label="Tipo de serviço" v-model="form.serviceType" />
+          <q-select
+            dense outlined use-input input-debounce="0"
+            class="col-12 col-md-6"
+            label="Tipo de serviço"
+            v-model="form.serviceType"
+            :options="opcoesTiposServico"
+            @new-value="criarValorTipoServico"
+          />
           <q-select dense outlined class="col-12 col-md-3" label="Prioridade" v-model="form.priority" :options="priorityOptions" />
           <q-select dense outlined class="col-12 col-md-3" label="Status" v-model="form.status" :options="statusOptions" />
           <q-input dense outlined type="date" class="col-12 col-md-4" label="Data" v-model="form.scheduledDate" />
@@ -446,6 +536,47 @@
       </q-card>
     </q-dialog>
 
+    <q-dialog v-model="modalEstoque">
+      <q-card style="width: 620px; max-width: 95vw">
+        <q-card-section>
+          <div class="text-h6">{{ itemEstoque.id ? 'Editar produto' : 'Novo produto' }}</div>
+        </q-card-section>
+        <q-card-section class="row q-col-gutter-sm">
+          <q-input dense outlined class="col-12 col-md-8" label="Nome" v-model="itemEstoque.name" />
+          <q-input dense outlined class="col-12 col-md-4" label="SKU" v-model="itemEstoque.sku" />
+          <q-input dense outlined class="col-12" type="textarea" label="Descrição" v-model="itemEstoque.description" />
+          <q-input dense outlined class="col-6 col-md-3" label="Unidade" v-model="itemEstoque.unit" />
+          <q-input dense outlined class="col-6 col-md-3" type="number" step="0.001" label="Quantidade" v-model.number="itemEstoque.quantity" />
+          <q-input dense outlined class="col-6 col-md-3" type="number" step="0.001" label="Estoque mínimo" v-model.number="itemEstoque.minQuantity" />
+          <q-input dense outlined class="col-6 col-md-3" type="number" step="0.01" label="Preço venda" v-model.number="itemEstoque.salePrice" />
+          <q-input dense outlined class="col-6 col-md-3" type="number" step="0.01" label="Custo" v-model.number="itemEstoque.costPrice" />
+          <q-toggle class="col-12" label="Ativo" v-model="itemEstoque.active" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn unelevated label="Salvar" color="primary" :loading="salvando" @click="salvarEstoque" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="modalTipoServico">
+      <q-card style="width: 560px; max-width: 95vw">
+        <q-card-section>
+          <div class="text-h6">{{ tipoServico.id ? 'Editar tipo' : 'Novo tipo' }}</div>
+        </q-card-section>
+        <q-card-section class="row q-col-gutter-sm">
+          <q-input dense outlined class="col-12 col-md-8" label="Nome" v-model="tipoServico.name" />
+          <q-input dense outlined class="col-12 col-md-4" type="number" step="0.01" label="Preço padrão" v-model.number="tipoServico.defaultPrice" />
+          <q-input dense outlined class="col-12" type="textarea" label="Descrição" v-model="tipoServico.description" />
+          <q-toggle class="col-12" label="Ativo" v-model="tipoServico.active" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn unelevated label="Salvar" color="primary" :loading="salvando" @click="salvarTipoServico" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <q-dialog v-model="modalNotificacao">
       <q-card style="width: 520px; max-width: 95vw">
         <q-card-section>
@@ -482,6 +613,14 @@ import {
   ListarAtendentesServico,
   CriarAtendenteServico,
   AlterarAtendenteServico,
+  ListarEstoqueServico,
+  CriarItemEstoqueServico,
+  AlterarItemEstoqueServico,
+  ExcluirItemEstoqueServico,
+  ListarTiposServico,
+  CriarTipoServico,
+  AlterarTipoServico,
+  ExcluirTipoServico,
   ListarOrdensServico,
   DashboardOrdensServico,
   CriarOrdemServico,
@@ -535,14 +674,20 @@ export default {
       dataAgenda: localDateInput(),
       modalOrdem: false,
       modalAtendente: false,
+      modalEstoque: false,
+      modalTipoServico: false,
       modalNotificacao: false,
       modalCliente: false,
       selectedContactId: null,
       form: emptyForm(),
       atendente: { active: true },
+      itemEstoque: { active: true, unit: 'un', quantity: 0, minQuantity: 0 },
+      tipoServico: { active: true },
       notificacao: { channels: ['internal'], message: '' },
       ordens: [],
       atendentes: [],
+      estoque: [],
+      tiposServico: [],
       clientes: [],
       ordemSelecionada: null,
       ordemArrastada: null,
@@ -564,6 +709,20 @@ export default {
         { label: 'E-mail', value: 'email' },
         { label: 'WhatsApp', value: 'whatsapp' }
       ],
+      colunasEstoque: [
+        { name: 'name', label: 'Produto', field: 'name', align: 'left', sortable: true },
+        { name: 'sku', label: 'SKU', field: 'sku', align: 'left', sortable: true },
+        { name: 'quantity', label: 'Saldo', field: 'quantity', align: 'left', sortable: true },
+        { name: 'salePrice', label: 'Preço venda', field: row => row.salePrice || '-', align: 'right', sortable: true },
+        { name: 'active', label: 'Status', field: 'active', align: 'center' },
+        { name: 'actions', label: '', field: 'actions', align: 'right' }
+      ],
+      colunasTiposServico: [
+        { name: 'name', label: 'Tipo', field: 'name', align: 'left', sortable: true },
+        { name: 'defaultPrice', label: 'Preço padrão', field: row => row.defaultPrice || '-', align: 'right', sortable: true },
+        { name: 'active', label: 'Status', field: 'active', align: 'center' },
+        { name: 'actions', label: '', field: 'actions', align: 'right' }
+      ],
       agendaStartHour: 0,
       agendaEndHour: 23,
       weekdayLabels: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -572,6 +731,11 @@ export default {
   computed: {
     opcoesAtendentes () {
       return this.atendentes.map(item => ({ label: item.name, value: item.id }))
+    },
+    opcoesTiposServico () {
+      return this.tiposServico
+        .filter(item => item.active)
+        .map(item => item.name)
     },
     agendaHours () {
       return Array.from(
@@ -618,11 +782,25 @@ export default {
   },
   methods: {
     async carregarTudo () {
-      await Promise.all([this.carregarAtendentes(), this.carregarOrdens(), this.carregarDashboard()])
+      await Promise.all([
+        this.carregarAtendentes(),
+        this.carregarEstoque(),
+        this.carregarTiposServico(),
+        this.carregarOrdens(),
+        this.carregarDashboard()
+      ])
     },
     async carregarAtendentes () {
       const { data } = await ListarAtendentesServico()
       this.atendentes = data
+    },
+    async carregarEstoque () {
+      const { data } = await ListarEstoqueServico()
+      this.estoque = data
+    },
+    async carregarTiposServico () {
+      const { data } = await ListarTiposServico()
+      this.tiposServico = data
     },
     async carregarOrdens () {
       const params = { ...this.filtros }
@@ -695,6 +873,81 @@ export default {
       } finally {
         this.salvando = false
       }
+    },
+    abrirEstoque (item) {
+      this.itemEstoque = item
+        ? { ...item }
+        : { active: true, unit: 'un', quantity: 0, minQuantity: 0 }
+      this.modalEstoque = true
+    },
+    async salvarEstoque () {
+      this.salvando = true
+      try {
+        if (this.itemEstoque.id) await AlterarItemEstoqueServico(this.itemEstoque)
+        else await CriarItemEstoqueServico(this.itemEstoque)
+        this.$q.notify({ type: 'positive', message: 'Produto salvo.' })
+        this.modalEstoque = false
+        await this.carregarEstoque()
+      } catch (error) {
+        this.$notificarErro('Não foi possível salvar o produto', error)
+      } finally {
+        this.salvando = false
+      }
+    },
+    confirmarExcluirEstoque (item) {
+      this.$q.dialog({
+        title: 'Excluir produto',
+        message: `Confirma excluir ${item.name}?`,
+        cancel: true,
+        persistent: true
+      }).onOk(() => this.excluirEstoque(item))
+    },
+    async excluirEstoque (item) {
+      try {
+        await ExcluirItemEstoqueServico(item.id)
+        this.$q.notify({ type: 'positive', message: 'Produto excluído.' })
+        await this.carregarEstoque()
+      } catch (error) {
+        this.$notificarErro('Não foi possível excluir o produto', error)
+      }
+    },
+    abrirTipoServico (tipo) {
+      this.tipoServico = tipo ? { ...tipo } : { active: true }
+      this.modalTipoServico = true
+    },
+    async salvarTipoServico () {
+      this.salvando = true
+      try {
+        if (this.tipoServico.id) await AlterarTipoServico(this.tipoServico)
+        else await CriarTipoServico(this.tipoServico)
+        this.$q.notify({ type: 'positive', message: 'Tipo de serviço salvo.' })
+        this.modalTipoServico = false
+        await this.carregarTiposServico()
+      } catch (error) {
+        this.$notificarErro('Não foi possível salvar o tipo de serviço', error)
+      } finally {
+        this.salvando = false
+      }
+    },
+    confirmarExcluirTipoServico (tipo) {
+      this.$q.dialog({
+        title: 'Excluir tipo de serviço',
+        message: `Confirma excluir ${tipo.name}?`,
+        cancel: true,
+        persistent: true
+      }).onOk(() => this.excluirTipoServico(tipo))
+    },
+    async excluirTipoServico (tipo) {
+      try {
+        await ExcluirTipoServico(tipo.id)
+        this.$q.notify({ type: 'positive', message: 'Tipo de serviço excluído.' })
+        await this.carregarTiposServico()
+      } catch (error) {
+        this.$notificarErro('Não foi possível excluir o tipo de serviço', error)
+      }
+    },
+    criarValorTipoServico (value, done) {
+      done(value, 'add-unique')
     },
     async salvarOrdem (status) {
       this.salvando = true

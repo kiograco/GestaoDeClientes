@@ -6,8 +6,10 @@ import AppError from "../../errors/AppError";
 import Contact from "../../models/Contact";
 import CustomerAddress from "../../models/CustomerAddress";
 import ServiceAttendant from "../../models/ServiceAttendant";
+import ServiceInventoryItem from "../../models/ServiceInventoryItem";
 import ServiceOrder from "../../models/ServiceOrder";
 import ServiceOrderLog from "../../models/ServiceOrderLog";
+import ServiceType from "../../models/ServiceType";
 import User from "../../models/User";
 import Tenant from "../../models/Tenant";
 import { getIO } from "../../libs/socket";
@@ -69,6 +71,25 @@ export interface ServiceOrderData {
 export interface ServiceOrderNotificationData {
   channels: Array<"internal" | "email" | "whatsapp">;
   message?: string | null;
+}
+
+export interface ServiceInventoryItemData {
+  name: string;
+  sku?: string | null;
+  description?: string | null;
+  unit?: string | null;
+  quantity?: number;
+  minQuantity?: number;
+  costPrice?: number | null;
+  salePrice?: number | null;
+  active?: boolean;
+}
+
+export interface ServiceTypeData {
+  name: string;
+  description?: string | null;
+  defaultPrice?: number | null;
+  active?: boolean;
 }
 
 const relevantStatuses = ["agendada", "em_atendimento", "reagendada"];
@@ -585,6 +606,116 @@ export const updateAttendant = async (
     workingHours: data.workingHours || null
   });
   return attendant;
+};
+
+const normalizeNumber = (value?: number | null): number | null => {
+  if (value === undefined || value === null || value === ("" as LegacyAny)) {
+    return null;
+  }
+  return Number(value);
+};
+
+const buildInventoryPayload = (
+  tenantId: string | number,
+  data: ServiceInventoryItemData
+): Record<string, unknown> => ({
+  tenantId,
+  name: cleanText(data.name),
+  sku: cleanText(data.sku),
+  description: cleanText(data.description),
+  unit: cleanText(data.unit) || "un",
+  quantity: normalizeNumber(data.quantity) || 0,
+  minQuantity: normalizeNumber(data.minQuantity) || 0,
+  costPrice: normalizeNumber(data.costPrice),
+  salePrice: normalizeNumber(data.salePrice),
+  active: data.active !== false
+});
+
+export const listInventoryItems = async (
+  tenantId: string | number
+): Promise<ServiceInventoryItem[]> =>
+  ServiceInventoryItem.findAll({
+    where: { tenantId },
+    order: [["name", "ASC"]]
+  });
+
+export const createInventoryItem = async (
+  tenantId: string | number,
+  data: ServiceInventoryItemData
+): Promise<ServiceInventoryItem> =>
+  ServiceInventoryItem.create(buildInventoryPayload(tenantId, data));
+
+export const updateInventoryItem = async (
+  tenantId: string | number,
+  itemId: string,
+  data: ServiceInventoryItemData
+): Promise<ServiceInventoryItem> => {
+  const item = await ServiceInventoryItem.findOne({
+    where: { id: itemId, tenantId }
+  });
+  if (!item) throw new AppError("ERR_SERVICE_INVENTORY_ITEM_NOT_FOUND", 404);
+  await item.update(buildInventoryPayload(tenantId, data));
+  return item;
+};
+
+export const deleteInventoryItem = async (
+  tenantId: string | number,
+  itemId: string
+): Promise<void> => {
+  const item = await ServiceInventoryItem.findOne({
+    where: { id: itemId, tenantId }
+  });
+  if (!item) throw new AppError("ERR_SERVICE_INVENTORY_ITEM_NOT_FOUND", 404);
+  await item.destroy();
+};
+
+const buildServiceTypePayload = (
+  tenantId: string | number,
+  data: ServiceTypeData
+): Record<string, unknown> => ({
+  tenantId,
+  name: cleanText(data.name),
+  description: cleanText(data.description),
+  defaultPrice: normalizeNumber(data.defaultPrice),
+  active: data.active !== false
+});
+
+export const listServiceTypes = async (
+  tenantId: string | number
+): Promise<ServiceType[]> =>
+  ServiceType.findAll({
+    where: { tenantId },
+    order: [["name", "ASC"]]
+  });
+
+export const createServiceType = async (
+  tenantId: string | number,
+  data: ServiceTypeData
+): Promise<ServiceType> =>
+  ServiceType.create(buildServiceTypePayload(tenantId, data));
+
+export const updateServiceType = async (
+  tenantId: string | number,
+  serviceTypeId: string,
+  data: ServiceTypeData
+): Promise<ServiceType> => {
+  const serviceType = await ServiceType.findOne({
+    where: { id: serviceTypeId, tenantId }
+  });
+  if (!serviceType) throw new AppError("ERR_SERVICE_TYPE_NOT_FOUND", 404);
+  await serviceType.update(buildServiceTypePayload(tenantId, data));
+  return serviceType;
+};
+
+export const deleteServiceType = async (
+  tenantId: string | number,
+  serviceTypeId: string
+): Promise<void> => {
+  const serviceType = await ServiceType.findOne({
+    where: { id: serviceTypeId, tenantId }
+  });
+  if (!serviceType) throw new AppError("ERR_SERVICE_TYPE_NOT_FOUND", 404);
+  await serviceType.destroy();
 };
 
 export const listOrders = async (
