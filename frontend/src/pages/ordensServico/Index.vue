@@ -62,7 +62,7 @@
     <div v-else class="agenda-workspace">
       <q-card flat bordered class="agenda-card">
         <q-card-section class="agenda-toolbar">
-          <q-tabs v-model="visao" dense active-color="primary" indicator-color="primary" align="left">
+          <q-tabs v-model="visao" dense active-color="primary" indicator-color="primary" align="left" @input="carregarTudo">
             <q-tab name="dia" icon="mdi-calendar-today" label="Dia" />
             <q-tab name="semana" icon="mdi-calendar-week" label="Semana" />
             <q-tab name="mes" icon="mdi-calendar-month" label="Mês" />
@@ -228,19 +228,89 @@
               </button>
             </div>
           </div>
-          <div v-else class="calendar-list">
-            <button
-              v-for="ordem in ordens"
-              :key="ordem.occurrenceKey || ordem.id"
-              class="calendar-item"
-              :class="[`status-${ordem.status}`, { urgente: ordem.priority === 'urgente' }]"
-              @click="selecionarOrdem(ordem)"
-              @contextmenu.prevent="prepararMenuOrdem(ordem)"
-            >
-              <strong>#{{ ordem.id }} {{ ordem.title }}</strong>
-              <span>{{ formatarData(ordem.scheduledStart) }} - {{ formatarData(ordem.scheduledEnd) }}</span>
-              <span>{{ ordem.contact ? ordem.contact.name : '' }}</span>
-            </button>
+          <div v-else class="calendar-board">
+            <div class="calendar-weekdays">
+              <div v-for="day in weekdayLabels" :key="day" class="calendar-weekday">{{ day }}</div>
+            </div>
+            <div class="calendar-grid">
+              <div
+                v-for="day in calendarDays"
+                :key="day.key"
+                class="calendar-day"
+                :class="{ outside: !day.currentPeriod, today: day.key === hojeKey }"
+              >
+                <div class="calendar-day-header">
+                  <strong>{{ day.label }}</strong>
+                  <span>{{ ordensDoDia(day.key).length }} OS</span>
+                </div>
+                <div class="calendar-day-orders">
+                  <button
+                    v-for="ordem in ordensDoDia(day.key)"
+                    :key="ordem.occurrenceKey || ordem.id"
+                    class="calendar-item"
+                    :class="[`status-${ordem.status}`, { urgente: ordem.priority === 'urgente' }]"
+                    @click="selecionarOrdem(ordem)"
+                    @contextmenu.prevent="prepararMenuOrdem(ordem)"
+                  >
+                    <strong>#{{ ordem.id }} {{ ordem.title }}</strong>
+                    <span>{{ formatarHora(ordem.scheduledStart) }} - {{ formatarHora(ordem.scheduledEnd) }}</span>
+                    <span>{{ ordem.contact ? ordem.contact.name : '' }}</span>
+                    <q-menu
+                      anchor="center right"
+                      self="center left"
+                      :offset="[10, 0]"
+                      content-class="order-details-popover"
+                      @before-show="selecionarOrdem(ordem)"
+                    >
+                      <div class="order-popover">
+                        <div class="row items-start no-wrap q-mb-sm">
+                          <div>
+                            <div class="text-subtitle2 text-weight-medium">Detalhes da ordem #{{ ordem.id }}</div>
+                            <div class="text-caption text-grey-7">{{ ordem.title }}</div>
+                          </div>
+                          <q-space />
+                          <q-badge outline color="primary" :label="ordem.status" />
+                        </div>
+                        <div class="order-popover-grid">
+                          <div><strong>Cliente:</strong> {{ ordem.contact ? ordem.contact.name : 'Sem cliente' }}</div>
+                          <div><strong>Técnico:</strong> {{ ordem.attendant ? ordem.attendant.name : 'Sem técnico' }}</div>
+                          <div><strong>Horário:</strong> {{ formatarData(ordem.scheduledStart) }} - {{ formatarHora(ordem.scheduledEnd) }}</div>
+                          <div><strong>Recorrência:</strong> {{ formatarRecorrencia(ordem) }}</div>
+                          <div v-if="ordem.address"><strong>Endereço:</strong> {{ ordem.address }} {{ ordem.city }}/{{ ordem.state }}</div>
+                          <div v-if="ordem.description"><strong>Descrição:</strong> {{ ordem.description }}</div>
+                        </div>
+                        <q-separator class="q-my-sm" />
+                        <div class="order-popover-actions">
+                          <q-btn dense flat color="primary" icon="mdi-pencil" label="Editar" v-close-popup @click="abrirOrdem(ordem)" />
+                          <q-btn dense flat color="amber-9" icon="mdi-play" label="Iniciar" v-close-popup @click="alterarStatusOrdem(ordem, 'em_atendimento')" />
+                          <q-btn dense flat color="positive" icon="mdi-check" label="Concluir" v-close-popup @click="alterarStatusOrdem(ordem, 'concluida')" />
+                          <q-btn dense flat color="negative" icon="mdi-cancel" label="Cancelar" v-close-popup @click="cancelarOrdem(ordem)" />
+                          <q-btn dense flat color="primary" icon="mdi-file-pdf-box" label="PDF cliente" v-close-popup @click="abrirPdfOrdem(ordem, false)" />
+                          <q-btn v-if="podeVerObservacaoInterna" dense flat color="primary" icon="mdi-file-document-alert-outline" label="PDF interno" v-close-popup @click="abrirPdfOrdem(ordem, true)" />
+                          <q-btn dense flat color="primary" icon="mdi-send" label="Notificar" v-close-popup @click="abrirNotificacao(ordem)" />
+                        </div>
+                        <q-separator class="q-my-sm" />
+                        <div class="text-caption text-grey-7 q-mb-xs">Trocar tecnico</div>
+                        <div class="order-popover-actions">
+                          <q-btn
+                            v-for="tecnico in atendentes"
+                            :key="tecnico.id"
+                            dense
+                            flat
+                            color="primary"
+                            icon="mdi-account-hard-hat-outline"
+                            :label="tecnico.name"
+                            :disable="tecnico.id === ordem.attendantId"
+                            v-close-popup
+                            @click="moverOrdemParaTecnico(ordem, tecnico)"
+                          />
+                        </div>
+                      </div>
+                    </q-menu>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </q-card-section>
       </q-card>
@@ -495,7 +565,8 @@ export default {
         { label: 'WhatsApp', value: 'whatsapp' }
       ],
       agendaStartHour: 0,
-      agendaEndHour: 23
+      agendaEndHour: 23,
+      weekdayLabels: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
     }
   },
   computed: {
@@ -512,6 +583,12 @@ export default {
       return {
         gridTemplateColumns: `150px repeat(${this.agendaHours.length}, minmax(48px, 1fr))`
       }
+    },
+    hojeKey () {
+      return localDateInput()
+    },
+    calendarDays () {
+      return this.visao === 'semana' ? this.diasDaSemanaAgenda() : this.diasDoMesAgenda()
     },
     linhasTecnicos () {
       const colors = ['#bae6fd', '#bbf7d0', '#fed7aa', '#fde68a', '#99f6e4', '#fbcfe8', '#ddd6fe', '#fecaca']
@@ -549,12 +626,9 @@ export default {
     },
     async carregarOrdens () {
       const params = { ...this.filtros }
-      if (this.visao === 'dia') {
-        const start = this.dataHoraAgenda(this.agendaStartHour)
-        const end = this.dataHoraAgenda(this.agendaEndHour + 1)
-        params.start = start.toISOString()
-        params.end = end.toISOString()
-      }
+      const { start, end } = this.periodoAgenda()
+      params.start = start.toISOString()
+      params.end = end.toISOString()
       const { data } = await ListarOrdensServico(params)
       this.ordens = data
       await this.carregarDashboard()
@@ -780,11 +854,20 @@ export default {
       if (!value) return false
       return localDateInput(value) === this.dataAgenda
     },
+    mesmoDiaCalendario (value, dateKey) {
+      if (!value) return false
+      return localDateInput(value) === dateKey
+    },
     ordensDaLinha (attendantId) {
       return this.ordens.filter(ordem => (
         this.mesmoDiaAgenda(ordem.scheduledStart) &&
         (ordem.attendantId || null) === (attendantId || null)
       ))
+    },
+    ordensDoDia (dateKey) {
+      return this.ordens
+        .filter(ordem => this.mesmoDiaCalendario(ordem.scheduledStart, dateKey))
+        .sort((a, b) => new Date(a.scheduledStart) - new Date(b.scheduledStart))
     },
     estiloOrdemAgenda (ordem) {
       const start = new Date(ordem.scheduledStart)
@@ -804,9 +887,72 @@ export default {
       date.setHours(hour, 0, 0, 0)
       return date
     },
+    inicioDiaAgenda () {
+      const date = new Date(`${this.dataAgenda}T00:00:00`)
+      date.setHours(0, 0, 0, 0)
+      return date
+    },
+    inicioSemanaAgenda () {
+      const date = this.inicioDiaAgenda()
+      date.setDate(date.getDate() - date.getDay())
+      return date
+    },
+    inicioMesAgenda () {
+      const date = this.inicioDiaAgenda()
+      date.setDate(1)
+      return date
+    },
+    periodoAgenda () {
+      if (this.visao === 'semana') {
+        const start = this.inicioSemanaAgenda()
+        const end = new Date(start)
+        end.setDate(end.getDate() + 7)
+        return { start, end }
+      }
+      if (this.visao === 'mes') {
+        const start = this.inicioMesAgenda()
+        const end = new Date(start)
+        end.setMonth(end.getMonth() + 1)
+        return { start, end }
+      }
+      return {
+        start: this.dataHoraAgenda(this.agendaStartHour),
+        end: this.dataHoraAgenda(this.agendaEndHour + 1)
+      }
+    },
+    diasDaSemanaAgenda () {
+      const start = this.inicioSemanaAgenda()
+      return Array.from({ length: 7 }, (_, index) => {
+        const date = new Date(start)
+        date.setDate(start.getDate() + index)
+        return this.descreverDiaCalendario(date, true)
+      })
+    },
+    diasDoMesAgenda () {
+      const monthStart = this.inicioMesAgenda()
+      const gridStart = new Date(monthStart)
+      gridStart.setDate(gridStart.getDate() - gridStart.getDay())
+      return Array.from({ length: 42 }, (_, index) => {
+        const date = new Date(gridStart)
+        date.setDate(gridStart.getDate() + index)
+        return this.descreverDiaCalendario(
+          date,
+          date.getMonth() === monthStart.getMonth()
+        )
+      })
+    },
+    descreverDiaCalendario (date, currentPeriod) {
+      return {
+        key: localDateInput(date),
+        label: String(date.getDate()).padStart(2, '0'),
+        currentPeriod
+      }
+    },
     alterarDataAgenda (days) {
       const date = new Date(`${this.dataAgenda}T00:00:00`)
-      date.setDate(date.getDate() + days)
+      if (this.visao === 'mes') date.setMonth(date.getMonth() + days)
+      else if (this.visao === 'semana') date.setDate(date.getDate() + (days * 7))
+      else date.setDate(date.getDate() + days)
       this.dataAgenda = localDateInput(date)
       this.carregarTudo()
     },
@@ -1041,9 +1187,55 @@ export default {
   justify-content: flex-end;
   gap: 2px;
 }
-.calendar-list {
+.calendar-board {
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.calendar-weekdays,
+.calendar-grid {
   display: grid;
+  grid-template-columns: repeat(7, minmax(140px, 1fr));
+}
+.calendar-weekday {
+  padding: 10px;
+  border-right: 1px solid #d7dde7;
+  border-bottom: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+.calendar-day {
+  min-height: 150px;
+  padding: 8px;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+}
+.calendar-day.outside {
+  background: #f8fafc;
+  color: #94a3b8;
+}
+.calendar-day.today {
+  box-shadow: inset 0 0 0 2px #2563eb;
+}
+.calendar-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  margin-bottom: 6px;
+  color: #334155;
+  font-size: 12px;
+}
+.calendar-day-header span {
+  color: #64748b;
+}
+.calendar-day-orders {
+  display: grid;
+  gap: 5px;
 }
 .order-popover {
   width: min(440px, calc(100vw - 32px));
@@ -1077,6 +1269,13 @@ export default {
   }
   .agenda-date {
     width: 100%;
+  }
+  .calendar-board {
+    overflow-x: auto;
+  }
+  .calendar-weekdays,
+  .calendar-grid {
+    min-width: 980px;
   }
 }
 </style>

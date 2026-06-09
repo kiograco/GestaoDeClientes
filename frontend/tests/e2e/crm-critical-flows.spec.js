@@ -185,6 +185,21 @@ test('clique na agenda exibe balao de detalhes da ordem', async ({ page }) => {
   await expect(page.getByText(/^Detalhes$/)).toHaveCount(0)
 })
 
+test('agenda semanal e mensal exibem ordens em calendario', async ({ page }) => {
+  await login(page)
+  await page.goto('/#/ordens-servico')
+  await page.locator('input[type="date"]').fill('2099-12-31')
+
+  await page.getByRole('tab', { name: /semana/i }).click()
+  await expect(page.locator('.calendar-board')).toBeVisible()
+  await expect(page.locator('.calendar-weekday').getByText('Dom')).toBeVisible()
+  await expect(page.locator('.calendar-day').filter({ hasText: /visita e2e/i })).toBeVisible()
+
+  await page.getByRole('tab', { name: /mês|mes/i }).click()
+  await expect(page.locator('.calendar-board')).toBeVisible()
+  await expect(page.locator('.calendar-day').filter({ hasText: /visita e2e/i })).toBeVisible()
+})
+
 test('menu contextual da agenda reserva horario livre', async ({ page }) => {
   await login(page)
   await page.goto('/#/ordens-servico')
