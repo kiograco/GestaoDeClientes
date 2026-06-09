@@ -5,6 +5,10 @@ usuários, campanhas e chatbot configurável.
 
 ## Recursos
 
+- Ordens de servico com agenda, recorrencia, documentos em PDF, produtos e
+  tipos de servico vinculados.
+- Controle de estoque para servicos, com baixa automatica, movimentos,
+  alertas de estoque minimo e ajuste manual auditado.
 - Atendimento por WhatsApp, Telegram, Instagram e Messenger.
 - Múltiplos usuários e empresas.
 - Envio e recebimento de mensagens e mídias.
@@ -95,6 +99,69 @@ escolher um plano, gerar Pix com QR Code e Copia e Cola ou abrir a página segur
 de pagamento hospedada pelo gateway. O prazo é renovado após webhook válido e
 idempotente.
 
+## Ordens De Servico, Servicos E Estoque
+
+O modulo de ordens de servico permite cadastrar atendentes, produtos de estoque,
+tipos de servico e ordens de servico por empresa. Todas as consultas e
+alteracoes usam `tenantId`, preservando o isolamento multiempresa.
+
+Recursos disponiveis:
+
+- cadastro de produtos de estoque com nome, SKU, unidade, quantidade, estoque
+  minimo, custo, preco de venda e status ativo;
+- unidade limitada a `unidade` ou `litros`;
+- quantidade e estoque minimo tratados como numeros inteiros;
+- valores monetarios tratados no padrao BRL, com centavos fixos;
+- cadastro de tipos de servico com preco padrao;
+- insercao de produtos e tipos de servico diretamente dentro da ordem de
+  servico;
+- calculo de totais por item e total geral da OS;
+- baixa automatica de produtos quando a OS e concluida;
+- bloqueio de conclusao quando nao ha saldo suficiente;
+- historico de movimentos de estoque;
+- filtro e indicador de baixo estoque;
+- ajuste manual de estoque por entrada, saida ou definicao de saldo;
+- dashboard com valores e rankings de servicos/produtos;
+- documento PDF publico e interno da OS.
+
+Quando uma ordem e concluida, a baixa de estoque e feita uma unica vez. Se a OS
+for salva novamente como concluida, o estoque nao e descontado novamente. Em caso
+de saldo insuficiente, a API retorna uma mensagem operacional com produto, saldo
+atual e quantidade necessaria.
+
+## Perfis E Permissoes
+
+Perfis de usuario por empresa:
+
+- `admin`: administra usuarios, configuracoes e operacao da empresa.
+- `supervisor`: pode gerenciar operacao e estoque.
+- `atendente`: opera atendimentos e ordens dentro das regras do sistema.
+- `tecnico`: perfil operacional para execucao de servicos.
+- `user`: perfil basico.
+
+Perfil global:
+
+- `superadmin`: administra o SaaS e tambem tem permissao de gestor de estoque.
+
+Permissoes de estoque:
+
+- somente `admin`, `superadmin` e `supervisor` podem criar, editar, excluir ou
+  ajustar produtos de estoque;
+- a listagem de estoque, baixo estoque e movimentos permanece disponivel para
+  usuarios autenticados da mesma empresa;
+- alteracoes criticas gravam auditoria sem armazenar senhas, tokens ou dados
+  sensiveis.
+
+Eventos de auditoria de estoque:
+
+- `service_inventory_created`
+- `service_inventory_updated`
+- `service_inventory_deleted`
+- `service_inventory_adjusted`
+- `service_inventory_adjust_failed`
+- `service_inventory_auto_deducted`
+- `service_inventory_auto_deduct_failed`
+
 ## Pagamentos Asaas
 
 Configure somente no backend:
@@ -173,6 +240,9 @@ Execute antes de publicar:
 cd backend
 npm run lint
 npm run build
+npm run test:migrate
+npm run test:unit
+npm run test:integration
 
 cd ..\frontend
 npm run lint
@@ -183,6 +253,21 @@ npx quasar build
 O backend bloqueia warnings de lint por meio de `--max-warnings 0`. A variável
 `NODE_OPTIONS` é necessária no frontend ao usar Node.js 20 com a versão atual
 do Webpack presente no projeto.
+
+Os testes backend usam o banco PostgreSQL de teste `wchats_test` em
+`localhost:5432`. Antes da primeira execucao, prepare o banco:
+
+```powershell
+cd backend
+npm run test:db:prepare
+```
+
+O fluxo de ordens de servico e estoque possui teste de integracao especifico:
+
+```powershell
+cd backend
+npm run test:integration -- service-orders-inventory --coverage=false
+```
 
 ## Seguranca
 
