@@ -10,6 +10,7 @@ export const ListarMovimentacoesEstoqueServico = () => request({ url: '/service/
 export const CriarItemEstoqueServico = data => request({ url: '/service/inventory', method: 'post', data })
 export const AlterarItemEstoqueServico = data => request({ url: `/service/inventory/${data.id}`, method: 'put', data })
 export const ExcluirItemEstoqueServico = id => request({ url: `/service/inventory/${id}`, method: 'delete' })
+export const AjustarItemEstoqueServico = (id, data) => request({ url: `/service/inventory/${id}/adjust`, method: 'post', data })
 
 export const ListarTiposServico = () => request({ url: '/service/types', method: 'get' })
 export const CriarTipoServico = data => request({ url: '/service/types', method: 'post', data })

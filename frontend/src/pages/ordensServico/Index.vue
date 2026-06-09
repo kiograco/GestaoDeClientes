@@ -133,6 +133,9 @@
           </template>
           <template v-slot:body-cell-actions="props">
             <q-td :props="props" auto-width>
+              <q-btn flat round dense icon="mdi-swap-vertical" color="primary" @click="abrirAjusteEstoque(props.row)">
+                <q-tooltip>Ajustar estoque</q-tooltip>
+              </q-btn>
               <q-btn flat round dense icon="mdi-pencil" color="primary" @click="abrirEstoque(props.row)">
                 <q-tooltip>Editar produto</q-tooltip>
               </q-btn>
@@ -157,7 +160,7 @@
         >
           <template v-slot:body-cell-quantity="props">
             <q-td :props="props">
-              <q-badge color="negative">{{ props.row.quantity }}</q-badge>
+              <q-badge :color="Number(props.row.quantity) < 0 ? 'negative' : 'positive'">{{ props.row.quantity }}</q-badge>
             </q-td>
           </template>
           <template v-slot:body-cell-serviceOrderId="props">
@@ -704,6 +707,35 @@
       </q-card>
     </q-dialog>
 
+    <q-dialog v-model="modalAjusteEstoque">
+      <q-card style="width: 520px; max-width: 95vw">
+        <q-card-section>
+          <div class="text-h6">Ajustar estoque</div>
+          <div class="text-caption text-grey-7">{{ ajusteEstoque.item ? ajusteEstoque.item.name : '' }}</div>
+        </q-card-section>
+        <q-card-section class="row q-col-gutter-sm">
+          <q-select
+            dense outlined emit-value map-options
+            class="col-12 col-md-6"
+            label="Movimento"
+            v-model="ajusteEstoque.movementType"
+            :options="movementOptions"
+          />
+          <q-input
+            dense outlined type="number" min="0" step="1"
+            class="col-12 col-md-6"
+            :label="ajusteEstoque.movementType === 'set' ? 'Novo saldo' : 'Quantidade'"
+            v-model.number="ajusteEstoque.quantity"
+          />
+          <q-input dense outlined type="textarea" class="col-12" label="Observação" v-model="ajusteEstoque.observation" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn unelevated label="Salvar ajuste" color="primary" :loading="salvando" @click="salvarAjusteEstoque" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <q-dialog v-model="modalNotificacao">
       <q-card style="width: 520px; max-width: 95vw">
         <q-card-section>
@@ -746,6 +778,7 @@ import {
   CriarItemEstoqueServico,
   AlterarItemEstoqueServico,
   ExcluirItemEstoqueServico,
+  AjustarItemEstoqueServico,
   ListarTiposServico,
   CriarTipoServico,
   AlterarTipoServico,
@@ -805,6 +838,7 @@ export default {
       modalOrdem: false,
       modalAtendente: false,
       modalEstoque: false,
+      modalAjusteEstoque: false,
       modalTipoServico: false,
       modalNotificacao: false,
       modalCliente: false,
@@ -812,6 +846,7 @@ export default {
       form: emptyForm(),
       atendente: { active: true },
       itemEstoque: { active: true, unit: 'unidade', quantity: 0, minQuantity: 0 },
+      ajusteEstoque: { item: null, movementType: 'entry', quantity: 0, observation: '' },
       tipoServico: { active: true },
       servicoOrdemSelecionado: null,
       produtoOrdemSelecionado: null,
@@ -847,6 +882,11 @@ export default {
       unitOptions: [
         { label: 'Unidade', value: 'unidade' },
         { label: 'Litros', value: 'litros' }
+      ],
+      movementOptions: [
+        { label: 'Entrada', value: 'entry' },
+        { label: 'Saída', value: 'exit' },
+        { label: 'Definir saldo', value: 'set' }
       ],
       colunasEstoque: [
         { name: 'name', label: 'Produto', field: 'name', align: 'left', sortable: true },
@@ -1105,6 +1145,35 @@ export default {
         await this.carregarEstoqueBaixo()
       } catch (error) {
         this.$notificarErro('Não foi possível excluir o produto', error)
+      }
+    },
+    abrirAjusteEstoque (item) {
+      this.ajusteEstoque = {
+        item,
+        movementType: 'entry',
+        quantity: 0,
+        observation: ''
+      }
+      this.modalAjusteEstoque = true
+    },
+    async salvarAjusteEstoque () {
+      if (!this.ajusteEstoque.item) return
+      this.salvando = true
+      try {
+        await AjustarItemEstoqueServico(this.ajusteEstoque.item.id, {
+          movementType: this.ajusteEstoque.movementType,
+          quantity: this.parseInteiro(this.ajusteEstoque.quantity),
+          observation: this.ajusteEstoque.observation
+        })
+        this.$q.notify({ type: 'positive', message: 'Estoque ajustado.' })
+        this.modalAjusteEstoque = false
+        await this.carregarEstoque()
+        await this.carregarEstoqueBaixo()
+        await this.carregarMovimentacoesEstoque()
+      } catch (error) {
+        this.$notificarErro('Não foi possível ajustar o estoque', error)
+      } finally {
+        this.salvando = false
       }
     },
     abrirTipoServico (tipo) {

@@ -97,6 +97,12 @@ export interface ServiceInventoryItemData {
   active?: boolean;
 }
 
+export interface ServiceInventoryAdjustmentData {
+  movementType: "entry" | "exit" | "set";
+  quantity: number;
+  observation?: string | null;
+}
+
 export interface ServiceTypeData {
   name: string;
   description?: string | null;
@@ -755,6 +761,56 @@ export const deleteInventoryItem = async (
   if (!item) throw new AppError("ERR_SERVICE_INVENTORY_ITEM_NOT_FOUND", 404);
   await item.destroy();
 };
+
+export const adjustInventoryItem = async (
+  tenantId: string | number,
+  itemId: string,
+  userId: string | number,
+  data: ServiceInventoryAdjustmentData
+): Promise<ServiceInventoryItem> =>
+  sequelize.transaction(
+    { isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE },
+    async transaction => {
+      const item = await ServiceInventoryItem.findOne({
+        where: { id: itemId, tenantId },
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      });
+      if (!item) {
+        throw new AppError("ERR_SERVICE_INVENTORY_ITEM_NOT_FOUND", 404);
+      }
+
+      const quantity = Math.max(0, normalizeInteger(data.quantity));
+      const previousQuantity = Number(item.quantity || 0);
+      let newQuantity = quantity;
+      if (data.movementType === "entry") {
+        newQuantity = previousQuantity + quantity;
+      }
+      if (data.movementType === "exit") {
+        newQuantity = previousQuantity - quantity;
+      }
+
+      if (newQuantity < 0) {
+        throw new AppError("ERR_SERVICE_INVENTORY_INSUFFICIENT_STOCK", 409);
+      }
+
+      await item.update({ quantity: newQuantity }, { transaction });
+      await ServiceInventoryMovement.create(
+        {
+          tenantId,
+          inventoryItemId: item.id,
+          userId: Number(userId),
+          movementType: `manual_${data.movementType}`,
+          quantity: newQuantity - previousQuantity,
+          previousQuantity,
+          newQuantity,
+          observation: cleanText(data.observation)
+        },
+        { transaction }
+      );
+      return item;
+    }
+  );
 
 const buildServiceTypePayload = (
   tenantId: string | number,

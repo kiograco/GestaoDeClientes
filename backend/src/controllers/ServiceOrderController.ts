@@ -30,6 +30,12 @@ const inventoryItemSchema = Yup.object().shape({
   active: Yup.boolean()
 });
 
+const inventoryAdjustmentSchema = Yup.object().shape({
+  movementType: Yup.string().oneOf(["entry", "exit", "set"]).required(),
+  quantity: Yup.number().integer().min(0).required(),
+  observation: nullableString
+});
+
 const serviceTypeSchema = Yup.object().shape({
   name: Yup.string().trim().required().min(2),
   description: nullableString,
@@ -186,6 +192,22 @@ export const deleteInventoryItem = async (
   await ServiceOrder.deleteInventoryItem(req.user.tenantId, req.params.itemId);
   return res.status(204).send();
 };
+
+export const adjustInventoryItem = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await ServiceOrder.adjustInventoryItem(
+      req.user.tenantId,
+      req.params.itemId,
+      req.user.id,
+      await validate<ServiceOrder.ServiceInventoryAdjustmentData>(
+        inventoryAdjustmentSchema,
+        req.body
+      )
+    )
+  );
 
 export const listServiceTypes = async (
   req: Request,

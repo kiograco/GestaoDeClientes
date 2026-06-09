@@ -49,6 +49,11 @@ serviceOrderRoutes.delete(
   isAuth,
   ServiceOrderController.deleteInventoryItem
 );
+serviceOrderRoutes.post(
+  "/service/inventory/:itemId/adjust",
+  isAuth,
+  ServiceOrderController.adjustInventoryItem
+);
 serviceOrderRoutes.get(
   "/service/types",
   isAuth,
