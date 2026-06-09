@@ -104,7 +104,7 @@
           </div>
           <q-space />
           <q-toggle v-model="filtrarEstoqueBaixo" label="Somente baixo estoque" class="q-mr-sm" />
-          <q-btn unelevated color="primary" icon="mdi-plus" label="Novo produto" @click="abrirEstoque()" />
+          <q-btn v-if="podeGerenciarEstoque" unelevated color="primary" icon="mdi-plus" label="Novo produto" @click="abrirEstoque()" />
         </q-card-section>
         <q-banner v-if="baixoEstoque.length" dense class="bg-orange-1 text-orange-10 q-mx-md q-mb-md">
           <template v-slot:avatar>
@@ -133,13 +133,13 @@
           </template>
           <template v-slot:body-cell-actions="props">
             <q-td :props="props" auto-width>
-              <q-btn flat round dense icon="mdi-swap-vertical" color="primary" @click="abrirAjusteEstoque(props.row)">
+              <q-btn v-if="podeGerenciarEstoque" flat round dense icon="mdi-swap-vertical" color="primary" @click="abrirAjusteEstoque(props.row)">
                 <q-tooltip>Ajustar estoque</q-tooltip>
               </q-btn>
-              <q-btn flat round dense icon="mdi-pencil" color="primary" @click="abrirEstoque(props.row)">
+              <q-btn v-if="podeGerenciarEstoque" flat round dense icon="mdi-pencil" color="primary" @click="abrirEstoque(props.row)">
                 <q-tooltip>Editar produto</q-tooltip>
               </q-btn>
-              <q-btn flat round dense icon="mdi-delete" color="negative" @click="confirmarExcluirEstoque(props.row)">
+              <q-btn v-if="podeGerenciarEstoque" flat round dense icon="mdi-delete" color="negative" @click="confirmarExcluirEstoque(props.row)">
                 <q-tooltip>Excluir produto</q-tooltip>
               </q-btn>
             </q-td>
@@ -991,6 +991,9 @@ export default {
     },
     podeVerObservacaoInterna () {
       return ['admin', 'superadmin', 'supervisor', 'atendente', 'tecnico'].includes(localStorage.getItem('profile'))
+    },
+    podeGerenciarEstoque () {
+      return ['admin', 'superadmin', 'supervisor'].includes(localStorage.getItem('profile'))
     }
   },
   methods: {

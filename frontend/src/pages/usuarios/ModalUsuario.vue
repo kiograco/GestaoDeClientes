@@ -111,8 +111,11 @@ export default {
     return {
       isPwd: false,
       optionsProfile: [
-        { value: 'user', label: 'Usuário' },
-        { value: 'admin', label: 'Administrador' }
+        { value: 'admin', label: 'Administrador' },
+        { value: 'supervisor', label: 'Supervisor' },
+        { value: 'atendente', label: 'Atendente' },
+        { value: 'tecnico', label: 'Técnico' },
+        { value: 'user', label: 'Usuário' }
       ],
       usuario: {
         name: '',

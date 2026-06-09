@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import * as Yup from "yup";
 import AppError from "../errors/AppError";
+import { STOCK_MANAGER_PROFILES } from "../helpers/UserSecurity";
+import createAuditLog from "../services/AuditLogService";
 import * as ServiceOrder from "../services/ServiceOrderServices/ServiceOrderService";
 
 const nullableString = Yup.string()
@@ -99,6 +101,29 @@ const validate = async <T>(schema: Yup.ObjectSchema, data: LegacyAny) => {
   }
 };
 
+const ensureCanManageStock = (profile: string): void => {
+  if (!STOCK_MANAGER_PROFILES.includes(profile)) {
+    throw new AppError("ERR_STOCK_PERMISSION_DENIED", 403);
+  }
+};
+
+const auditStockAction = async (
+  req: Request,
+  action: string,
+  resourceId?: string | number | null,
+  metadata?: Record<string, unknown>
+): Promise<void> =>
+  createAuditLog({
+    tenantId: req.user.tenantId,
+    userId: req.user.id,
+    action,
+    resource: "service_inventory",
+    resourceId,
+    ip: req.ip,
+    userAgent: req.get("user-agent"),
+    metadata
+  });
+
 export const listAttendants = async (
   req: Request,
   res: Response
@@ -157,57 +182,96 @@ export const listInventoryMovements = async (
 export const createInventoryItem = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res
-    .status(201)
-    .json(
-      await ServiceOrder.createInventoryItem(
-        req.user.tenantId,
-        await validate<ServiceOrder.ServiceInventoryItemData>(
-          inventoryItemSchema,
-          req.body
-        )
-      )
-    );
+): Promise<Response> => {
+  ensureCanManageStock(req.user.profile);
+  const data = await validate<ServiceOrder.ServiceInventoryItemData>(
+    inventoryItemSchema,
+    req.body
+  );
+  const item = await ServiceOrder.createInventoryItem(req.user.tenantId, data);
+  await auditStockAction(req, "service_inventory_created", item.id, {
+    name: item.name,
+    sku: item.sku,
+    quantity: item.quantity,
+    minQuantity: item.minQuantity,
+    active: item.active
+  });
+  return res.status(201).json(item);
+};
 
 export const updateInventoryItem = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res.json(
-    await ServiceOrder.updateInventoryItem(
-      req.user.tenantId,
-      req.params.itemId,
-      await validate<ServiceOrder.ServiceInventoryItemData>(
-        inventoryItemSchema,
-        req.body
-      )
-    )
+): Promise<Response> => {
+  ensureCanManageStock(req.user.profile);
+  const data = await validate<ServiceOrder.ServiceInventoryItemData>(
+    inventoryItemSchema,
+    req.body
   );
+  const item = await ServiceOrder.updateInventoryItem(
+    req.user.tenantId,
+    req.params.itemId,
+    data
+  );
+  await auditStockAction(req, "service_inventory_updated", item.id, {
+    name: item.name,
+    sku: item.sku,
+    quantity: item.quantity,
+    minQuantity: item.minQuantity,
+    active: item.active,
+    changedCostPrice: data.costPrice !== undefined,
+    changedSalePrice: data.salePrice !== undefined
+  });
+  return res.json(item);
+};
 
 export const deleteInventoryItem = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
+  ensureCanManageStock(req.user.profile);
   await ServiceOrder.deleteInventoryItem(req.user.tenantId, req.params.itemId);
+  await auditStockAction(req, "service_inventory_deleted", req.params.itemId);
   return res.status(204).send();
 };
 
 export const adjustInventoryItem = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res.json(
-    await ServiceOrder.adjustInventoryItem(
+): Promise<Response> => {
+  ensureCanManageStock(req.user.profile);
+  const data = await validate<ServiceOrder.ServiceInventoryAdjustmentData>(
+    inventoryAdjustmentSchema,
+    req.body
+  );
+  try {
+    const item = await ServiceOrder.adjustInventoryItem(
       req.user.tenantId,
       req.params.itemId,
       req.user.id,
-      await validate<ServiceOrder.ServiceInventoryAdjustmentData>(
-        inventoryAdjustmentSchema,
-        req.body
-      )
-    )
-  );
+      data
+    );
+    await auditStockAction(req, "service_inventory_adjusted", item.id, {
+      movementType: data.movementType,
+      quantity: data.quantity,
+      newQuantity: item.quantity,
+      hasObservation: Boolean(data.observation)
+    });
+    return res.json(item);
+  } catch (error) {
+    await auditStockAction(
+      req,
+      "service_inventory_adjust_failed",
+      req.params.itemId,
+      {
+        movementType: data.movementType,
+        quantity: data.quantity,
+        reason: error instanceof Error ? error.message : "unknown"
+      }
+    );
+    throw error;
+  }
+};
 
 export const listServiceTypes = async (
   req: Request,
@@ -301,16 +365,29 @@ export const createOrder = async (
 export const updateOrder = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res.json(
-    await ServiceOrder.updateOrder(
-      req.user.tenantId,
-      req.user.id,
-      req.user.profile,
-      req.params.serviceOrderId,
-      await validate<ServiceOrder.ServiceOrderData>(orderSchema, req.body)
-    )
+): Promise<Response> => {
+  const serviceOrder = await ServiceOrder.updateOrder(
+    req.user.tenantId,
+    req.user.id,
+    req.user.profile,
+    req.params.serviceOrderId,
+    await validate<ServiceOrder.ServiceOrderData>(orderSchema, req.body)
   );
+  if (req.body.status === "concluida" && serviceOrder.inventoryDeductedAt) {
+    await auditStockAction(
+      req,
+      "service_inventory_auto_deducted",
+      serviceOrder.id,
+      {
+        serviceOrderId: serviceOrder.id,
+        productItems: (serviceOrder.items || []).filter(
+          item => item.itemType === "product"
+        ).length
+      }
+    );
+  }
+  return res.json(serviceOrder);
+};
 
 export const publicDocument = async (
   req: Request,

@@ -101,8 +101,11 @@ export default {
       modalFilaUsuario: false,
       filas: [],
       optionsProfile: [
-        { value: 'user', label: 'Usuário' },
-        { value: 'admin', label: 'Administrador' }
+        { value: 'admin', label: 'Administrador' },
+        { value: 'supervisor', label: 'Supervisor' },
+        { value: 'atendente', label: 'Atendente' },
+        { value: 'tecnico', label: 'Técnico' },
+        { value: 'user', label: 'Usuário' }
       ],
       modalUsuario: false,
       filter: null,
@@ -129,7 +132,7 @@ export default {
           classes: 'ellipsis',
           style: 'max-width: 400px;'
         },
-        { name: 'profile', label: 'Perfil', field: 'profile', align: 'left', format: (v) => this.optionsProfile.find(o => o.value == v).label },
+        { name: 'profile', label: 'Perfil', field: 'profile', align: 'left', format: (v) => (this.optionsProfile.find(o => o.value == v) || { label: v }).label },
         { name: 'acoes', label: 'Ações', field: 'acoes', align: 'center' }
       ]
     }
