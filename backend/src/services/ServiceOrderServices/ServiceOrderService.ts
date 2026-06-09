@@ -859,7 +859,11 @@ export const getDashboard = async (
 
   const orders = await ServiceOrder.findAll({
     where,
-    include: [{ model: ServiceAttendant }, { model: Contact }],
+    include: [
+      { model: ServiceAttendant },
+      { model: Contact },
+      { model: ServiceOrderItem, as: "items" }
+    ],
     order: [["createdAt", "ASC"]]
   });
   const now = Date.now();
@@ -898,6 +902,42 @@ export const getDashboard = async (
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+  const itemMetrics = orders.reduce(
+    (acc, order) => {
+      (order.items || []).forEach(item => {
+        const quantity = Number(item.quantity || 0);
+        const totalPrice = Number(item.totalPrice || 0);
+        const key = item.description || "sem_descricao";
+        acc.totalItemsValue += totalPrice;
+        if (item.itemType === "service") {
+          acc.serviceItemsValue += totalPrice;
+          acc.servicesByQuantity[key] =
+            (acc.servicesByQuantity[key] || 0) + quantity;
+          acc.servicesByValue[key] = Number(
+            ((acc.servicesByValue[key] || 0) + totalPrice).toFixed(2)
+          );
+        }
+        if (item.itemType === "product") {
+          acc.productItemsValue += totalPrice;
+          acc.productsByQuantity[key] =
+            (acc.productsByQuantity[key] || 0) + quantity;
+          acc.productsByValue[key] = Number(
+            ((acc.productsByValue[key] || 0) + totalPrice).toFixed(2)
+          );
+        }
+      });
+      return acc;
+    },
+    {
+      totalItemsValue: 0,
+      serviceItemsValue: 0,
+      productItemsValue: 0,
+      servicesByQuantity: {} as Record<string, number>,
+      servicesByValue: {} as Record<string, number>,
+      productsByQuantity: {} as Record<string, number>,
+      productsByValue: {} as Record<string, number>
+    }
+  );
 
   return {
     total,
@@ -920,7 +960,14 @@ export const getDashboard = async (
     byPriority: grouped("priority"),
     byServiceType: grouped("serviceType"),
     byAttendant,
-    visitsByDay
+    visitsByDay,
+    totalItemsValue: Number(itemMetrics.totalItemsValue.toFixed(2)),
+    serviceItemsValue: Number(itemMetrics.serviceItemsValue.toFixed(2)),
+    productItemsValue: Number(itemMetrics.productItemsValue.toFixed(2)),
+    servicesByQuantity: itemMetrics.servicesByQuantity,
+    servicesByValue: itemMetrics.servicesByValue,
+    productsByQuantity: itemMetrics.productsByQuantity,
+    productsByValue: itemMetrics.productsByValue
   };
 };
 

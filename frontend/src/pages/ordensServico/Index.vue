@@ -61,6 +61,38 @@
           </div>
         </q-card-section>
       </q-card>
+      <q-card flat bordered class="dashboard-panel">
+        <q-card-section>
+          <div class="text-subtitle1 text-weight-medium q-mb-sm">Serviços executados</div>
+          <div v-for="item in dashboardList(dashboard.servicesByQuantity)" :key="item.label" class="metric-row">
+            <span>{{ item.label }}</span><strong>{{ item.value }}</strong>
+          </div>
+        </q-card-section>
+      </q-card>
+      <q-card flat bordered class="dashboard-panel">
+        <q-card-section>
+          <div class="text-subtitle1 text-weight-medium q-mb-sm">Produtos mais usados</div>
+          <div v-for="item in dashboardList(dashboard.productsByQuantity)" :key="item.label" class="metric-row">
+            <span>{{ item.label }}</span><strong>{{ item.value }}</strong>
+          </div>
+        </q-card-section>
+      </q-card>
+      <q-card flat bordered class="dashboard-panel">
+        <q-card-section>
+          <div class="text-subtitle1 text-weight-medium q-mb-sm">Receita por serviço</div>
+          <div v-for="item in dashboardMoneyList(dashboard.servicesByValue)" :key="item.label" class="metric-row">
+            <span>{{ item.label }}</span><strong>{{ item.value }}</strong>
+          </div>
+        </q-card-section>
+      </q-card>
+      <q-card flat bordered class="dashboard-panel">
+        <q-card-section>
+          <div class="text-subtitle1 text-weight-medium q-mb-sm">Receita por produto</div>
+          <div v-for="item in dashboardMoneyList(dashboard.productsByValue)" :key="item.label" class="metric-row">
+            <span>{{ item.label }}</span><strong>{{ item.value }}</strong>
+          </div>
+        </q-card-section>
+      </q-card>
     </div>
 
     <div v-else-if="aba === 'estoque'" class="q-mb-md">
@@ -911,7 +943,10 @@ export default {
         { label: 'Canceladas', value: this.dashboard.canceled || 0 },
         { label: 'Atrasadas', value: this.dashboard.late || 0 },
         { label: 'Tempo médio', value: `${this.dashboard.averageServiceMinutes || 0} min` },
-        { label: 'Taxa cancelamento', value: `${this.dashboard.cancellationRate || 0}%` }
+        { label: 'Taxa cancelamento', value: `${this.dashboard.cancellationRate || 0}%` },
+        { label: 'Total itens', value: this.formatarMoeda(this.dashboard.totalItemsValue) },
+        { label: 'Serviços', value: this.formatarMoeda(this.dashboard.serviceItemsValue) },
+        { label: 'Produtos', value: this.formatarMoeda(this.dashboard.productItemsValue) }
       ]
     },
     podeVerObservacaoInterna () {
@@ -1390,6 +1425,16 @@ export default {
       return Object.entries(source || {})
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => b.value - a.value)
+        .slice(0, 8)
+    },
+    dashboardMoneyList (source) {
+      return Object.entries(source || {})
+        .map(([label, value]) => ({
+          label,
+          rawValue: Number(value || 0),
+          value: this.formatarMoeda(value)
+        }))
+        .sort((a, b) => b.rawValue - a.rawValue)
         .slice(0, 8)
     },
     mesmoDiaAgenda (value) {
