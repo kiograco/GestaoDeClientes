@@ -1,4 +1,4 @@
-import { Op, Transaction } from "sequelize";
+import { col, Op, Transaction, where as sequelizeWhere } from "sequelize";
 import PDFDocument from "pdfkit";
 import { Resend } from "resend";
 import sequelize from "../../database";
@@ -697,6 +697,18 @@ export const listInventoryItems = async (
 ): Promise<ServiceInventoryItem[]> =>
   ServiceInventoryItem.findAll({
     where: { tenantId },
+    order: [["name", "ASC"]]
+  });
+
+export const listLowStockInventoryItems = async (
+  tenantId: string | number
+): Promise<ServiceInventoryItem[]> =>
+  ServiceInventoryItem.findAll({
+    where: {
+      tenantId,
+      active: true,
+      [Op.and]: [sequelizeWhere(col("quantity"), "<=", col("minQuantity"))]
+    },
     order: [["name", "ASC"]]
   });
 

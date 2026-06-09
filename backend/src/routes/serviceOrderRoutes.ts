@@ -25,6 +25,11 @@ serviceOrderRoutes.get(
   ServiceOrderController.listInventoryItems
 );
 serviceOrderRoutes.get(
+  "/service/inventory-low-stock",
+  isAuth,
+  ServiceOrderController.listLowStockInventoryItems
+);
+serviceOrderRoutes.get(
   "/service/inventory-movements",
   isAuth,
   ServiceOrderController.listInventoryMovements

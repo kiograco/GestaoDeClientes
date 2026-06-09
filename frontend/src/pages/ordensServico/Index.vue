@@ -71,11 +71,18 @@
             <div class="text-caption text-grey-7">Itens usados nas ordens de serviço</div>
           </div>
           <q-space />
+          <q-toggle v-model="filtrarEstoqueBaixo" label="Somente baixo estoque" class="q-mr-sm" />
           <q-btn unelevated color="primary" icon="mdi-plus" label="Novo produto" @click="abrirEstoque()" />
         </q-card-section>
+        <q-banner v-if="baixoEstoque.length" dense class="bg-orange-1 text-orange-10 q-mx-md q-mb-md">
+          <template v-slot:avatar>
+            <q-icon name="mdi-alert-outline" color="orange-10" />
+          </template>
+          {{ baixoEstoque.length }} produto(s) com saldo igual ou abaixo do estoque mínimo.
+        </q-banner>
         <q-table
           flat
-          :data="estoque"
+          :data="estoqueFiltrado"
           :columns="colunasEstoque"
           row-key="id"
           :pagination="{ rowsPerPage: 15 }"
@@ -702,6 +709,7 @@ import {
   CriarAtendenteServico,
   AlterarAtendenteServico,
   ListarEstoqueServico,
+  ListarEstoqueBaixoServico,
   ListarMovimentacoesEstoqueServico,
   CriarItemEstoqueServico,
   AlterarItemEstoqueServico,
@@ -779,6 +787,8 @@ export default {
       ordens: [],
       atendentes: [],
       estoque: [],
+      baixoEstoque: [],
+      filtrarEstoqueBaixo: false,
       movimentacoesEstoque: [],
       tiposServico: [],
       clientes: [],
@@ -852,6 +862,11 @@ export default {
         .filter(item => item.active)
         .map(item => ({ label: `${item.name} - ${this.formatarMoeda(item.salePrice)}`, value: item.id }))
     },
+    estoqueFiltrado () {
+      if (!this.filtrarEstoqueBaixo) return this.estoque
+      const baixoEstoqueIds = new Set(this.baixoEstoque.map(item => item.id))
+      return this.estoque.filter(item => baixoEstoqueIds.has(item.id))
+    },
     totalItensOrdem () {
       const total = this.form.items.reduce((sum, item) => {
         const quantity = this.parseInteiro(item.quantity) || 1
@@ -908,6 +923,7 @@ export default {
       await Promise.all([
         this.carregarAtendentes(),
         this.carregarEstoque(),
+        this.carregarEstoqueBaixo(),
         this.carregarMovimentacoesEstoque(),
         this.carregarTiposServico(),
         this.carregarOrdens(),
@@ -921,6 +937,10 @@ export default {
     async carregarEstoque () {
       const { data } = await ListarEstoqueServico()
       this.estoque = data
+    },
+    async carregarEstoqueBaixo () {
+      const { data } = await ListarEstoqueBaixoServico()
+      this.baixoEstoque = data
     },
     async carregarMovimentacoesEstoque () {
       const { data } = await ListarMovimentacoesEstoqueServico()
@@ -1027,6 +1047,7 @@ export default {
         this.$q.notify({ type: 'positive', message: 'Produto salvo.' })
         this.modalEstoque = false
         await this.carregarEstoque()
+        await this.carregarEstoqueBaixo()
       } catch (error) {
         this.$notificarErro('Não foi possível salvar o produto', error)
       } finally {
@@ -1046,6 +1067,7 @@ export default {
         await ExcluirItemEstoqueServico(item.id)
         this.$q.notify({ type: 'positive', message: 'Produto excluído.' })
         await this.carregarEstoque()
+        await this.carregarEstoqueBaixo()
       } catch (error) {
         this.$notificarErro('Não foi possível excluir o produto', error)
       }
@@ -1220,6 +1242,7 @@ export default {
         this.ordemSelecionada = response.data
         await this.carregarOrdens()
         await this.carregarEstoque()
+        await this.carregarEstoqueBaixo()
         await this.carregarMovimentacoesEstoque()
       } catch (error) {
         this.$notificarErro('Não foi possível salvar a ordem de serviço', error)
@@ -1256,6 +1279,7 @@ export default {
         this.ordemSelecionada = data
         await this.carregarOrdens()
         await this.carregarEstoque()
+        await this.carregarEstoqueBaixo()
         await this.carregarMovimentacoesEstoque()
       } catch (error) {
         this.$notificarErro('Não foi possível alterar o status', error)
