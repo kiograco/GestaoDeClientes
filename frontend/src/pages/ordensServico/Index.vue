@@ -444,11 +444,13 @@
           <q-select dense outlined emit-value map-options class="col-12 col-md-6" label="Técnico" v-model="form.attendantId" :options="opcoesAtendentes" />
           <q-input dense outlined class="col-12 col-md-6" label="Título" v-model="form.title" />
           <q-select
-            dense outlined use-input input-debounce="0"
+            dense outlined use-input fill-input hide-selected input-debounce="0"
             class="col-12 col-md-6"
             label="Tipo de serviço"
             v-model="form.serviceType"
+            :input-value="form.serviceType"
             :options="opcoesTiposServico"
+            @input-value="atualizarTipoServicoDigitado"
             @new-value="criarValorTipoServico"
           />
           <q-select dense outlined class="col-12 col-md-3" label="Prioridade" v-model="form.priority" :options="priorityOptions" />
@@ -545,11 +547,11 @@
           <q-input dense outlined class="col-12 col-md-8" label="Nome" v-model="itemEstoque.name" />
           <q-input dense outlined class="col-12 col-md-4" label="SKU" v-model="itemEstoque.sku" />
           <q-input dense outlined class="col-12" type="textarea" label="Descrição" v-model="itemEstoque.description" />
-          <q-input dense outlined class="col-6 col-md-3" label="Unidade" v-model="itemEstoque.unit" />
-          <q-input dense outlined class="col-6 col-md-3" type="number" step="0.001" label="Quantidade" v-model.number="itemEstoque.quantity" />
-          <q-input dense outlined class="col-6 col-md-3" type="number" step="0.001" label="Estoque mínimo" v-model.number="itemEstoque.minQuantity" />
-          <q-input dense outlined class="col-6 col-md-3" type="number" step="0.01" label="Preço venda" v-model.number="itemEstoque.salePrice" />
-          <q-input dense outlined class="col-6 col-md-3" type="number" step="0.01" label="Custo" v-model.number="itemEstoque.costPrice" />
+          <q-select dense outlined emit-value map-options class="col-6 col-md-3" label="Unidade" v-model="itemEstoque.unit" :options="unitOptions" />
+          <q-input dense outlined class="col-6 col-md-3" type="number" step="1" min="0" label="Quantidade" v-model.number="itemEstoque.quantity" @blur="normalizarInteiroEstoque('quantity')" />
+          <q-input dense outlined class="col-6 col-md-3" type="number" step="1" min="0" label="Estoque mínimo" v-model.number="itemEstoque.minQuantity" @blur="normalizarInteiroEstoque('minQuantity')" />
+          <q-input dense outlined class="col-6 col-md-3" inputmode="decimal" label="Preço venda" v-model="itemEstoque.salePrice" prefix="R$" @blur="normalizarMoedaEstoque('salePrice')" />
+          <q-input dense outlined class="col-6 col-md-3" inputmode="decimal" label="Custo" v-model="itemEstoque.costPrice" prefix="R$" @blur="normalizarMoedaEstoque('costPrice')" />
           <q-toggle class="col-12" label="Ativo" v-model="itemEstoque.active" />
         </q-card-section>
         <q-card-actions align="right">
@@ -566,7 +568,7 @@
         </q-card-section>
         <q-card-section class="row q-col-gutter-sm">
           <q-input dense outlined class="col-12 col-md-8" label="Nome" v-model="tipoServico.name" />
-          <q-input dense outlined class="col-12 col-md-4" type="number" step="0.01" label="Preço padrão" v-model.number="tipoServico.defaultPrice" />
+          <q-input dense outlined class="col-12 col-md-4" inputmode="decimal" label="Preço padrão" v-model="tipoServico.defaultPrice" prefix="R$" @blur="normalizarMoedaTipoServico" />
           <q-input dense outlined class="col-12" type="textarea" label="Descrição" v-model="tipoServico.description" />
           <q-toggle class="col-12" label="Ativo" v-model="tipoServico.active" />
         </q-card-section>
@@ -681,7 +683,7 @@ export default {
       selectedContactId: null,
       form: emptyForm(),
       atendente: { active: true },
-      itemEstoque: { active: true, unit: 'un', quantity: 0, minQuantity: 0 },
+      itemEstoque: { active: true, unit: 'unidade', quantity: 0, minQuantity: 0 },
       tipoServico: { active: true },
       notificacao: { channels: ['internal'], message: '' },
       ordens: [],
@@ -709,17 +711,21 @@ export default {
         { label: 'E-mail', value: 'email' },
         { label: 'WhatsApp', value: 'whatsapp' }
       ],
+      unitOptions: [
+        { label: 'Unidade', value: 'unidade' },
+        { label: 'Litros', value: 'litros' }
+      ],
       colunasEstoque: [
         { name: 'name', label: 'Produto', field: 'name', align: 'left', sortable: true },
         { name: 'sku', label: 'SKU', field: 'sku', align: 'left', sortable: true },
         { name: 'quantity', label: 'Saldo', field: 'quantity', align: 'left', sortable: true },
-        { name: 'salePrice', label: 'Preço venda', field: row => row.salePrice || '-', align: 'right', sortable: true },
+        { name: 'salePrice', label: 'Preço venda', field: row => this.formatarMoeda(row.salePrice), align: 'right', sortable: true },
         { name: 'active', label: 'Status', field: 'active', align: 'center' },
         { name: 'actions', label: '', field: 'actions', align: 'right' }
       ],
       colunasTiposServico: [
         { name: 'name', label: 'Tipo', field: 'name', align: 'left', sortable: true },
-        { name: 'defaultPrice', label: 'Preço padrão', field: row => row.defaultPrice || '-', align: 'right', sortable: true },
+        { name: 'defaultPrice', label: 'Preço padrão', field: row => this.formatarMoeda(row.defaultPrice), align: 'right', sortable: true },
         { name: 'active', label: 'Status', field: 'active', align: 'center' },
         { name: 'actions', label: '', field: 'actions', align: 'right' }
       ],
@@ -876,15 +882,23 @@ export default {
     },
     abrirEstoque (item) {
       this.itemEstoque = item
-        ? { ...item }
-        : { active: true, unit: 'un', quantity: 0, minQuantity: 0 }
+        ? {
+          ...item,
+          unit: item.unit || 'unidade',
+          quantity: this.parseInteiro(item.quantity),
+          minQuantity: this.parseInteiro(item.minQuantity),
+          salePrice: this.formatarMoedaCampo(item.salePrice),
+          costPrice: this.formatarMoedaCampo(item.costPrice)
+        }
+        : { active: true, unit: 'unidade', quantity: 0, minQuantity: 0, salePrice: '0,00', costPrice: '0,00' }
       this.modalEstoque = true
     },
     async salvarEstoque () {
       this.salvando = true
       try {
-        if (this.itemEstoque.id) await AlterarItemEstoqueServico(this.itemEstoque)
-        else await CriarItemEstoqueServico(this.itemEstoque)
+        const payload = this.normalizarPayloadEstoque(this.itemEstoque)
+        if (payload.id) await AlterarItemEstoqueServico(payload)
+        else await CriarItemEstoqueServico(payload)
         this.$q.notify({ type: 'positive', message: 'Produto salvo.' })
         this.modalEstoque = false
         await this.carregarEstoque()
@@ -912,14 +926,17 @@ export default {
       }
     },
     abrirTipoServico (tipo) {
-      this.tipoServico = tipo ? { ...tipo } : { active: true }
+      this.tipoServico = tipo
+        ? { ...tipo, defaultPrice: this.formatarMoedaCampo(tipo.defaultPrice) }
+        : { active: true, defaultPrice: '0,00' }
       this.modalTipoServico = true
     },
     async salvarTipoServico () {
       this.salvando = true
       try {
-        if (this.tipoServico.id) await AlterarTipoServico(this.tipoServico)
-        else await CriarTipoServico(this.tipoServico)
+        const payload = this.normalizarPayloadTipoServico(this.tipoServico)
+        if (payload.id) await AlterarTipoServico(payload)
+        else await CriarTipoServico(payload)
         this.$q.notify({ type: 'positive', message: 'Tipo de serviço salvo.' })
         this.modalTipoServico = false
         await this.carregarTiposServico()
@@ -947,7 +964,59 @@ export default {
       }
     },
     criarValorTipoServico (value, done) {
+      this.form.serviceType = value
       done(value, 'add-unique')
+    },
+    atualizarTipoServicoDigitado (value) {
+      this.form.serviceType = value
+    },
+    parseInteiro (value) {
+      const parsed = parseInt(value, 10)
+      return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
+    },
+    parseMoeda (value) {
+      if (value === null || value === undefined || value === '') return null
+      const cleaned = String(value)
+        .replace(/[^\d,.-]/g, '')
+      const normalized = cleaned.includes(',')
+        ? cleaned.replace(/\./g, '').replace(',', '.')
+        : cleaned
+      const parsed = Number(normalized)
+      return Number.isFinite(parsed) && parsed >= 0 ? Number(parsed.toFixed(2)) : null
+    },
+    formatarMoedaCampo (value) {
+      const parsed = this.parseMoeda(value)
+      return parsed === null ? '' : parsed.toFixed(2).replace('.', ',')
+    },
+    formatarMoeda (value) {
+      const parsed = this.parseMoeda(value)
+      if (parsed === null) return '-'
+      return parsed.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    },
+    normalizarInteiroEstoque (field) {
+      this.itemEstoque[field] = this.parseInteiro(this.itemEstoque[field])
+    },
+    normalizarMoedaEstoque (field) {
+      this.itemEstoque[field] = this.formatarMoedaCampo(this.itemEstoque[field])
+    },
+    normalizarMoedaTipoServico () {
+      this.tipoServico.defaultPrice = this.formatarMoedaCampo(this.tipoServico.defaultPrice)
+    },
+    normalizarPayloadEstoque (item) {
+      return {
+        ...item,
+        unit: item.unit || 'unidade',
+        quantity: this.parseInteiro(item.quantity),
+        minQuantity: this.parseInteiro(item.minQuantity),
+        costPrice: this.parseMoeda(item.costPrice),
+        salePrice: this.parseMoeda(item.salePrice)
+      }
+    },
+    normalizarPayloadTipoServico (tipo) {
+      return {
+        ...tipo,
+        defaultPrice: this.parseMoeda(tipo.defaultPrice)
+      }
     },
     async salvarOrdem (status) {
       this.salvando = true

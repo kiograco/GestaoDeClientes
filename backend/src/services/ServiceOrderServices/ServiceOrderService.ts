@@ -615,6 +615,11 @@ const normalizeNumber = (value?: number | null): number | null => {
   return Number(value);
 };
 
+const normalizeInteger = (value?: number | null): number => {
+  const normalized = normalizeNumber(value);
+  return normalized === null ? 0 : Math.trunc(normalized);
+};
+
 const buildInventoryPayload = (
   tenantId: string | number,
   data: ServiceInventoryItemData
@@ -623,9 +628,9 @@ const buildInventoryPayload = (
   name: cleanText(data.name),
   sku: cleanText(data.sku),
   description: cleanText(data.description),
-  unit: cleanText(data.unit) || "un",
-  quantity: normalizeNumber(data.quantity) || 0,
-  minQuantity: normalizeNumber(data.minQuantity) || 0,
+  unit: cleanText(data.unit) || "unidade",
+  quantity: normalizeInteger(data.quantity),
+  minQuantity: normalizeInteger(data.minQuantity),
   costPrice: normalizeNumber(data.costPrice),
   salePrice: normalizeNumber(data.salePrice),
   active: data.active !== false

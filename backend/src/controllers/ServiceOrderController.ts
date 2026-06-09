@@ -22,9 +22,9 @@ const inventoryItemSchema = Yup.object().shape({
   name: Yup.string().trim().required().min(2),
   sku: nullableString,
   description: nullableString,
-  unit: Yup.string().trim().max(20).nullable(),
-  quantity: Yup.number().min(0).default(0),
-  minQuantity: Yup.number().min(0).default(0),
+  unit: Yup.string().trim().oneOf(["unidade", "litros"]).default("unidade"),
+  quantity: Yup.number().integer().min(0).default(0),
+  minQuantity: Yup.number().integer().min(0).default(0),
   costPrice: Yup.number().min(0).nullable(),
   salePrice: Yup.number().min(0).nullable(),
   active: Yup.boolean()

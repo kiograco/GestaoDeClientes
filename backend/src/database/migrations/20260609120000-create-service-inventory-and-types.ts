@@ -22,15 +22,15 @@ module.exports = {
       unit: {
         type: DataTypes.STRING(20),
         allowNull: false,
-        defaultValue: "un"
+        defaultValue: "unidade"
       },
       quantity: {
-        type: DataTypes.DECIMAL(12, 3),
+        type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0
       },
       minQuantity: {
-        type: DataTypes.DECIMAL(12, 3),
+        type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0
       },

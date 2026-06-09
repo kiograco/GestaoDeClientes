@@ -40,11 +40,11 @@ class ServiceInventoryItem extends Model<ServiceInventoryItem> {
   unit: string;
 
   @Default(0)
-  @Column(DataType.DECIMAL(12, 3))
+  @Column(DataType.INTEGER)
   quantity: number;
 
   @Default(0)
-  @Column(DataType.DECIMAL(12, 3))
+  @Column(DataType.INTEGER)
   minQuantity: number;
 
   @Column(DataType.DECIMAL(12, 2))
