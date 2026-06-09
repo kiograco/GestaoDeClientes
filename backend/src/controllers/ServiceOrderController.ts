@@ -366,27 +366,42 @@ export const updateOrder = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const serviceOrder = await ServiceOrder.updateOrder(
-    req.user.tenantId,
-    req.user.id,
-    req.user.profile,
-    req.params.serviceOrderId,
-    await validate<ServiceOrder.ServiceOrderData>(orderSchema, req.body)
-  );
-  if (req.body.status === "concluida" && serviceOrder.inventoryDeductedAt) {
-    await auditStockAction(
-      req,
-      "service_inventory_auto_deducted",
-      serviceOrder.id,
-      {
-        serviceOrderId: serviceOrder.id,
-        productItems: (serviceOrder.items || []).filter(
-          item => item.itemType === "product"
-        ).length
-      }
+  try {
+    const serviceOrder = await ServiceOrder.updateOrder(
+      req.user.tenantId,
+      req.user.id,
+      req.user.profile,
+      req.params.serviceOrderId,
+      await validate<ServiceOrder.ServiceOrderData>(orderSchema, req.body)
     );
+    if (req.body.status === "concluida" && serviceOrder.inventoryDeductedAt) {
+      await auditStockAction(
+        req,
+        "service_inventory_auto_deducted",
+        serviceOrder.id,
+        {
+          serviceOrderId: serviceOrder.id,
+          productItems: (serviceOrder.items || []).filter(
+            item => item.itemType === "product"
+          ).length
+        }
+      );
+    }
+    return res.json(serviceOrder);
+  } catch (error) {
+    if (req.body.status === "concluida") {
+      await auditStockAction(
+        req,
+        "service_inventory_auto_deduct_failed",
+        req.params.serviceOrderId,
+        {
+          serviceOrderId: req.params.serviceOrderId,
+          reason: error instanceof Error ? error.message : "unknown"
+        }
+      );
+    }
+    throw error;
   }
-  return res.json(serviceOrder);
 };
 
 export const publicDocument = async (

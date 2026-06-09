@@ -791,7 +791,10 @@ export const adjustInventoryItem = async (
       }
 
       if (newQuantity < 0) {
-        throw new AppError("ERR_SERVICE_INVENTORY_INSUFFICIENT_STOCK", 409);
+        throw new AppError(
+          `Estoque insuficiente para ${item.name}. Saldo atual: ${previousQuantity}, necessario: ${quantity}.`,
+          409
+        );
       }
 
       await item.update({ quantity: newQuantity }, { transaction });
@@ -1174,7 +1177,15 @@ const deductInventoryForServiceOrder = async (
     );
   });
   if (insufficientInventoryItemId) {
-    throw new AppError("ERR_SERVICE_INVENTORY_INSUFFICIENT_STOCK", 409);
+    const inventoryItem = inventoryById.get(insufficientInventoryItemId);
+    throw new AppError(
+      `Estoque insuficiente para ${
+        inventoryItem?.name || "produto"
+      }. Saldo atual: ${Number(inventoryItem?.quantity || 0)}, necessario: ${
+        totalsByInventoryItemId[insufficientInventoryItemId]
+      }.`,
+      409
+    );
   }
 
   const runningQuantities: Record<number, number> = {};
