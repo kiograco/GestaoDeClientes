@@ -6,6 +6,7 @@ import AppError from "../../errors/AppError";
 import Contact from "../../models/Contact";
 import CustomerAddress from "../../models/CustomerAddress";
 import ServiceAttendant from "../../models/ServiceAttendant";
+import ServiceInventoryMovement from "../../models/ServiceInventoryMovement";
 import ServiceInventoryItem from "../../models/ServiceInventoryItem";
 import ServiceOrder from "../../models/ServiceOrder";
 import ServiceOrderItem from "../../models/ServiceOrderItem";
@@ -699,6 +700,20 @@ export const listInventoryItems = async (
     order: [["name", "ASC"]]
   });
 
+export const listInventoryMovements = async (
+  tenantId: string | number
+): Promise<ServiceInventoryMovement[]> =>
+  ServiceInventoryMovement.findAll({
+    where: { tenantId },
+    include: [
+      { model: ServiceInventoryItem, attributes: ["id", "name", "unit"] },
+      { model: ServiceOrder, attributes: ["id", "title", "status"] },
+      { model: User, attributes: ["id", "name", "email"] }
+    ],
+    order: [["createdAt", "DESC"]],
+    limit: 100
+  });
+
 export const createInventoryItem = async (
   tenantId: string | number,
   data: ServiceInventoryItemData
@@ -988,6 +1003,99 @@ const replaceOrderItems = async (
   );
 };
 
+const deductInventoryForServiceOrder = async (
+  tenantId: string | number,
+  serviceOrderId: number,
+  userId: string | number,
+  transaction: Transaction
+): Promise<void> => {
+  const productItems = (
+    await ServiceOrderItem.findAll({
+      where: {
+        tenantId,
+        serviceOrderId,
+        itemType: "product"
+      },
+      transaction
+    })
+  ).filter(item => item.inventoryItemId);
+
+  if (!productItems.length) return;
+
+  const totalsByInventoryItemId = productItems.reduce<Record<number, number>>(
+    (acc, item) => ({
+      ...acc,
+      [item.inventoryItemId]:
+        (acc[item.inventoryItemId] || 0) + Number(item.quantity || 0)
+    }),
+    {}
+  );
+  const inventoryItemIds = Object.keys(totalsByInventoryItemId).map(Number);
+
+  const inventoryItems = await ServiceInventoryItem.findAll({
+    where: {
+      tenantId,
+      id: { [Op.in]: inventoryItemIds }
+    },
+    transaction,
+    lock: transaction.LOCK.UPDATE
+  });
+  const inventoryById = new Map(
+    inventoryItems.map(item => [item.id, item] as const)
+  );
+
+  const missingInventoryItemId = inventoryItemIds.find(
+    inventoryItemId => !inventoryById.has(inventoryItemId)
+  );
+  if (missingInventoryItemId) {
+    throw new AppError("ERR_SERVICE_INVENTORY_ITEM_NOT_FOUND", 404);
+  }
+
+  const insufficientInventoryItemId = inventoryItemIds.find(inventoryItemId => {
+    const inventoryItem = inventoryById.get(inventoryItemId);
+    return (
+      Number(inventoryItem?.quantity || 0) <
+      totalsByInventoryItemId[inventoryItemId]
+    );
+  });
+  if (insufficientInventoryItemId) {
+    throw new AppError("ERR_SERVICE_INVENTORY_INSUFFICIENT_STOCK", 409);
+  }
+
+  const runningQuantities: Record<number, number> = {};
+  const movements = productItems.map(item => {
+    const inventoryItem = inventoryById.get(item.inventoryItemId);
+    const quantityToDeduct = Number(item.quantity || 0);
+    const previousQuantity =
+      runningQuantities[item.inventoryItemId] ??
+      Number(inventoryItem?.quantity || 0);
+    const newQuantity = previousQuantity - quantityToDeduct;
+    runningQuantities[item.inventoryItemId] = newQuantity;
+
+    return {
+      tenantId,
+      inventoryItemId: item.inventoryItemId,
+      serviceOrderId,
+      serviceOrderItemId: item.id,
+      userId: Number(userId),
+      movementType: "service_order_deduction",
+      quantity: -quantityToDeduct,
+      previousQuantity,
+      newQuantity,
+      observation: `Baixa automatica pela OS #${serviceOrderId}`
+    };
+  });
+
+  await Promise.all(
+    Object.entries(runningQuantities).map(([inventoryItemId, quantity]) =>
+      inventoryById
+        .get(Number(inventoryItemId))
+        ?.update({ quantity }, { transaction })
+    )
+  );
+  await ServiceInventoryMovement.bulkCreate(movements, { transaction });
+};
+
 export const createOrder = async (
   tenantId: string | number,
   userId: string | number,
@@ -1015,6 +1123,18 @@ export const createOrder = async (
         data.items,
         transaction
       );
+      if (serviceOrder.status === "concluida") {
+        await deductInventoryForServiceOrder(
+          tenantId,
+          serviceOrder.id,
+          userId,
+          transaction
+        );
+        await serviceOrder.update(
+          { inventoryDeductedAt: new Date() },
+          { transaction }
+        );
+      }
       await logOrder(
         serviceOrder.id,
         userId,
@@ -1061,7 +1181,8 @@ export const updateOrder = async (
         scheduledEnd: serviceOrder.scheduledEnd,
         recurrenceType: serviceOrder.recurrenceType,
         recurrenceDayOfMonth: serviceOrder.recurrenceDayOfMonth,
-        recurrenceIntervalDays: serviceOrder.recurrenceIntervalDays
+        recurrenceIntervalDays: serviceOrder.recurrenceIntervalDays,
+        inventoryDeductedAt: serviceOrder.inventoryDeductedAt
       };
       const payload = buildOrderPayload(tenantId, userId, data);
       payload.createdByUserId = serviceOrder.createdByUserId;
@@ -1086,6 +1207,18 @@ export const updateOrder = async (
         data.items,
         transaction
       );
+      if (payload.status === "concluida" && !oldValue.inventoryDeductedAt) {
+        await deductInventoryForServiceOrder(
+          tenantId,
+          serviceOrder.id,
+          userId,
+          transaction
+        );
+        await serviceOrder.update(
+          { inventoryDeductedAt: new Date() },
+          { transaction }
+        );
+      }
       await logOrder(
         serviceOrder.id,
         userId,

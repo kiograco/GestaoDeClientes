@@ -136,6 +136,12 @@ export const listInventoryItems = async (
 ): Promise<Response> =>
   res.json(await ServiceOrder.listInventoryItems(req.user.tenantId));
 
+export const listInventoryMovements = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(await ServiceOrder.listInventoryMovements(req.user.tenantId));
+
 export const createInventoryItem = async (
   req: Request,
   res: Response

@@ -24,6 +24,11 @@ serviceOrderRoutes.get(
   isAuth,
   ServiceOrderController.listInventoryItems
 );
+serviceOrderRoutes.get(
+  "/service/inventory-movements",
+  isAuth,
+  ServiceOrderController.listInventoryMovements
+);
 serviceOrderRoutes.post(
   "/service/inventory",
   isAuth,

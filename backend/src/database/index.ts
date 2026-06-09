@@ -43,6 +43,7 @@ import OrderPayment from "../models/OrderPayment";
 import CustomerProfile from "../models/CustomerProfile";
 import AuditLog from "../models/AuditLog";
 import ServiceAttendant from "../models/ServiceAttendant";
+import ServiceInventoryMovement from "../models/ServiceInventoryMovement";
 import ServiceInventoryItem from "../models/ServiceInventoryItem";
 import ServiceOrder from "../models/ServiceOrder";
 import ServiceOrderItem from "../models/ServiceOrderItem";
@@ -107,6 +108,7 @@ const models = [
   CustomerProfile,
   AuditLog,
   ServiceAttendant,
+  ServiceInventoryMovement,
   ServiceInventoryItem,
   ServiceOrder,
   ServiceOrderItem,

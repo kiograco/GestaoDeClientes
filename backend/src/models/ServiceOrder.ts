@@ -119,6 +119,9 @@ class ServiceOrder extends Model<ServiceOrder> {
   @Column
   canceledAt: Date;
 
+  @Column
+  inventoryDeductedAt: Date;
+
   @Column(DataType.TEXT)
   cancelReason: string;
 

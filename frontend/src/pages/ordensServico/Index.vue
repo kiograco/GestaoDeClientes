@@ -104,6 +104,31 @@
           </template>
         </q-table>
       </q-card>
+      <q-card flat bordered class="q-mt-md">
+        <q-card-section>
+          <div class="text-subtitle1 text-weight-medium">Histórico de movimentações</div>
+          <div class="text-caption text-grey-7">Últimas baixas automáticas de estoque</div>
+        </q-card-section>
+        <q-table
+          flat
+          :data="movimentacoesEstoque"
+          :columns="colunasMovimentacoesEstoque"
+          row-key="id"
+          :pagination="{ rowsPerPage: 10 }"
+        >
+          <template v-slot:body-cell-quantity="props">
+            <q-td :props="props">
+              <q-badge color="negative">{{ props.row.quantity }}</q-badge>
+            </q-td>
+          </template>
+          <template v-slot:body-cell-serviceOrderId="props">
+            <q-td :props="props">
+              <span v-if="props.row.serviceOrder">#{{ props.row.serviceOrder.id }} {{ props.row.serviceOrder.title }}</span>
+              <span v-else>-</span>
+            </q-td>
+          </template>
+        </q-table>
+      </q-card>
     </div>
 
     <div v-else-if="aba === 'tipos'" class="q-mb-md">
@@ -677,6 +702,7 @@ import {
   CriarAtendenteServico,
   AlterarAtendenteServico,
   ListarEstoqueServico,
+  ListarMovimentacoesEstoqueServico,
   CriarItemEstoqueServico,
   AlterarItemEstoqueServico,
   ExcluirItemEstoqueServico,
@@ -753,6 +779,7 @@ export default {
       ordens: [],
       atendentes: [],
       estoque: [],
+      movimentacoesEstoque: [],
       tiposServico: [],
       clientes: [],
       ordemSelecionada: null,
@@ -786,6 +813,14 @@ export default {
         { name: 'salePrice', label: 'Preço venda', field: row => this.formatarMoeda(row.salePrice), align: 'right', sortable: true },
         { name: 'active', label: 'Status', field: 'active', align: 'center' },
         { name: 'actions', label: '', field: 'actions', align: 'right' }
+      ],
+      colunasMovimentacoesEstoque: [
+        { name: 'createdAt', label: 'Data', field: row => this.formatarData(row.createdAt), align: 'left', sortable: true },
+        { name: 'inventoryItem', label: 'Produto', field: row => row.inventoryItem ? row.inventoryItem.name : '-', align: 'left', sortable: true },
+        { name: 'quantity', label: 'Qtd.', field: 'quantity', align: 'center', sortable: true },
+        { name: 'serviceOrderId', label: 'OS', field: 'serviceOrderId', align: 'left' },
+        { name: 'user', label: 'Usuário', field: row => row.user ? row.user.name : '-', align: 'left' },
+        { name: 'observation', label: 'Observação', field: 'observation', align: 'left' }
       ],
       colunasTiposServico: [
         { name: 'name', label: 'Tipo', field: 'name', align: 'left', sortable: true },
@@ -873,6 +908,7 @@ export default {
       await Promise.all([
         this.carregarAtendentes(),
         this.carregarEstoque(),
+        this.carregarMovimentacoesEstoque(),
         this.carregarTiposServico(),
         this.carregarOrdens(),
         this.carregarDashboard()
@@ -885,6 +921,10 @@ export default {
     async carregarEstoque () {
       const { data } = await ListarEstoqueServico()
       this.estoque = data
+    },
+    async carregarMovimentacoesEstoque () {
+      const { data } = await ListarMovimentacoesEstoqueServico()
+      this.movimentacoesEstoque = data
     },
     async carregarTiposServico () {
       const { data } = await ListarTiposServico()
@@ -1179,6 +1219,8 @@ export default {
         this.modalOrdem = false
         this.ordemSelecionada = response.data
         await this.carregarOrdens()
+        await this.carregarEstoque()
+        await this.carregarMovimentacoesEstoque()
       } catch (error) {
         this.$notificarErro('Não foi possível salvar a ordem de serviço', error)
       } finally {
@@ -1213,6 +1255,8 @@ export default {
         const { data } = await AlterarOrdemServico(this.normalizarDatasPayload(payload))
         this.ordemSelecionada = data
         await this.carregarOrdens()
+        await this.carregarEstoque()
+        await this.carregarMovimentacoesEstoque()
       } catch (error) {
         this.$notificarErro('Não foi possível alterar o status', error)
       }
