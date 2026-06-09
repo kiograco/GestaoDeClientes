@@ -107,6 +107,14 @@ const ensureCanManageStock = (profile: string): void => {
   }
 };
 
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error) {
+    return String((error as { message?: unknown }).message || "unknown");
+  }
+  return "unknown";
+};
+
 const auditStockAction = async (
   req: Request,
   action: string,
@@ -266,7 +274,7 @@ export const adjustInventoryItem = async (
       {
         movementType: data.movementType,
         quantity: data.quantity,
-        reason: error instanceof Error ? error.message : "unknown"
+        reason: getErrorMessage(error)
       }
     );
     throw error;
@@ -396,7 +404,7 @@ export const updateOrder = async (
         req.params.serviceOrderId,
         {
           serviceOrderId: req.params.serviceOrderId,
-          reason: error instanceof Error ? error.message : "unknown"
+          reason: getErrorMessage(error)
         }
       );
     }
