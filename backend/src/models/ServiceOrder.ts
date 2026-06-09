@@ -15,6 +15,7 @@ import Tenant from "./Tenant";
 import Contact from "./Contact";
 import User from "./User";
 import ServiceAttendant from "./ServiceAttendant";
+import ServiceOrderItem from "./ServiceOrderItem";
 import ServiceOrderLog from "./ServiceOrderLog";
 
 @Table
@@ -123,6 +124,9 @@ class ServiceOrder extends Model<ServiceOrder> {
 
   @HasMany(() => ServiceOrderLog)
   logs: ServiceOrderLog[];
+
+  @HasMany(() => ServiceOrderItem)
+  items: ServiceOrderItem[];
 
   @CreatedAt
   createdAt: Date;

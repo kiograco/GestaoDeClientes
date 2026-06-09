@@ -8,6 +8,7 @@ import CustomerAddress from "../../models/CustomerAddress";
 import ServiceAttendant from "../../models/ServiceAttendant";
 import ServiceInventoryItem from "../../models/ServiceInventoryItem";
 import ServiceOrder from "../../models/ServiceOrder";
+import ServiceOrderItem from "../../models/ServiceOrderItem";
 import ServiceOrderLog from "../../models/ServiceOrderLog";
 import ServiceType from "../../models/ServiceType";
 import User from "../../models/User";
@@ -42,6 +43,15 @@ export interface ServiceAttendantData {
   workingHours?: LegacyAny;
 }
 
+export interface ServiceOrderItemData {
+  itemType: "service" | "product";
+  serviceTypeId?: number | null;
+  inventoryItemId?: number | null;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 export interface ServiceOrderData {
   contactId: number;
   attendantId?: number | null;
@@ -66,6 +76,7 @@ export interface ServiceOrderData {
   customerSignatureUrl?: string | null;
   attachmentUrls?: string[];
   cancelReason?: string | null;
+  items?: ServiceOrderItemData[];
 }
 
 export interface ServiceOrderNotificationData {
@@ -158,6 +169,11 @@ const includeOrder = [
   },
   { model: ServiceAttendant },
   { model: User, as: "createdBy", attributes: ["id", "name", "email"] },
+  {
+    model: ServiceOrderItem,
+    as: "items",
+    include: [{ model: ServiceType }, { model: ServiceInventoryItem }]
+  },
   {
     model: ServiceOrderLog,
     as: "logs",
@@ -403,6 +419,34 @@ const ensureAttendant = async (
   return attendant;
 };
 
+const ensureServiceType = async (
+  tenantId: string | number,
+  serviceTypeId?: number | null,
+  transaction?: Transaction
+): Promise<void> => {
+  if (!serviceTypeId) return;
+  const serviceType = await ServiceType.findOne({
+    where: { id: serviceTypeId, tenantId },
+    transaction
+  });
+  if (!serviceType) throw new AppError("ERR_SERVICE_TYPE_NOT_FOUND", 404);
+};
+
+const ensureInventoryItem = async (
+  tenantId: string | number,
+  inventoryItemId?: number | null,
+  transaction?: Transaction
+): Promise<void> => {
+  if (!inventoryItemId) return;
+  const inventoryItem = await ServiceInventoryItem.findOne({
+    where: { id: inventoryItemId, tenantId },
+    transaction
+  });
+  if (!inventoryItem) {
+    throw new AppError("ERR_SERVICE_INVENTORY_ITEM_NOT_FOUND", 404);
+  }
+};
+
 export const validateServiceOrderSchedule = (data: ServiceOrderData): void => {
   const start = normalizeDate(data.scheduledStart);
   const end = normalizeDate(data.scheduledEnd);
@@ -545,6 +589,12 @@ const formatDateTime = (date?: Date | null): string =>
     ? new Date(date).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
     : "";
 
+const formatCurrency = (value?: number | string | null): string =>
+  Number(value || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
+
 const buildPublicNotificationMessage = (
   serviceOrder: ServiceOrder,
   customMessage?: string | null
@@ -618,6 +668,11 @@ const normalizeNumber = (value?: number | null): number | null => {
 const normalizeInteger = (value?: number | null): number => {
   const normalized = normalizeNumber(value);
   return normalized === null ? 0 : Math.trunc(normalized);
+};
+
+const normalizeMoney = (value?: number | null): number => {
+  const normalized = normalizeNumber(value);
+  return normalized === null ? 0 : Number(normalized.toFixed(2));
 };
 
 const buildInventoryPayload = (
@@ -881,6 +936,58 @@ const buildOrderPayload = (
   };
 };
 
+const buildOrderItemPayload = (
+  tenantId: string | number,
+  serviceOrderId: number,
+  item: ServiceOrderItemData
+): Record<string, unknown> => {
+  const quantity = Math.max(1, normalizeInteger(item.quantity));
+  const unitPrice = normalizeMoney(item.unitPrice);
+  return {
+    tenantId,
+    serviceOrderId,
+    itemType: item.itemType,
+    serviceTypeId:
+      item.itemType === "service" ? item.serviceTypeId || null : null,
+    inventoryItemId:
+      item.itemType === "product" ? item.inventoryItemId || null : null,
+    description: cleanText(item.description),
+    quantity,
+    unitPrice,
+    totalPrice: Number((quantity * unitPrice).toFixed(2))
+  };
+};
+
+const replaceOrderItems = async (
+  tenantId: string | number,
+  serviceOrderId: number,
+  items: ServiceOrderItemData[] = [],
+  transaction: Transaction
+): Promise<void> => {
+  await ServiceOrderItem.destroy({
+    where: { tenantId, serviceOrderId },
+    transaction
+  });
+
+  if (!items.length) return;
+
+  await Promise.all(
+    items.map(async item => {
+      if (item.itemType === "service") {
+        await ensureServiceType(tenantId, item.serviceTypeId, transaction);
+      }
+      if (item.itemType === "product") {
+        await ensureInventoryItem(tenantId, item.inventoryItemId, transaction);
+      }
+    })
+  );
+
+  await ServiceOrderItem.bulkCreate(
+    items.map(item => buildOrderItemPayload(tenantId, serviceOrderId, item)),
+    { transaction }
+  );
+};
+
 export const createOrder = async (
   tenantId: string | number,
   userId: string | number,
@@ -902,6 +1009,12 @@ export const createOrder = async (
         transaction
       );
       const serviceOrder = await ServiceOrder.create(payload, { transaction });
+      await replaceOrderItems(
+        tenantId,
+        serviceOrder.id,
+        data.items,
+        transaction
+      );
       await logOrder(
         serviceOrder.id,
         userId,
@@ -967,6 +1080,12 @@ export const updateOrder = async (
         transaction
       );
       await serviceOrder.update(payload, { transaction });
+      await replaceOrderItems(
+        tenantId,
+        serviceOrder.id,
+        data.items,
+        transaction
+      );
       await logOrder(
         serviceOrder.id,
         userId,
@@ -1025,6 +1144,19 @@ export const buildPublicServiceOrderDocumentHTML = ({
   <p><strong>Descricao:</strong> ${escapePublicText(
     serviceOrder.description
   )}</p>
+  <h3>Produtos e servicos</h3>
+  <ul>
+    ${(serviceOrder.items || [])
+      .map(
+        item =>
+          `<li>${escapePublicText(item.description)} - ${escapePublicText(
+            item.quantity
+          )} x ${escapePublicText(
+            formatCurrency(item.unitPrice)
+          )} = ${escapePublicText(formatCurrency(item.totalPrice))}</li>`
+      )
+      .join("")}
+  </ul>
   <p><strong>Observacao para o cliente:</strong> ${escapePublicText(
     serviceOrder.publicObservation
   )}</p>
@@ -1080,6 +1212,17 @@ function buildServiceOrderPdf({
     doc.moveDown();
     doc.text("Descricao:", { underline: true });
     doc.text(serviceOrder.description || "");
+    if (serviceOrder.items?.length) {
+      doc.moveDown();
+      doc.text("Produtos e servicos:", { underline: true });
+      serviceOrder.items.forEach(item => {
+        doc.text(
+          `${item.description || ""} - ${item.quantity} x ${formatCurrency(
+            item.unitPrice
+          )} = ${formatCurrency(item.totalPrice)}`
+        );
+      });
+    }
     doc.moveDown();
     doc.text("Observacao para o cliente:", { underline: true });
     doc.text(serviceOrder.publicObservation || "");

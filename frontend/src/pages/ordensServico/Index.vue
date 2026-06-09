@@ -508,6 +508,67 @@
           <q-input dense outlined maxlength="2" class="col-12 col-md-1" label="UF" v-model="form.state" />
           <q-input dense outlined mask="#####-###" class="col-12 col-md-2" label="CEP" v-model="form.zipCode" />
           <q-input dense outlined type="textarea" class="col-12" label="Descrição" v-model="form.description" />
+          <div class="col-12">
+            <q-separator class="q-my-sm" />
+            <div class="row items-center q-col-gutter-sm">
+              <div class="col-12 col-md">
+                <div class="text-subtitle1 text-weight-medium">Produtos e serviços da ordem</div>
+                <div class="text-caption text-grey-7">Itens cobrados ou usados nesta OS</div>
+              </div>
+              <q-select
+                dense outlined emit-value map-options clearable
+                class="col-12 col-md-3"
+                label="Serviço"
+                v-model="servicoOrdemSelecionado"
+                :options="opcoesTiposServicoOrdem"
+              />
+              <q-btn flat color="primary" icon="mdi-plus" label="Serviço" :disable="!servicoOrdemSelecionado" @click="adicionarServicoNaOrdem" />
+              <q-select
+                dense outlined emit-value map-options clearable
+                class="col-12 col-md-3"
+                label="Produto"
+                v-model="produtoOrdemSelecionado"
+                :options="opcoesProdutosOrdem"
+              />
+              <q-btn flat color="primary" icon="mdi-plus" label="Produto" :disable="!produtoOrdemSelecionado" @click="adicionarProdutoNaOrdem" />
+            </div>
+            <q-markup-table v-if="form.items.length" flat bordered dense class="q-mt-sm service-order-items-table">
+              <thead>
+                <tr>
+                  <th class="text-left">Tipo</th>
+                  <th class="text-left">Descrição</th>
+                  <th class="text-right">Qtd.</th>
+                  <th class="text-right">Valor unit.</th>
+                  <th class="text-right">Total</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(item, index) in form.items" :key="item.key">
+                  <td>{{ item.itemType === 'service' ? 'Serviço' : 'Produto' }}</td>
+                  <td>
+                    <q-input dense borderless v-model="item.description" />
+                  </td>
+                  <td class="quantity-cell">
+                    <q-input dense borderless type="number" min="1" step="1" v-model.number="item.quantity" @blur="normalizarQuantidadeItemOrdem(item)" />
+                  </td>
+                  <td class="money-cell">
+                    <q-input dense borderless inputmode="decimal" prefix="R$" v-model="item.unitPrice" @blur="normalizarMoedaItemOrdem(item)" />
+                  </td>
+                  <td class="text-right text-weight-medium">{{ totalItemOrdem(item) }}</td>
+                  <td class="text-right">
+                    <q-btn flat round dense color="negative" icon="mdi-delete" @click="removerItemOrdem(index)">
+                      <q-tooltip>Remover item</q-tooltip>
+                    </q-btn>
+                  </td>
+                </tr>
+              </tbody>
+            </q-markup-table>
+            <div v-else class="text-caption text-grey-7 q-mt-sm">Nenhum produto ou serviço inserido nesta ordem.</div>
+            <div class="row justify-end q-mt-sm">
+              <div class="text-subtitle2">Total dos itens: {{ totalItensOrdem }}</div>
+            </div>
+          </div>
           <q-input dense outlined type="textarea" class="col-12 col-md-6" label="Observação para o cliente" v-model="form.publicObservation" />
           <q-input dense outlined type="textarea" class="col-12 col-md-6" label="Observação interna" v-model="form.internalObservation" />
         </q-card-section>
@@ -662,7 +723,8 @@ const emptyForm = () => ({
   state: '',
   zipCode: '',
   publicObservation: '',
-  internalObservation: ''
+  internalObservation: '',
+  items: []
 })
 
 export default {
@@ -685,6 +747,8 @@ export default {
       atendente: { active: true },
       itemEstoque: { active: true, unit: 'unidade', quantity: 0, minQuantity: 0 },
       tipoServico: { active: true },
+      servicoOrdemSelecionado: null,
+      produtoOrdemSelecionado: null,
       notificacao: { channels: ['internal'], message: '' },
       ordens: [],
       atendentes: [],
@@ -742,6 +806,24 @@ export default {
       return this.tiposServico
         .filter(item => item.active)
         .map(item => item.name)
+    },
+    opcoesTiposServicoOrdem () {
+      return this.tiposServico
+        .filter(item => item.active)
+        .map(item => ({ label: `${item.name} - ${this.formatarMoeda(item.defaultPrice)}`, value: item.id }))
+    },
+    opcoesProdutosOrdem () {
+      return this.estoque
+        .filter(item => item.active)
+        .map(item => ({ label: `${item.name} - ${this.formatarMoeda(item.salePrice)}`, value: item.id }))
+    },
+    totalItensOrdem () {
+      const total = this.form.items.reduce((sum, item) => {
+        const quantity = this.parseInteiro(item.quantity) || 1
+        const unitPrice = this.parseMoeda(item.unitPrice) || 0
+        return sum + (quantity * unitPrice)
+      }, 0)
+      return this.formatarMoeda(total)
     },
     agendaHours () {
       return Array.from(
@@ -857,9 +939,12 @@ export default {
           scheduledStartTime: this.toInputTime(ordem.scheduledStart),
           scheduledEndTime: this.toInputTime(ordem.scheduledEnd),
           scheduledStart: this.toInputDate(ordem.scheduledStart),
-          scheduledEnd: this.toInputDate(ordem.scheduledEnd)
+          scheduledEnd: this.toInputDate(ordem.scheduledEnd),
+          items: this.normalizarItensOrdemParaFormulario(ordem.items || [])
         }
         : emptyForm()
+      this.servicoOrdemSelecionado = null
+      this.produtoOrdemSelecionado = null
       this.modalOrdem = true
     },
     abrirAtendente (atendente) {
@@ -1017,6 +1102,73 @@ export default {
         ...tipo,
         defaultPrice: this.parseMoeda(tipo.defaultPrice)
       }
+    },
+    criarItemOrdemBase (overrides) {
+      return {
+        key: `${Date.now()}-${Math.random()}`,
+        itemType: 'service',
+        serviceTypeId: null,
+        inventoryItemId: null,
+        description: '',
+        quantity: 1,
+        unitPrice: '0,00',
+        ...overrides
+      }
+    },
+    adicionarServicoNaOrdem () {
+      const serviceType = this.tiposServico.find(item => item.id === this.servicoOrdemSelecionado)
+      if (!serviceType) return
+      this.form.items.push(this.criarItemOrdemBase({
+        itemType: 'service',
+        serviceTypeId: serviceType.id,
+        description: serviceType.name,
+        unitPrice: this.formatarMoedaCampo(serviceType.defaultPrice)
+      }))
+      this.servicoOrdemSelecionado = null
+    },
+    adicionarProdutoNaOrdem () {
+      const product = this.estoque.find(item => item.id === this.produtoOrdemSelecionado)
+      if (!product) return
+      this.form.items.push(this.criarItemOrdemBase({
+        itemType: 'product',
+        inventoryItemId: product.id,
+        description: product.name,
+        unitPrice: this.formatarMoedaCampo(product.salePrice)
+      }))
+      this.produtoOrdemSelecionado = null
+    },
+    removerItemOrdem (index) {
+      this.form.items.splice(index, 1)
+    },
+    normalizarQuantidadeItemOrdem (item) {
+      item.quantity = Math.max(1, this.parseInteiro(item.quantity))
+    },
+    normalizarMoedaItemOrdem (item) {
+      item.unitPrice = this.formatarMoedaCampo(item.unitPrice)
+    },
+    totalItemOrdem (item) {
+      const quantity = this.parseInteiro(item.quantity) || 1
+      const unitPrice = this.parseMoeda(item.unitPrice) || 0
+      return this.formatarMoeda(quantity * unitPrice)
+    },
+    normalizarItensOrdemParaFormulario (items) {
+      return items.map(item => this.criarItemOrdemBase({
+        ...item,
+        quantity: this.parseInteiro(item.quantity) || 1,
+        unitPrice: this.formatarMoedaCampo(item.unitPrice)
+      }))
+    },
+    normalizarItensOrdemPayload (items) {
+      return (items || [])
+        .filter(item => item.description)
+        .map(item => ({
+          itemType: item.itemType,
+          serviceTypeId: item.itemType === 'service' ? item.serviceTypeId : null,
+          inventoryItemId: item.itemType === 'product' ? item.inventoryItemId : null,
+          description: item.description,
+          quantity: Math.max(1, this.parseInteiro(item.quantity)),
+          unitPrice: this.parseMoeda(item.unitPrice) || 0
+        }))
     },
     async salvarOrdem (status) {
       this.salvando = true
@@ -1341,6 +1493,7 @@ export default {
       return {
         ...payload,
         ...this.normalizarRecorrenciaPayload(payload),
+        items: this.normalizarItensOrdemPayload(payload.items),
         scheduledStart: this.toApiScheduleDate(payload, 'scheduledStart', 'scheduledStartTime'),
         scheduledEnd: this.toApiScheduleDate(payload, 'scheduledEnd', 'scheduledEndTime')
       }
@@ -1576,6 +1729,15 @@ export default {
   flex-wrap: wrap;
   gap: 4px;
   justify-content: flex-end;
+}
+.service-order-items-table {
+  overflow-x: auto;
+}
+.service-order-items-table .quantity-cell {
+  width: 90px;
+}
+.service-order-items-table .money-cell {
+  width: 150px;
 }
 .status-em_atendimento { border-left-color: #d97706; background: #fffbeb; }
 .status-concluida { border-left-color: #16a34a; background: #f0fdf4; }

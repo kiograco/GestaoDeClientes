@@ -45,6 +45,7 @@ import AuditLog from "../models/AuditLog";
 import ServiceAttendant from "../models/ServiceAttendant";
 import ServiceInventoryItem from "../models/ServiceInventoryItem";
 import ServiceOrder from "../models/ServiceOrder";
+import ServiceOrderItem from "../models/ServiceOrderItem";
 import ServiceOrderLog from "../models/ServiceOrderLog";
 import ServiceType from "../models/ServiceType";
 import * as QueueJobs from "../libs/Queue";
@@ -108,6 +109,7 @@ const models = [
   ServiceAttendant,
   ServiceInventoryItem,
   ServiceOrder,
+  ServiceOrderItem,
   ServiceOrderLog,
   ServiceType
 ];

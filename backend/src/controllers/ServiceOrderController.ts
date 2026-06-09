@@ -37,6 +37,15 @@ const serviceTypeSchema = Yup.object().shape({
   active: Yup.boolean()
 });
 
+const orderItemSchema = Yup.object().shape({
+  itemType: Yup.string().oneOf(["service", "product"]).required(),
+  serviceTypeId: Yup.number().integer().positive().nullable(),
+  inventoryItemId: Yup.number().integer().positive().nullable(),
+  description: Yup.string().trim().required().min(2),
+  quantity: Yup.number().integer().min(1).required(),
+  unitPrice: Yup.number().min(0).required()
+});
+
 const orderSchema = Yup.object().shape({
   contactId: Yup.number().integer().positive().required(),
   attendantId: Yup.number().integer().positive().nullable(),
@@ -64,7 +73,8 @@ const orderSchema = Yup.object().shape({
   internalObservation: nullableString,
   customerSignatureUrl: nullableString,
   attachmentUrls: Yup.array().of(Yup.string().url()).default([]),
-  cancelReason: nullableString
+  cancelReason: nullableString,
+  items: Yup.array().of(orderItemSchema).default([])
 });
 
 const notificationSchema = Yup.object().shape({
