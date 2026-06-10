@@ -17,6 +17,7 @@
       <q-card-section class="row q-col-gutter-sm">
         <q-select dense outlined emit-value map-options clearable class="col-12 col-md-3" label="Técnico" v-model="filtros.attendantId" :options="opcoesAtendentes" @input="carregarOrdens" />
         <q-select dense outlined clearable class="col-12 col-md-2" label="Status" v-model="filtros.status" :options="statusOptions" @input="carregarOrdens" />
+        <q-select dense outlined emit-value map-options clearable class="col-12 col-md-2" label="Financeiro" v-model="filtros.financialStatus" :options="financialStatusOptions" @input="carregarOrdens" />
         <q-select dense outlined clearable class="col-12 col-md-2" label="Prioridade" v-model="filtros.priority" :options="priorityOptions" @input="carregarOrdens" />
         <q-input dense outlined clearable class="col-12 col-md-3" label="Tipo de serviço" v-model="filtros.serviceType" @keyup.enter="carregarOrdens" />
         <q-btn flat color="primary" icon="mdi-refresh" class="col-12 col-md-auto" label="Atualizar" @click="carregarTudo" />
@@ -618,6 +619,43 @@
           <q-input dense outlined type="textarea" class="col-12" label="Descrição" v-model="form.description" />
           <div class="col-12">
             <q-separator class="q-my-sm" />
+            <div class="text-subtitle1 text-weight-medium">Financeiro</div>
+          </div>
+          <q-select
+            dense outlined emit-value map-options
+            class="col-12 col-md-3"
+            label="Status financeiro"
+            v-model="form.financialStatus"
+            :options="financialStatusOptions"
+          />
+          <q-select
+            dense outlined emit-value map-options clearable
+            class="col-12 col-md-3"
+            label="Forma de pagamento"
+            v-model="form.paymentMethod"
+            :options="paymentMethodOptions"
+          />
+          <q-input
+            dense outlined
+            class="col-12 col-md-3"
+            label="Valor cobrado"
+            v-model="form.chargedAmount"
+            inputmode="decimal"
+            @blur="form.chargedAmount = formatarMoedaCampo(form.chargedAmount)"
+          />
+          <q-input
+            dense outlined
+            class="col-12 col-md-3"
+            label="Valor pago"
+            v-model="form.paidAmount"
+            inputmode="decimal"
+            @blur="form.paidAmount = formatarMoedaCampo(form.paidAmount)"
+          />
+          <q-input dense outlined type="date" class="col-12 col-md-3" label="Vencimento" v-model="form.paymentDueDate" />
+          <q-input dense outlined type="date" class="col-12 col-md-3" label="Data pagamento" v-model="form.paidAt" />
+          <q-input dense outlined type="textarea" class="col-12 col-md-6" label="Observação financeira" v-model="form.financialObservation" />
+          <div class="col-12">
+            <q-separator class="q-my-sm" />
             <div class="row items-center q-col-gutter-sm">
               <div class="col-12 col-md">
                 <div class="text-subtitle1 text-weight-medium">Produtos e serviços da ordem</div>
@@ -850,6 +888,13 @@ const emptyForm = () => ({
   serviceType: '',
   priority: 'baixa',
   status: 'rascunho',
+  financialStatus: 'nao_cobrado',
+  paymentMethod: null,
+  chargedAmount: '0,00',
+  paidAmount: '0,00',
+  paymentDueDate: '',
+  paidAt: '',
+  financialObservation: '',
   recurrenceActive: false,
   recurrenceType: 'single',
   recurrenceDayOfMonth: null,
@@ -909,6 +954,20 @@ export default {
       filtros: {},
       priorityOptions: ['baixa', 'media', 'alta', 'urgente'],
       statusOptions: ['rascunho', 'agendada', 'em_atendimento', 'concluida', 'cancelada', 'reagendada'],
+      financialStatusOptions: [
+        { label: 'Não cobrado', value: 'nao_cobrado' },
+        { label: 'Cobrado', value: 'cobrado' },
+        { label: 'Pago', value: 'pago' },
+        { label: 'Parcial', value: 'parcial' },
+        { label: 'Cancelado', value: 'cancelado' }
+      ],
+      paymentMethodOptions: [
+        { label: 'Pix', value: 'pix' },
+        { label: 'Dinheiro', value: 'dinheiro' },
+        { label: 'Cartão', value: 'cartao' },
+        { label: 'Boleto', value: 'boleto' },
+        { label: 'Transferência', value: 'transferencia' }
+      ],
       recurrenceOptions: [
         { label: 'Dia fixo todo mês', value: 'monthly_fixed_day' },
         { label: 'Intervalo em dias', value: 'custom_interval' }
@@ -1142,6 +1201,10 @@ export default {
           scheduledEndTime: this.toInputTime(ordem.scheduledEnd),
           scheduledStart: this.toInputDate(ordem.scheduledStart),
           scheduledEnd: this.toInputDate(ordem.scheduledEnd),
+          chargedAmount: this.formatarMoedaCampo(ordem.chargedAmount),
+          paidAmount: this.formatarMoedaCampo(ordem.paidAmount),
+          paymentDueDate: ordem.paymentDueDate ? this.toInputDate(ordem.paymentDueDate).slice(0, 10) : '',
+          paidAt: ordem.paidAt ? this.toInputDate(ordem.paidAt).slice(0, 10) : '',
           items: this.normalizarItensOrdemParaFormulario(ordem.items || [])
         }
         : emptyForm()
@@ -1766,6 +1829,10 @@ export default {
         ...payload,
         ...this.normalizarRecorrenciaPayload(payload),
         items: this.normalizarItensOrdemPayload(payload.items),
+        chargedAmount: this.parseMoeda(payload.chargedAmount) || 0,
+        paidAmount: this.parseMoeda(payload.paidAmount) || 0,
+        paymentDueDate: this.toApiDate(payload.paymentDueDate),
+        paidAt: this.toApiDate(payload.paidAt),
         scheduledStart: this.toApiScheduleDate(payload, 'scheduledStart', 'scheduledStartTime'),
         scheduledEnd: this.toApiScheduleDate(payload, 'scheduledEnd', 'scheduledEndTime')
       }

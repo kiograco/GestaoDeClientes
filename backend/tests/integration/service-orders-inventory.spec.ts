@@ -60,8 +60,25 @@ describe("service orders inventory API", () => {
     const created = await request(app)
       .post("/service/orders")
       .set("Authorization", authorization)
-      .send(orderPayload(contact.id, inventoryItem.id, 2))
-      .expect(201);
+      .send({
+        ...orderPayload(contact.id, inventoryItem.id, 2),
+        financialStatus: "cobrado",
+        paymentMethod: "pix",
+        chargedAmount: 150,
+        paidAmount: 50,
+        paymentDueDate: "2026-06-15T00:00:00.000Z",
+        financialObservation: "Pagamento parcial combinado"
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          financialStatus: "cobrado",
+          paymentMethod: "pix",
+          chargedAmount: "150.00",
+          paidAmount: "50.00",
+          financialObservation: "Pagamento parcial combinado"
+        });
+      });
 
     await request(app)
       .put(`/service/orders/${created.body.id}`)

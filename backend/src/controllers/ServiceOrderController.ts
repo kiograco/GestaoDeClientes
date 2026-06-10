@@ -62,6 +62,18 @@ const orderSchema = Yup.object().shape({
   serviceType: Yup.string().trim().required(),
   priority: Yup.string().oneOf(ServiceOrder.SERVICE_ORDER_PRIORITIES),
   status: Yup.string().oneOf(ServiceOrder.SERVICE_ORDER_STATUSES),
+  financialStatus: Yup.string().oneOf(
+    ServiceOrder.SERVICE_ORDER_FINANCIAL_STATUSES
+  ),
+  paymentMethod: nullableString.oneOf([
+    ...ServiceOrder.SERVICE_ORDER_PAYMENT_METHODS,
+    null
+  ]),
+  chargedAmount: Yup.number().min(0).nullable(),
+  paidAmount: Yup.number().min(0).nullable(),
+  paymentDueDate: Yup.date().nullable(),
+  paidAt: Yup.date().nullable(),
+  financialObservation: nullableString,
   recurrenceType: Yup.string().oneOf(
     ServiceOrder.SERVICE_ORDER_RECURRENCE_TYPES
   ),

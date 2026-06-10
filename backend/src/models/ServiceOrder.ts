@@ -69,6 +69,27 @@ class ServiceOrder extends Model<ServiceOrder> {
   status: string;
 
   @Column
+  financialStatus: string;
+
+  @Column
+  paymentMethod: string;
+
+  @Column(DataType.DECIMAL(12, 2))
+  chargedAmount: number;
+
+  @Column(DataType.DECIMAL(12, 2))
+  paidAmount: number;
+
+  @Column
+  paymentDueDate: Date;
+
+  @Column
+  paidAt: Date;
+
+  @Column(DataType.TEXT)
+  financialObservation: string;
+
+  @Column
   recurrenceType: string;
 
   @Column

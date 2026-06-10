@@ -29,6 +29,22 @@ export const SERVICE_ORDER_STATUSES = [
   "reagendada"
 ];
 
+export const SERVICE_ORDER_FINANCIAL_STATUSES = [
+  "nao_cobrado",
+  "cobrado",
+  "pago",
+  "parcial",
+  "cancelado"
+];
+
+export const SERVICE_ORDER_PAYMENT_METHODS = [
+  "pix",
+  "dinheiro",
+  "cartao",
+  "boleto",
+  "transferencia"
+];
+
 export const SERVICE_ORDER_RECURRENCE_TYPES = [
   "single",
   "monthly_fixed_day",
@@ -61,6 +77,13 @@ export interface ServiceOrderData {
   serviceType: string;
   priority?: string;
   status?: string;
+  financialStatus?: string;
+  paymentMethod?: string | null;
+  chargedAmount?: number | null;
+  paidAmount?: number | null;
+  paymentDueDate?: string | Date | null;
+  paidAt?: string | Date | null;
+  financialObservation?: string | null;
   recurrenceType?: string;
   recurrenceActive?: boolean;
   recurrenceDayOfMonth?: number | null;
@@ -873,6 +896,7 @@ export const listOrders = async (
   const rangeStart = filters.start ? new Date(filters.start) : null;
   const rangeEnd = filters.end ? new Date(filters.end) : null;
   if (filters.status) where.status = filters.status;
+  if (filters.financialStatus) where.financialStatus = filters.financialStatus;
   if (filters.priority) where.priority = filters.priority;
   if (filters.serviceType) where.serviceType = filters.serviceType;
   if (filters.attendantId) where.attendantId = filters.attendantId;
@@ -908,6 +932,7 @@ export const getDashboard = async (
   const where: LegacyAny = { tenantId };
   if (filters.attendantId) where.attendantId = filters.attendantId;
   if (filters.status) where.status = filters.status;
+  if (filters.financialStatus) where.financialStatus = filters.financialStatus;
   if (filters.priority) where.priority = filters.priority;
   if (filters.serviceType) where.serviceType = filters.serviceType;
   if (filters.start && filters.end) {
@@ -1100,6 +1125,13 @@ const buildOrderPayload = (
     serviceType: cleanText(data.serviceType),
     priority: data.priority || "baixa",
     status: data.status || "rascunho",
+    financialStatus: data.financialStatus || "nao_cobrado",
+    paymentMethod: cleanText(data.paymentMethod),
+    chargedAmount: normalizeMoney(data.chargedAmount),
+    paidAmount: normalizeMoney(data.paidAmount),
+    paymentDueDate: normalizeDate(data.paymentDueDate),
+    paidAt: normalizeDate(data.paidAt),
+    financialObservation: cleanText(data.financialObservation),
     ...recurrence,
     scheduledStart: normalizeDate(data.scheduledStart),
     scheduledEnd: normalizeDate(data.scheduledEnd),
@@ -1791,15 +1823,15 @@ function buildServiceOrderPdf({
         half - 20
       );
       labelValue(
-        "Criado em",
-        formatDateTime(serviceOrder.createdAt),
+        "Forma pagamento",
+        serviceOrder.paymentMethod,
         margin + 10,
         690,
         half - 20
       );
       labelValue(
-        "Concluido em",
-        formatDateTime(serviceOrder.completedAt),
+        "Valor pago",
+        formatCurrency(serviceOrder.paidAmount),
         margin + half + 10,
         690,
         half - 20
