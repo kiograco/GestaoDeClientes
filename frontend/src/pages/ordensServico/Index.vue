@@ -88,9 +88,18 @@
       </q-card>
       <q-card flat bordered class="dashboard-panel">
         <q-card-section>
-          <div class="text-subtitle1 text-weight-medium q-mb-sm">Receita por produto</div>
-          <div v-for="item in dashboardMoneyList(dashboard.productsByValue)" :key="item.label" class="metric-row">
+          <div class="text-subtitle1 text-weight-medium q-mb-sm">Custo por produto usado</div>
+          <div v-for="item in dashboardMoneyList(dashboard.productsByCost)" :key="item.label" class="metric-row">
             <span>{{ item.label }}</span><strong>{{ item.value }}</strong>
+          </div>
+        </q-card-section>
+      </q-card>
+      <q-card flat bordered class="dashboard-panel dashboard-panel-wide">
+        <q-card-section>
+          <div class="text-subtitle1 text-weight-medium q-mb-sm">OS mais rentáveis</div>
+          <div v-for="item in dashboardProfitabilityList" :key="item.id" class="metric-row metric-row-profit">
+            <span>#{{ item.id }} {{ item.title }}<small>{{ item.contactName }}</small></span>
+            <strong>{{ formatarMoeda(item.grossProfit) }} <small>{{ item.grossMarginPercent }}%</small></strong>
           </div>
         </q-card-section>
       </q-card>
@@ -1026,10 +1035,14 @@ export default {
         { label: 'Atrasadas', value: this.dashboard.late || 0 },
         { label: 'Tempo médio', value: `${this.dashboard.averageServiceMinutes || 0} min` },
         { label: 'Taxa cancelamento', value: `${this.dashboard.cancellationRate || 0}%` },
-        { label: 'Total itens', value: this.formatarMoeda(this.dashboard.totalItemsValue) },
-        { label: 'Serviços', value: this.formatarMoeda(this.dashboard.serviceItemsValue) },
-        { label: 'Produtos', value: this.formatarMoeda(this.dashboard.productItemsValue) }
+        { label: 'Receita serviços', value: this.formatarMoeda(this.dashboard.serviceRevenue) },
+        { label: 'Custo produtos', value: this.formatarMoeda(this.dashboard.productCost) },
+        { label: 'Lucro bruto', value: this.formatarMoeda(this.dashboard.grossProfit) },
+        { label: 'Margem bruta', value: `${this.dashboard.grossMarginPercent || 0}%` }
       ]
+    },
+    dashboardProfitabilityList () {
+      return this.dashboard.ordersProfitability || []
     },
     podeVerObservacaoInterna () {
       return ['admin', 'superadmin', 'supervisor', 'atendente', 'tecnico'].includes(localStorage.getItem('profile'))
@@ -1813,6 +1826,9 @@ export default {
 .dashboard-panel {
   min-height: 190px;
 }
+.dashboard-panel-wide {
+  grid-column: span 2;
+}
 .metric-row {
   display: flex;
   align-items: center;
@@ -1820,6 +1836,15 @@ export default {
   gap: 12px;
   padding: 6px 0;
   border-bottom: 1px solid #eef2f7;
+}
+.metric-row small {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 400;
+}
+.metric-row-profit span {
+  min-width: 0;
 }
 .agenda-workspace {
   display: grid;

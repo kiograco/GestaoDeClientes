@@ -22,6 +22,12 @@ const orderPayload = (
   scheduledEnd: "2026-06-10T11:00:00.000Z",
   items: [
     {
+      itemType: "service",
+      description: "Instalacao tecnica",
+      quantity: 1,
+      unitPrice: 150
+    },
+    {
       itemType: "product",
       inventoryItemId,
       description: "Filtro de agua",
@@ -103,6 +109,28 @@ describe("service orders inventory API", () => {
       .expect(response => {
         expect(response.body.length).toBeGreaterThan(1000);
         expect(countPdfPages(response.body)).toBe(1);
+      });
+
+    await request(app)
+      .get("/service/orders-dashboard")
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.serviceRevenue).toBe(150);
+        expect(body.productCost).toBe(25);
+        expect(body.grossProfit).toBe(125);
+        expect(body.grossMarginPercent).toBe(83.33);
+        expect(body.productsByCost).toMatchObject({ "Filtro de agua": 25 });
+        expect(body.ordersProfitability).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              id: created.body.id,
+              serviceRevenue: 150,
+              productCost: 25,
+              grossProfit: 125
+            })
+          ])
+        );
       });
   });
 

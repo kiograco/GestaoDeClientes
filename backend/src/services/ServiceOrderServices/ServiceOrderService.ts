@@ -921,7 +921,11 @@ export const getDashboard = async (
     include: [
       { model: ServiceAttendant },
       { model: Contact },
-      { model: ServiceOrderItem, as: "items" }
+      {
+        model: ServiceOrderItem,
+        as: "items",
+        include: [{ model: ServiceInventoryItem }]
+      }
     ],
     order: [["createdAt", "ASC"]]
   });
@@ -963,13 +967,19 @@ export const getDashboard = async (
   }, {} as Record<string, number>);
   const itemMetrics = orders.reduce(
     (acc, order) => {
+      let orderServiceRevenue = 0;
+      let orderProductCost = 0;
       (order.items || []).forEach(item => {
         const quantity = Number(item.quantity || 0);
         const totalPrice = Number(item.totalPrice || 0);
+        const productCost =
+          Number(item.inventoryItem?.costPrice || 0) * quantity;
         const key = item.description || "sem_descricao";
         acc.totalItemsValue += totalPrice;
         if (item.itemType === "service") {
           acc.serviceItemsValue += totalPrice;
+          acc.serviceRevenue += totalPrice;
+          orderServiceRevenue += totalPrice;
           acc.servicesByQuantity[key] =
             (acc.servicesByQuantity[key] || 0) + quantity;
           acc.servicesByValue[key] = Number(
@@ -978,12 +988,31 @@ export const getDashboard = async (
         }
         if (item.itemType === "product") {
           acc.productItemsValue += totalPrice;
+          acc.productCost += productCost;
+          orderProductCost += productCost;
           acc.productsByQuantity[key] =
             (acc.productsByQuantity[key] || 0) + quantity;
           acc.productsByValue[key] = Number(
             ((acc.productsByValue[key] || 0) + totalPrice).toFixed(2)
           );
+          acc.productsByCost[key] = Number(
+            ((acc.productsByCost[key] || 0) + productCost).toFixed(2)
+          );
         }
+      });
+      const grossProfit = Number(
+        (orderServiceRevenue - orderProductCost).toFixed(2)
+      );
+      acc.ordersProfitability.push({
+        id: order.id,
+        title: order.title,
+        contactName: order.contact?.name || "Sem cliente",
+        serviceRevenue: Number(orderServiceRevenue.toFixed(2)),
+        productCost: Number(orderProductCost.toFixed(2)),
+        grossProfit,
+        grossMarginPercent: orderServiceRevenue
+          ? Number(((grossProfit / orderServiceRevenue) * 100).toFixed(2))
+          : 0
       });
       return acc;
     },
@@ -991,12 +1020,22 @@ export const getDashboard = async (
       totalItemsValue: 0,
       serviceItemsValue: 0,
       productItemsValue: 0,
+      serviceRevenue: 0,
+      productCost: 0,
       servicesByQuantity: {} as Record<string, number>,
       servicesByValue: {} as Record<string, number>,
       productsByQuantity: {} as Record<string, number>,
-      productsByValue: {} as Record<string, number>
+      productsByValue: {} as Record<string, number>,
+      productsByCost: {} as Record<string, number>,
+      ordersProfitability: [] as Array<Record<string, unknown>>
     }
   );
+  const grossProfit = Number(
+    (itemMetrics.serviceRevenue - itemMetrics.productCost).toFixed(2)
+  );
+  const grossMarginPercent = itemMetrics.serviceRevenue
+    ? Number(((grossProfit / itemMetrics.serviceRevenue) * 100).toFixed(2))
+    : 0;
 
   return {
     total,
@@ -1023,10 +1062,18 @@ export const getDashboard = async (
     totalItemsValue: Number(itemMetrics.totalItemsValue.toFixed(2)),
     serviceItemsValue: Number(itemMetrics.serviceItemsValue.toFixed(2)),
     productItemsValue: Number(itemMetrics.productItemsValue.toFixed(2)),
+    serviceRevenue: Number(itemMetrics.serviceRevenue.toFixed(2)),
+    productCost: Number(itemMetrics.productCost.toFixed(2)),
+    grossProfit,
+    grossMarginPercent,
     servicesByQuantity: itemMetrics.servicesByQuantity,
     servicesByValue: itemMetrics.servicesByValue,
     productsByQuantity: itemMetrics.productsByQuantity,
-    productsByValue: itemMetrics.productsByValue
+    productsByValue: itemMetrics.productsByValue,
+    productsByCost: itemMetrics.productsByCost,
+    ordersProfitability: itemMetrics.ordersProfitability
+      .sort((a, b) => Number(b.grossProfit || 0) - Number(a.grossProfit || 0))
+      .slice(0, 8)
   };
 };
 
@@ -1442,7 +1489,6 @@ function buildServiceOrderPdf({
 
     const margin = 30;
     const contentWidth = doc.page.width - margin * 2;
-    const bottomLimit = doc.page.height - 60;
     const primary = "#1f4e79";
     const border = "#d8dee9";
     const light = "#f5f7fb";
@@ -1468,265 +1514,342 @@ function buildServiceOrderPdf({
       .filter(Boolean)
       .join(" - ");
 
-    const addFooter = (): void => {
-      const footerY = doc.page.height - 48;
-      doc
-        .strokeColor(border)
-        .lineWidth(0.5)
-        .moveTo(margin, footerY)
-        .lineTo(doc.page.width - margin, footerY)
-        .stroke();
-      doc
-        .fontSize(7)
-        .fillColor(muted)
-        .text(
-          `Documento gerado em ${formatDateTime(new Date())}`,
-          margin,
-          footerY + 10,
-          { width: contentWidth / 2 }
-        )
-        .text(
-          `OS #${serviceOrder.id}`,
-          margin + contentWidth / 2,
-          footerY + 10,
-          { width: contentWidth / 2, align: "right" }
-        );
-    };
-
-    const drawHeader = (): void => {
-      doc.rect(0, 0, doc.page.width, 72).fill(primary);
-      doc
-        .fillColor("#ffffff")
-        .fontSize(15)
-        .text(tenantName, margin, 18, { width: contentWidth * 0.6 })
-        .fontSize(8)
-        .text("Sistema de ordens de servico", margin, 40, {
-          width: contentWidth * 0.6
-        });
-      doc
-        .fontSize(13)
-        .text(title, margin + contentWidth * 0.62, 16, {
-          width: contentWidth * 0.38,
-          align: "right"
-        })
-        .fontSize(10)
-        .text(`#${serviceOrder.id}`, margin + contentWidth * 0.62, 36, {
-          width: contentWidth * 0.38,
-          align: "right"
-        })
-        .fontSize(8)
-        .text(`Status: ${serviceOrder.status || "-"}`, margin, 55, {
-          width: contentWidth,
-          align: "right"
-        });
-      doc.y = 84;
-      doc.fillColor(text);
-    };
-
-    const ensureSpace = (height: number): void => {
-      if (doc.y + height <= bottomLimit) return;
-      doc.y = Math.max(86, bottomLimit - height);
-    };
-
-    const sectionTitle = (label: string): void => {
-      ensureSpace(20);
-      doc.moveDown(0.25);
-      doc
-        .fontSize(9)
-        .fillColor(primary)
-        .text(label.toUpperCase(), margin, doc.y, { width: contentWidth });
-      doc
-        .strokeColor(primary)
-        .lineWidth(1)
-        .moveTo(margin, doc.y + 3)
-        .lineTo(doc.page.width - margin, doc.y + 3)
-        .stroke();
-      doc.moveDown(0.35);
-      doc.fillColor(text);
-    };
-
-    const infoBox = (
-      fields: Array<[string, string | number | null | undefined]>
+    const writeText = (
+      value: string,
+      x: number,
+      y: number,
+      width: number,
+      height: number,
+      options: PDFKit.Mixins.TextOptions = {}
     ): void => {
-      ensureSpace(58);
-      const startY = doc.y;
-      const half = contentWidth / 2;
-      const rowHeight = 17;
-      doc.roundedRect(margin, startY, contentWidth, 56, 4).fill(light);
-      fields.slice(0, 6).forEach((field, index) => {
-        const column = index % 2;
-        const row = Math.floor(index / 2);
-        const x = margin + column * half + 12;
-        const y = startY + row * rowHeight + 9;
-        doc
-          .fontSize(6.8)
-          .fillColor(muted)
-          .text(field[0].toUpperCase(), x, y, { width: half - 24 });
-        doc
-          .fontSize(8.2)
-          .fillColor(text)
-          .text(String(field[1] || "-"), x, y + 9, { width: half - 24 });
+      doc.text(value || "-", x, y, {
+        width,
+        height,
+        ellipsis: true,
+        lineBreak: false,
+        ...options
       });
-      doc.y = startY + 62;
     };
 
-    const textBox = (label: string, value?: string | null): void => {
-      const body = value || "-";
-      const height = Math.max(
-        34,
-        Math.min(50, doc.heightOfString(body, { width: contentWidth - 18 }) + 22)
-      );
-      ensureSpace(height + 8);
-      const startY = doc.y;
-      doc.roundedRect(margin, startY, contentWidth, height, 4).stroke(border);
-      doc
-        .fontSize(7)
-        .fillColor(muted)
-        .text(label.toUpperCase(), margin + 9, startY + 7, {
-          width: contentWidth - 18
-        });
+    const sectionTitle = (label: string, y: number): void => {
       doc
         .fontSize(8.5)
-        .fillColor(text)
-        .text(body, margin + 9, startY + 18, {
-          width: contentWidth - 18,
-          height: height - 22,
-          ellipsis: true
+        .fillColor(primary)
+        .text(label.toUpperCase(), margin, y, {
+          width: contentWidth,
+          height: 10,
+          lineBreak: false
         });
-      doc.y = startY + height + 6;
+      doc
+        .strokeColor(primary)
+        .lineWidth(0.8)
+        .moveTo(margin, y + 13)
+        .lineTo(doc.page.width - margin, y + 13)
+        .stroke();
     };
 
-    const drawItemsHeader = (): void => {
-      const { y } = doc;
-      doc.rect(margin, y, contentWidth, 19).fill(primary);
-      doc.fillColor("#ffffff").fontSize(7.5);
-      doc.text("Tipo", margin + 7, y + 6, { width: 52 });
-      doc.text("Descricao", margin + 62, y + 6, { width: 230 });
-      doc.text("Qtd.", margin + 305, y + 6, { width: 34, align: "right" });
-      doc.text("Valor unit.", margin + 350, y + 6, {
-        width: 76,
-        align: "right"
-      });
-      doc.text("Total", margin + 436, y + 6, {
-        width: contentWidth - 444,
-        align: "right"
-      });
-      doc.y = y + 19;
-      doc.fillColor(text);
+    const labelValue = (
+      label: string,
+      value: string | number | null | undefined,
+      x: number,
+      y: number,
+      width: number
+    ): void => {
+      doc.fontSize(6.7).fillColor(muted);
+      writeText(label.toUpperCase(), x, y, width, 8);
+      doc.fontSize(8.2).fillColor(text);
+      writeText(String(value || "-"), x, y + 9, width, 10);
     };
 
-    const drawItemRow = (item: ServiceOrderItem, index: number): void => {
-      const rowColor = index % 2 === 0 ? "#ffffff" : light;
-      const description = item.description || "-";
-      const rowHeight = 18;
-      ensureSpace(rowHeight + 24);
-      const { y } = doc;
-      doc.rect(margin, y, contentWidth, rowHeight).fill(rowColor);
-      doc.fillColor(text).fontSize(7.7);
-      doc.text(
+    const box = (x: number, y: number, width: number, height: number): void => {
+      doc.roundedRect(x, y, width, height, 4).stroke(border);
+    };
+
+    const paragraphBox = (
+      label: string,
+      value: string | null | undefined,
+      y: number,
+      height: number
+    ): void => {
+      box(margin, y, contentWidth, height);
+      doc.fontSize(6.8).fillColor(muted);
+      writeText(label.toUpperCase(), margin + 9, y + 7, contentWidth - 18, 8);
+      doc.fontSize(8.2).fillColor(text);
+      writeText(
+        value || "-",
+        margin + 9,
+        y + 18,
+        contentWidth - 18,
+        height - 24,
+        {
+          lineBreak: true
+        }
+      );
+    };
+
+    doc.rect(0, 0, doc.page.width, 70).fill(primary);
+    doc.fillColor("#ffffff").fontSize(15);
+    writeText(tenantName, margin, 17, contentWidth * 0.6, 18);
+    doc.fontSize(8);
+    writeText(
+      "Sistema de ordens de servico",
+      margin,
+      39,
+      contentWidth * 0.6,
+      10
+    );
+    doc.fontSize(13);
+    writeText(title, margin + contentWidth * 0.6, 15, contentWidth * 0.4, 16, {
+      align: "right"
+    });
+    doc.fontSize(10);
+    writeText(
+      `#${serviceOrder.id}`,
+      margin + contentWidth * 0.6,
+      35,
+      contentWidth * 0.4,
+      12,
+      {
+        align: "right"
+      }
+    );
+    doc.fontSize(8);
+    writeText(
+      `Status: ${serviceOrder.status || "-"}`,
+      margin,
+      53,
+      contentWidth,
+      10,
+      {
+        align: "right"
+      }
+    );
+
+    sectionTitle("Dados da ordem", 83);
+    doc.roundedRect(margin, 102, contentWidth, 58, 4).fill(light);
+    const half = contentWidth / 2;
+    labelValue(
+      "Cliente",
+      serviceOrder.contact?.name,
+      margin + 10,
+      110,
+      half - 20
+    );
+    labelValue(
+      "Contato",
+      serviceOrder.contact?.number || serviceOrder.contact?.email,
+      margin + half + 10,
+      110,
+      half - 20
+    );
+    labelValue(
+      "Tecnico",
+      serviceOrder.attendant?.name || "Sem tecnico",
+      margin + 10,
+      127,
+      half - 20
+    );
+    labelValue(
+      "Tipo de servico",
+      serviceOrder.serviceType,
+      margin + half + 10,
+      127,
+      half - 20
+    );
+    labelValue(
+      "Inicio",
+      formatDateTime(serviceOrder.scheduledStart),
+      margin + 10,
+      144,
+      half - 20
+    );
+    labelValue(
+      "Fim",
+      formatDateTime(serviceOrder.scheduledEnd),
+      margin + half + 10,
+      144,
+      half - 20
+    );
+
+    sectionTitle("Endereco do atendimento", 172);
+    paragraphBox("Endereco", address || "Endereco nao informado", 191, 34);
+
+    sectionTitle("Descricao do servico", 236);
+    paragraphBox("Descricao", serviceOrder.description, 255, 44);
+
+    sectionTitle("Servicos e produtos", 310);
+    const tableTop = 329;
+    doc.rect(margin, tableTop, contentWidth, 18).fill(primary);
+    doc.fillColor("#ffffff").fontSize(7.2);
+    writeText("Tipo", margin + 7, tableTop + 5, 52, 8);
+    writeText("Descricao", margin + 62, tableTop + 5, 230, 8);
+    writeText("Qtd.", margin + 305, tableTop + 5, 34, 8, { align: "right" });
+    writeText("Valor unit.", margin + 350, tableTop + 5, 76, 8, {
+      align: "right"
+    });
+    writeText("Total", margin + 436, tableTop + 5, contentWidth - 444, 8, {
+      align: "right"
+    });
+
+    const maxRows = includeInternalObservation ? 7 : 9;
+    const rowHeight = 18;
+    items.slice(0, maxRows).forEach((item, index) => {
+      const y = tableTop + 18 + index * rowHeight;
+      doc
+        .rect(margin, y, contentWidth, rowHeight)
+        .fill(index % 2 ? light : "#ffffff");
+      doc.fillColor(text).fontSize(7.5);
+      writeText(
         item.itemType === "service" ? "Servico" : "Produto",
         margin + 7,
         y + 5,
-        { width: 52 }
+        52,
+        8
       );
-      doc.text(description, margin + 62, y + 5, {
-        width: 230,
-        height: 10,
-        ellipsis: true
-      });
-      doc.text(String(item.quantity || 0), margin + 305, y + 5, {
-        width: 34,
+      writeText(item.description || "-", margin + 62, y + 5, 230, 8);
+      writeText(String(item.quantity || 0), margin + 305, y + 5, 34, 8, {
         align: "right"
       });
-      doc.text(formatCurrency(item.unitPrice), margin + 350, y + 5, {
-        width: 76,
+      writeText(formatCurrency(item.unitPrice), margin + 350, y + 5, 76, 8, {
         align: "right"
       });
-      doc.text(formatCurrency(item.totalPrice), margin + 436, y + 5, {
-        width: contentWidth - 444,
-        align: "right"
-      });
-      doc.y = y + rowHeight;
-    };
-
-    drawHeader();
-    sectionTitle("Dados da ordem");
-    infoBox([
-      ["Cliente", serviceOrder.contact?.name],
-      ["Contato", serviceOrder.contact?.number || serviceOrder.contact?.email],
-      ["Tecnico", serviceOrder.attendant?.name || "Sem tecnico"],
-      ["Tipo de servico", serviceOrder.serviceType],
-      ["Inicio", formatDateTime(serviceOrder.scheduledStart)],
-      ["Fim", formatDateTime(serviceOrder.scheduledEnd)]
-    ]);
-
-    sectionTitle("Endereco do atendimento");
-    textBox("Endereco", address || "Endereco nao informado");
-
-    sectionTitle("Descricao do servico");
-    textBox("Descricao", serviceOrder.description);
-
-    sectionTitle("Servicos e produtos");
-    if (items.length) {
-      drawItemsHeader();
-      items.forEach((item, index) => drawItemRow(item, index));
-      ensureSpace(30);
-      const totalY = doc.y;
-      doc
-        .rect(margin, totalY, contentWidth, 26)
-        .fill("#eef4fb")
-        .fillColor(primary)
-        .fontSize(9.5)
-        .text("Total geral", margin + 300, totalY + 8, {
-          width: 126,
+      writeText(
+        formatCurrency(item.totalPrice),
+        margin + 436,
+        y + 5,
+        contentWidth - 444,
+        8,
+        {
           align: "right"
-        })
-        .fontSize(10.5)
-        .text(formatCurrency(itemsTotal), margin + 436, totalY + 8, {
-          width: contentWidth - 444,
-          align: "right"
-        });
-      doc.y = totalY + 32;
-      doc.fillColor(text);
-    } else {
-      textBox("Itens", "Nenhum servico ou produto informado.");
+        }
+      );
+    });
+
+    const omittedItems = Math.max(0, items.length - maxRows);
+    if (!items.length || omittedItems > 0) {
+      const y = tableTop + 18 + Math.min(items.length, maxRows) * rowHeight;
+      doc.fillColor(muted).fontSize(7.5);
+      writeText(
+        items.length
+          ? `Mais ${omittedItems} item(ns) constam nesta OS. Consulte o sistema para a lista completa.`
+          : "Nenhum servico ou produto informado.",
+        margin + 7,
+        y + 5,
+        contentWidth - 14,
+        9
+      );
     }
 
-    sectionTitle("Observacoes");
-    textBox("Observacao para o cliente", serviceOrder.publicObservation);
+    const totalY = tableTop + 18 + maxRows * rowHeight + 8;
+    doc.rect(margin, totalY, contentWidth, 24).fill("#eef4fb");
+    doc.fillColor(primary).fontSize(9.5);
+    writeText("Total geral", margin + 300, totalY + 7, 126, 10, {
+      align: "right"
+    });
+    doc.fontSize(10.5);
+    writeText(
+      formatCurrency(itemsTotal),
+      margin + 436,
+      totalY + 7,
+      contentWidth - 444,
+      10,
+      {
+        align: "right"
+      }
+    );
+
+    const notesY = includeInternalObservation ? 525 : 548;
+    sectionTitle("Observacoes", notesY);
+    paragraphBox(
+      "Observacao para o cliente",
+      serviceOrder.publicObservation,
+      notesY + 19,
+      48
+    );
 
     if (includeInternalObservation) {
-      textBox("Observacao interna", serviceOrder.internalObservation);
-      sectionTitle("Dados internos");
-      infoBox([
-        ["Prioridade", serviceOrder.priority],
-        ["Criado por", serviceOrder.createdBy?.name],
-        ["Criado em", formatDateTime(serviceOrder.createdAt)],
-        ["Concluido em", formatDateTime(serviceOrder.completedAt)],
-        ["Cancelado em", formatDateTime(serviceOrder.canceledAt)],
-        ["Motivo cancelamento", serviceOrder.cancelReason]
-      ]);
+      paragraphBox(
+        "Observacao interna",
+        serviceOrder.internalObservation,
+        592,
+        44
+      );
+      sectionTitle("Dados internos", 646);
+      doc.roundedRect(margin, 665, contentWidth, 52, 4).fill(light);
+      labelValue(
+        "Prioridade",
+        serviceOrder.priority,
+        margin + 10,
+        672,
+        half - 20
+      );
+      labelValue(
+        "Criado por",
+        serviceOrder.createdBy?.name,
+        margin + half + 10,
+        672,
+        half - 20
+      );
+      labelValue(
+        "Criado em",
+        formatDateTime(serviceOrder.createdAt),
+        margin + 10,
+        690,
+        half - 20
+      );
+      labelValue(
+        "Concluido em",
+        formatDateTime(serviceOrder.completedAt),
+        margin + half + 10,
+        690,
+        half - 20
+      );
     } else {
-      ensureSpace(58);
-      doc.moveDown(0.4);
-      const signatureY = doc.y + 20;
+      const signatureY = 680;
       doc
         .strokeColor("#111827")
         .lineWidth(0.8)
-        .moveTo(margin + 60, signatureY)
-        .lineTo(doc.page.width - margin - 60, signatureY)
+        .moveTo(margin + 70, signatureY)
+        .lineTo(doc.page.width - margin - 70, signatureY)
         .stroke();
-      doc
-        .fontSize(9)
-        .fillColor(muted)
-        .text("Assinatura do cliente", margin, signatureY + 8, {
-          width: contentWidth,
+      doc.fontSize(8).fillColor(muted);
+      writeText(
+        "Assinatura do cliente",
+        margin,
+        signatureY + 8,
+        contentWidth,
+        10,
+        {
           align: "center"
-        });
-      doc.y = signatureY + 28;
+        }
+      );
     }
 
-    addFooter();
+    const footerY = doc.page.height - 48;
+    doc
+      .strokeColor(border)
+      .lineWidth(0.5)
+      .moveTo(margin, footerY)
+      .lineTo(doc.page.width - margin, footerY)
+      .stroke();
+    doc.fontSize(7).fillColor(muted);
+    writeText(
+      `Documento gerado em ${formatDateTime(new Date())}`,
+      margin,
+      footerY + 10,
+      contentWidth / 2,
+      9
+    );
+    writeText(
+      `OS #${serviceOrder.id}`,
+      margin + contentWidth / 2,
+      footerY + 10,
+      contentWidth / 2,
+      9,
+      {
+        align: "right"
+      }
+    );
     doc.end();
   });
 }
