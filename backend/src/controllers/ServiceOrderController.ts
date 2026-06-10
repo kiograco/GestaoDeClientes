@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import * as Yup from "yup";
 import AppError from "../errors/AppError";
 import { STOCK_MANAGER_PROFILES } from "../helpers/UserSecurity";
-import createAuditLog from "../services/AuditLogService";
+import createAuditLog, { listAuditLogs } from "../services/AuditLogService";
 import * as ServiceOrder from "../services/ServiceOrderServices/ServiceOrderService";
 
 const nullableString = Yup.string()
@@ -186,6 +186,20 @@ export const listInventoryMovements = async (
   res: Response
 ): Promise<Response> =>
   res.json(await ServiceOrder.listInventoryMovements(req.user.tenantId));
+
+export const listInventoryAuditLogs = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  ensureCanManageStock(req.user.profile);
+  return res.json(
+    await listAuditLogs({
+      tenantId: req.user.tenantId,
+      resource: "service_inventory",
+      limit: Number(req.query.limit) || 100
+    })
+  );
+};
 
 export const createInventoryItem = async (
   req: Request,

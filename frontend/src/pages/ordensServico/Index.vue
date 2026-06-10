@@ -27,6 +27,7 @@
       <q-tab name="agenda" icon="mdi-calendar-clock" label="Agenda" />
       <q-tab name="dashboard" icon="mdi-chart-box-outline" label="Dashboard" />
       <q-tab name="estoque" icon="mdi-package-variant-closed" label="Estoque" />
+      <q-tab v-if="podeGerenciarEstoque" name="auditoria" icon="mdi-shield-search" label="Auditoria" />
       <q-tab name="tipos" icon="mdi-format-list-bulleted-type" label="Tipos de serviço" />
     </q-tabs>
 
@@ -167,6 +168,37 @@
             <q-td :props="props">
               <span v-if="props.row.serviceOrder">#{{ props.row.serviceOrder.id }} {{ props.row.serviceOrder.title }}</span>
               <span v-else>-</span>
+            </q-td>
+          </template>
+        </q-table>
+      </q-card>
+    </div>
+
+    <div v-else-if="aba === 'auditoria' && podeGerenciarEstoque" class="q-mb-md">
+      <q-card flat bordered>
+        <q-card-section class="row items-center">
+          <div>
+            <div class="text-subtitle1 text-weight-medium">Auditoria de estoque</div>
+            <div class="text-caption text-grey-7">Eventos críticos de produtos, ajustes e baixas automáticas</div>
+          </div>
+          <q-space />
+          <q-btn flat color="primary" icon="mdi-refresh" label="Atualizar" @click="carregarAuditoriaEstoque" />
+        </q-card-section>
+        <q-table
+          flat
+          :data="auditoriaEstoque"
+          :columns="colunasAuditoriaEstoque"
+          row-key="id"
+          :pagination="{ rowsPerPage: 15 }"
+        >
+          <template v-slot:body-cell-action="props">
+            <q-td :props="props">
+              <q-badge color="primary" outline :label="formatarAcaoAuditoriaEstoque(props.row.action)" />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-metadata="props">
+            <q-td :props="props">
+              <div class="audit-metadata">{{ descreverAuditoriaEstoque(props.row) }}</div>
             </q-td>
           </template>
         </q-table>
@@ -775,6 +807,7 @@ import {
   ListarEstoqueServico,
   ListarEstoqueBaixoServico,
   ListarMovimentacoesEstoqueServico,
+  ListarAuditoriaEstoqueServico,
   CriarItemEstoqueServico,
   AlterarItemEstoqueServico,
   ExcluirItemEstoqueServico,
@@ -857,6 +890,7 @@ export default {
       baixoEstoque: [],
       filtrarEstoqueBaixo: false,
       movimentacoesEstoque: [],
+      auditoriaEstoque: [],
       tiposServico: [],
       clientes: [],
       ordemSelecionada: null,
@@ -903,6 +937,14 @@ export default {
         { name: 'serviceOrderId', label: 'OS', field: 'serviceOrderId', align: 'left' },
         { name: 'user', label: 'Usuário', field: row => row.user ? row.user.name : '-', align: 'left' },
         { name: 'observation', label: 'Observação', field: 'observation', align: 'left' }
+      ],
+      colunasAuditoriaEstoque: [
+        { name: 'createdAt', label: 'Data', field: row => this.formatarData(row.createdAt), align: 'left', sortable: true },
+        { name: 'action', label: 'Evento', field: 'action', align: 'left', sortable: true },
+        { name: 'resourceId', label: 'Recurso', field: row => row.resourceId ? `#${row.resourceId}` : '-', align: 'left' },
+        { name: 'user', label: 'Usuário', field: row => row.user ? row.user.name : '-', align: 'left' },
+        { name: 'ip', label: 'IP', field: row => row.ip || '-', align: 'left' },
+        { name: 'metadata', label: 'Detalhes', field: 'metadata', align: 'left' }
       ],
       colunasTiposServico: [
         { name: 'name', label: 'Tipo', field: 'name', align: 'left', sortable: true },
@@ -1003,6 +1045,7 @@ export default {
         this.carregarEstoque(),
         this.carregarEstoqueBaixo(),
         this.carregarMovimentacoesEstoque(),
+        this.carregarAuditoriaEstoque(),
         this.carregarTiposServico(),
         this.carregarOrdens(),
         this.carregarDashboard()
@@ -1023,6 +1066,14 @@ export default {
     async carregarMovimentacoesEstoque () {
       const { data } = await ListarMovimentacoesEstoqueServico()
       this.movimentacoesEstoque = data
+    },
+    async carregarAuditoriaEstoque () {
+      if (!this.podeGerenciarEstoque) {
+        this.auditoriaEstoque = []
+        return
+      }
+      const { data } = await ListarAuditoriaEstoqueServico()
+      this.auditoriaEstoque = data
     },
     async carregarTiposServico () {
       const { data } = await ListarTiposServico()
@@ -1173,6 +1224,7 @@ export default {
         await this.carregarEstoque()
         await this.carregarEstoqueBaixo()
         await this.carregarMovimentacoesEstoque()
+        await this.carregarAuditoriaEstoque()
       } catch (error) {
         this.$notificarErro('Não foi possível ajustar o estoque', error)
       } finally {
@@ -1351,6 +1403,7 @@ export default {
         await this.carregarEstoque()
         await this.carregarEstoqueBaixo()
         await this.carregarMovimentacoesEstoque()
+        await this.carregarAuditoriaEstoque()
       } catch (error) {
         this.$notificarErro('Não foi possível salvar a ordem de serviço', error)
       } finally {
@@ -1388,6 +1441,7 @@ export default {
         await this.carregarEstoque()
         await this.carregarEstoqueBaixo()
         await this.carregarMovimentacoesEstoque()
+        await this.carregarAuditoriaEstoque()
       } catch (error) {
         this.$notificarErro('Não foi possível alterar o status', error)
       }
@@ -1635,6 +1689,26 @@ export default {
       if (ordem.recurrenceType === 'monthly_fixed_day') return `Todo mês no dia ${ordem.recurrenceDayOfMonth}`
       if (ordem.recurrenceType === 'custom_interval') return `A cada ${ordem.recurrenceIntervalDays} dia(s)`
       return 'Avulsa'
+    },
+    formatarAcaoAuditoriaEstoque (action) {
+      const labels = {
+        service_inventory_created: 'Produto criado',
+        service_inventory_updated: 'Produto alterado',
+        service_inventory_deleted: 'Produto excluído',
+        service_inventory_adjusted: 'Ajuste manual',
+        service_inventory_adjust_failed: 'Ajuste bloqueado',
+        service_inventory_auto_deducted: 'Baixa automática',
+        service_inventory_auto_deduct_failed: 'Baixa bloqueada'
+      }
+      return labels[action] || action
+    },
+    descreverAuditoriaEstoque (log) {
+      const metadata = log.metadata || {}
+      if (metadata.reason) return metadata.reason
+      if (metadata.name) return metadata.sku ? `${metadata.name} (${metadata.sku})` : metadata.name
+      if (metadata.movementType) return `${metadata.movementType}: ${metadata.quantity}`
+      if (metadata.serviceOrderId) return `OS #${metadata.serviceOrderId}`
+      return '-'
     },
     alternarRecorrencia (active) {
       if (!active) {
@@ -1923,6 +1997,11 @@ export default {
 }
 .service-order-items-table .money-cell {
   width: 150px;
+}
+.audit-metadata {
+  max-width: 460px;
+  white-space: normal;
+  word-break: break-word;
 }
 .status-em_atendimento { border-left-color: #d97706; background: #fffbeb; }
 .status-concluida { border-left-color: #16a34a; background: #f0fdf4; }

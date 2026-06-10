@@ -34,6 +34,11 @@ serviceOrderRoutes.get(
   isAuth,
   ServiceOrderController.listInventoryMovements
 );
+serviceOrderRoutes.get(
+  "/service/inventory-audit",
+  isAuth,
+  ServiceOrderController.listInventoryAuditLogs
+);
 serviceOrderRoutes.post(
   "/service/inventory",
   isAuth,

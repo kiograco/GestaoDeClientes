@@ -7,6 +7,7 @@ export const AlterarAtendenteServico = data => request({ url: `/service/attendan
 export const ListarEstoqueServico = () => request({ url: '/service/inventory', method: 'get' })
 export const ListarEstoqueBaixoServico = () => request({ url: '/service/inventory-low-stock', method: 'get' })
 export const ListarMovimentacoesEstoqueServico = () => request({ url: '/service/inventory-movements', method: 'get' })
+export const ListarAuditoriaEstoqueServico = () => request({ url: '/service/inventory-audit', method: 'get' })
 export const CriarItemEstoqueServico = data => request({ url: '/service/inventory', method: 'post', data })
 export const AlterarItemEstoqueServico = data => request({ url: `/service/inventory/${data.id}`, method: 'put', data })
 export const ExcluirItemEstoqueServico = id => request({ url: `/service/inventory/${id}`, method: 'delete' })

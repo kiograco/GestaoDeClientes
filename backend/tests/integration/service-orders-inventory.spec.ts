@@ -5,7 +5,7 @@ import ServiceInventoryMovement from "../../src/models/ServiceInventoryMovement"
 import ServiceOrder from "../../src/models/ServiceOrder";
 import { bearerTokenFor } from "../helpers/auth";
 import { makeTestApp } from "../helpers/app";
-import { createAdminUser, createContact } from "../factories";
+import { createAdminUser, createAgentUser, createContact } from "../factories";
 
 const orderPayload = (
   contactId: number,
@@ -135,5 +135,31 @@ describe("service orders inventory API", () => {
     expect(String(auditLog?.metadata.reason)).toContain(
       "Estoque insuficiente para Filtro de agua"
     );
+
+    await request(app)
+      .get("/service/inventory-audit")
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              action: "service_inventory_auto_deduct_failed",
+              resource: "service_inventory",
+              resourceId: String(created.body.id),
+              user: expect.objectContaining({ id: user.id })
+            })
+          ])
+        );
+        expect(String(body[0].metadata.reason)).toContain(
+          "Estoque insuficiente para Filtro de agua"
+        );
+      });
+
+    const agent = await createAgentUser({ tenantId: user.tenantId });
+    await request(app)
+      .get("/service/inventory-audit")
+      .set("Authorization", bearerTokenFor(agent))
+      .expect(403);
   });
 });
