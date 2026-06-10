@@ -81,6 +81,24 @@ describe("service orders inventory API", () => {
       previousQuantity: 5,
       newQuantity: 3
     });
+
+    await request(app)
+      .get(`/service/orders/${created.body.id}/document`)
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect("Content-Type", /pdf/)
+      .expect(response => {
+        expect(response.body.length).toBeGreaterThan(1000);
+      });
+
+    await request(app)
+      .get(`/service/orders/${created.body.id}/document/internal`)
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect("Content-Type", /pdf/)
+      .expect(response => {
+        expect(response.body.length).toBeGreaterThan(1000);
+      });
   });
 
   it("bloqueia conclusao sem saldo e registra auditoria da falha", async () => {

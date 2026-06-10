@@ -1434,71 +1434,296 @@ function buildServiceOrderPdf({
   includeInternalObservation: boolean;
 }): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 48, size: "A4" });
+    const doc = new PDFDocument({ margin: 42, size: "A4" });
     const chunks: Buffer[] = [];
     doc.on("data", chunk => chunks.push(Buffer.from(chunk)));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    doc.fontSize(20).text(tenantName, { align: "center" });
-    doc.moveDown();
-    doc
-      .fontSize(16)
-      .text(
-        includeInternalObservation
-          ? `Ordem de Servico Interna #${serviceOrder.id}`
-          : `Ordem de Servico #${serviceOrder.id}`
-      );
-    doc.moveDown();
-    doc.fontSize(11);
-    doc.text(`Cliente: ${serviceOrder.contact?.name || ""}`);
-    doc.text(
-      `Endereco: ${serviceOrder.address || ""} ${
-        serviceOrder.addressComplement || ""
-      }`
+    const margin = 42;
+    const contentWidth = doc.page.width - margin * 2;
+    const bottomLimit = doc.page.height - 86;
+    const primary = "#1f4e79";
+    const border = "#d8dee9";
+    const light = "#f5f7fb";
+    const text = "#1f2937";
+    const muted = "#667085";
+
+    const items = serviceOrder.items || [];
+    const itemsTotal = items.reduce(
+      (sum, item) => sum + Number(item.totalPrice || 0),
+      0
     );
-    doc.text(
-      `${serviceOrder.city || ""}/${serviceOrder.state || ""} ${
-        serviceOrder.zipCode || ""
-      }`
-    );
-    doc.text(
-      `Horario: ${formatDateTime(
-        serviceOrder.scheduledStart
-      )} ate ${formatDateTime(serviceOrder.scheduledEnd)}`
-    );
-    doc.text(`Tipo de servico: ${serviceOrder.serviceType || ""}`);
-    doc.moveDown();
-    doc.text("Descricao:", { underline: true });
-    doc.text(serviceOrder.description || "");
-    if (serviceOrder.items?.length) {
-      doc.moveDown();
-      doc.text("Produtos e servicos:", { underline: true });
-      serviceOrder.items.forEach(item => {
-        doc.text(
-          `${item.description || ""} - ${item.quantity} x ${formatCurrency(
-            item.unitPrice
-          )} = ${formatCurrency(item.totalPrice)}`
+    const title = includeInternalObservation
+      ? "Ordem de Servico Interna"
+      : "Ordem de Servico";
+    const address = [
+      serviceOrder.address,
+      serviceOrder.addressComplement,
+      serviceOrder.city && serviceOrder.state
+        ? `${serviceOrder.city}/${serviceOrder.state}`
+        : serviceOrder.city || serviceOrder.state,
+      serviceOrder.zipCode
+    ]
+      .filter(Boolean)
+      .join(" - ");
+
+    const addFooter = (): void => {
+      const footerY = doc.page.height - 58;
+      doc
+        .strokeColor(border)
+        .lineWidth(0.5)
+        .moveTo(margin, footerY)
+        .lineTo(doc.page.width - margin, footerY)
+        .stroke();
+      doc
+        .fontSize(8)
+        .fillColor(muted)
+        .text(
+          `Documento gerado em ${formatDateTime(new Date())}`,
+          margin,
+          footerY + 10,
+          { width: contentWidth / 2 }
+        )
+        .text(
+          `OS #${serviceOrder.id}`,
+          margin + contentWidth / 2,
+          footerY + 10,
+          { width: contentWidth / 2, align: "right" }
         );
+    };
+
+    const drawHeader = (): void => {
+      doc.rect(0, 0, doc.page.width, 92).fill(primary);
+      doc
+        .fillColor("#ffffff")
+        .fontSize(18)
+        .text(tenantName, margin, 24, { width: contentWidth * 0.6 })
+        .fontSize(9)
+        .text("Sistema de ordens de servico", margin, 49, {
+          width: contentWidth * 0.6
+        });
+      doc
+        .fontSize(15)
+        .text(title, margin + contentWidth * 0.62, 22, {
+          width: contentWidth * 0.38,
+          align: "right"
+        })
+        .fontSize(11)
+        .text(`#${serviceOrder.id}`, margin + contentWidth * 0.62, 46, {
+          width: contentWidth * 0.38,
+          align: "right"
+        })
+        .fontSize(9)
+        .text(`Status: ${serviceOrder.status || "-"}`, margin, 70, {
+          width: contentWidth,
+          align: "right"
+        });
+      doc.y = 114;
+      doc.fillColor(text);
+    };
+
+    const ensureSpace = (height: number): void => {
+      if (doc.y + height <= bottomLimit) return;
+      addFooter();
+      doc.addPage();
+      drawHeader();
+    };
+
+    const sectionTitle = (label: string): void => {
+      ensureSpace(32);
+      doc.moveDown(0.6);
+      doc
+        .fontSize(11)
+        .fillColor(primary)
+        .text(label.toUpperCase(), margin, doc.y, { width: contentWidth });
+      doc
+        .strokeColor(primary)
+        .lineWidth(1)
+        .moveTo(margin, doc.y + 3)
+        .lineTo(doc.page.width - margin, doc.y + 3)
+        .stroke();
+      doc.moveDown(0.7);
+      doc.fillColor(text);
+    };
+
+    const infoBox = (
+      fields: Array<[string, string | number | null | undefined]>
+    ): void => {
+      ensureSpace(76);
+      const startY = doc.y;
+      const half = contentWidth / 2;
+      const rowHeight = 22;
+      doc.roundedRect(margin, startY, contentWidth, 74, 4).fill(light);
+      fields.slice(0, 6).forEach((field, index) => {
+        const column = index % 2;
+        const row = Math.floor(index / 2);
+        const x = margin + column * half + 12;
+        const y = startY + row * rowHeight + 9;
+        doc
+          .fontSize(7.5)
+          .fillColor(muted)
+          .text(field[0].toUpperCase(), x, y, { width: half - 24 });
+        doc
+          .fontSize(9.5)
+          .fillColor(text)
+          .text(String(field[1] || "-"), x, y + 9, { width: half - 24 });
       });
-    }
-    doc.moveDown();
-    doc.text("Observacao para o cliente:", { underline: true });
-    doc.text(serviceOrder.publicObservation || "");
-    if (includeInternalObservation) {
-      doc.moveDown();
-      doc.text("Observacao interna:", { underline: true });
-      doc.text(serviceOrder.internalObservation || "");
-      doc.moveDown();
-      doc.text(`Tecnico: ${serviceOrder.attendant?.name || "Sem tecnico"}`);
-      doc.text(`Criado por: ${serviceOrder.createdBy?.name || ""}`);
-    }
-    doc.moveDown(3);
-    if (!includeInternalObservation) {
-      doc.text(
-        "Assinatura do cliente: ________________________________________"
+      doc.y = startY + 86;
+    };
+
+    const textBox = (label: string, value?: string | null): void => {
+      const body = value || "-";
+      const height = Math.max(
+        46,
+        doc.heightOfString(body, { width: contentWidth - 24 }) + 28
       );
+      ensureSpace(height + 8);
+      const startY = doc.y;
+      doc.roundedRect(margin, startY, contentWidth, height, 4).stroke(border);
+      doc
+        .fontSize(8)
+        .fillColor(muted)
+        .text(label.toUpperCase(), margin + 12, startY + 9, {
+          width: contentWidth - 24
+        });
+      doc
+        .fontSize(10)
+        .fillColor(text)
+        .text(body, margin + 12, startY + 22, { width: contentWidth - 24 });
+      doc.y = startY + height + 10;
+    };
+
+    const drawItemsHeader = (): void => {
+      const { y } = doc;
+      doc.rect(margin, y, contentWidth, 24).fill(primary);
+      doc.fillColor("#ffffff").fontSize(8.5);
+      doc.text("Tipo", margin + 8, y + 8, { width: 54 });
+      doc.text("Descricao", margin + 66, y + 8, { width: 224 });
+      doc.text("Qtd.", margin + 300, y + 8, { width: 40, align: "right" });
+      doc.text("Valor unit.", margin + 350, y + 8, {
+        width: 76,
+        align: "right"
+      });
+      doc.text("Total", margin + 436, y + 8, {
+        width: contentWidth - 444,
+        align: "right"
+      });
+      doc.y = y + 24;
+      doc.fillColor(text);
+    };
+
+    const drawItemRow = (item: ServiceOrderItem, index: number): void => {
+      const rowColor = index % 2 === 0 ? "#ffffff" : light;
+      const description = item.description || "-";
+      const rowHeight = Math.max(
+        28,
+        doc.heightOfString(description, { width: 224 }) + 14
+      );
+      ensureSpace(rowHeight + 28);
+      if (doc.y < 140) drawItemsHeader();
+      const { y } = doc;
+      doc.rect(margin, y, contentWidth, rowHeight).fill(rowColor);
+      doc.fillColor(text).fontSize(8.8);
+      doc.text(
+        item.itemType === "service" ? "Servico" : "Produto",
+        margin + 8,
+        y + 8,
+        { width: 54 }
+      );
+      doc.text(description, margin + 66, y + 8, { width: 224 });
+      doc.text(String(item.quantity || 0), margin + 300, y + 8, {
+        width: 40,
+        align: "right"
+      });
+      doc.text(formatCurrency(item.unitPrice), margin + 350, y + 8, {
+        width: 76,
+        align: "right"
+      });
+      doc.text(formatCurrency(item.totalPrice), margin + 436, y + 8, {
+        width: contentWidth - 444,
+        align: "right"
+      });
+      doc.y = y + rowHeight;
+    };
+
+    drawHeader();
+    sectionTitle("Dados da ordem");
+    infoBox([
+      ["Cliente", serviceOrder.contact?.name],
+      ["Contato", serviceOrder.contact?.number || serviceOrder.contact?.email],
+      ["Tecnico", serviceOrder.attendant?.name || "Sem tecnico"],
+      ["Tipo de servico", serviceOrder.serviceType],
+      ["Inicio", formatDateTime(serviceOrder.scheduledStart)],
+      ["Fim", formatDateTime(serviceOrder.scheduledEnd)]
+    ]);
+
+    sectionTitle("Endereco do atendimento");
+    textBox("Endereco", address || "Endereco nao informado");
+
+    sectionTitle("Descricao do servico");
+    textBox("Descricao", serviceOrder.description);
+
+    sectionTitle("Servicos e produtos");
+    if (items.length) {
+      drawItemsHeader();
+      items.forEach((item, index) => drawItemRow(item, index));
+      ensureSpace(42);
+      doc
+        .rect(margin, doc.y, contentWidth, 34)
+        .fill("#eef4fb")
+        .fillColor(primary)
+        .fontSize(11)
+        .text("Total geral", margin + 300, doc.y + 11, {
+          width: 126,
+          align: "right"
+        })
+        .fontSize(12)
+        .text(formatCurrency(itemsTotal), margin + 436, doc.y - 12, {
+          width: contentWidth - 444,
+          align: "right"
+        });
+      doc.y += 44;
+      doc.fillColor(text);
+    } else {
+      textBox("Itens", "Nenhum servico ou produto informado.");
     }
+
+    sectionTitle("Observacoes");
+    textBox("Observacao para o cliente", serviceOrder.publicObservation);
+
+    if (includeInternalObservation) {
+      textBox("Observacao interna", serviceOrder.internalObservation);
+      sectionTitle("Dados internos");
+      infoBox([
+        ["Prioridade", serviceOrder.priority],
+        ["Criado por", serviceOrder.createdBy?.name],
+        ["Criado em", formatDateTime(serviceOrder.createdAt)],
+        ["Concluido em", formatDateTime(serviceOrder.completedAt)],
+        ["Cancelado em", formatDateTime(serviceOrder.canceledAt)],
+        ["Motivo cancelamento", serviceOrder.cancelReason]
+      ]);
+    } else {
+      ensureSpace(90);
+      doc.moveDown(1.3);
+      const signatureY = doc.y + 28;
+      doc
+        .strokeColor("#111827")
+        .lineWidth(0.8)
+        .moveTo(margin + 60, signatureY)
+        .lineTo(doc.page.width - margin - 60, signatureY)
+        .stroke();
+      doc
+        .fontSize(9)
+        .fillColor(muted)
+        .text("Assinatura do cliente", margin, signatureY + 8, {
+          width: contentWidth,
+          align: "center"
+        });
+      doc.y = signatureY + 28;
+    }
+
+    addFooter();
     doc.end();
   });
 }
