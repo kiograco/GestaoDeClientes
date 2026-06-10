@@ -31,6 +31,9 @@ const orderPayload = (
   ]
 });
 
+const countPdfPages = (pdf: Buffer): number =>
+  (pdf.toString("latin1").match(/\/Type\s*\/Page\b/g) || []).length;
+
 describe("service orders inventory API", () => {
   it("baixa estoque uma unica vez ao concluir ordem de servico", async () => {
     const app = await makeTestApp();
@@ -89,6 +92,7 @@ describe("service orders inventory API", () => {
       .expect("Content-Type", /pdf/)
       .expect(response => {
         expect(response.body.length).toBeGreaterThan(1000);
+        expect(countPdfPages(response.body)).toBe(1);
       });
 
     await request(app)
@@ -98,6 +102,7 @@ describe("service orders inventory API", () => {
       .expect("Content-Type", /pdf/)
       .expect(response => {
         expect(response.body.length).toBeGreaterThan(1000);
+        expect(countPdfPages(response.body)).toBe(1);
       });
   });
 

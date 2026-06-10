@@ -1434,15 +1434,15 @@ function buildServiceOrderPdf({
   includeInternalObservation: boolean;
 }): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 42, size: "A4" });
+    const doc = new PDFDocument({ margin: 30, size: "A4" });
     const chunks: Buffer[] = [];
     doc.on("data", chunk => chunks.push(Buffer.from(chunk)));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    const margin = 42;
+    const margin = 30;
     const contentWidth = doc.page.width - margin * 2;
-    const bottomLimit = doc.page.height - 86;
+    const bottomLimit = doc.page.height - 60;
     const primary = "#1f4e79";
     const border = "#d8dee9";
     const light = "#f5f7fb";
@@ -1469,7 +1469,7 @@ function buildServiceOrderPdf({
       .join(" - ");
 
     const addFooter = (): void => {
-      const footerY = doc.page.height - 58;
+      const footerY = doc.page.height - 48;
       doc
         .strokeColor(border)
         .lineWidth(0.5)
@@ -1477,7 +1477,7 @@ function buildServiceOrderPdf({
         .lineTo(doc.page.width - margin, footerY)
         .stroke();
       doc
-        .fontSize(8)
+        .fontSize(7)
         .fillColor(muted)
         .text(
           `Documento gerado em ${formatDateTime(new Date())}`,
@@ -1494,47 +1494,45 @@ function buildServiceOrderPdf({
     };
 
     const drawHeader = (): void => {
-      doc.rect(0, 0, doc.page.width, 92).fill(primary);
+      doc.rect(0, 0, doc.page.width, 72).fill(primary);
       doc
         .fillColor("#ffffff")
-        .fontSize(18)
-        .text(tenantName, margin, 24, { width: contentWidth * 0.6 })
-        .fontSize(9)
-        .text("Sistema de ordens de servico", margin, 49, {
+        .fontSize(15)
+        .text(tenantName, margin, 18, { width: contentWidth * 0.6 })
+        .fontSize(8)
+        .text("Sistema de ordens de servico", margin, 40, {
           width: contentWidth * 0.6
         });
       doc
-        .fontSize(15)
-        .text(title, margin + contentWidth * 0.62, 22, {
+        .fontSize(13)
+        .text(title, margin + contentWidth * 0.62, 16, {
           width: contentWidth * 0.38,
           align: "right"
         })
-        .fontSize(11)
-        .text(`#${serviceOrder.id}`, margin + contentWidth * 0.62, 46, {
+        .fontSize(10)
+        .text(`#${serviceOrder.id}`, margin + contentWidth * 0.62, 36, {
           width: contentWidth * 0.38,
           align: "right"
         })
-        .fontSize(9)
-        .text(`Status: ${serviceOrder.status || "-"}`, margin, 70, {
+        .fontSize(8)
+        .text(`Status: ${serviceOrder.status || "-"}`, margin, 55, {
           width: contentWidth,
           align: "right"
         });
-      doc.y = 114;
+      doc.y = 84;
       doc.fillColor(text);
     };
 
     const ensureSpace = (height: number): void => {
       if (doc.y + height <= bottomLimit) return;
-      addFooter();
-      doc.addPage();
-      drawHeader();
+      doc.y = Math.max(86, bottomLimit - height);
     };
 
     const sectionTitle = (label: string): void => {
-      ensureSpace(32);
-      doc.moveDown(0.6);
+      ensureSpace(20);
+      doc.moveDown(0.25);
       doc
-        .fontSize(11)
+        .fontSize(9)
         .fillColor(primary)
         .text(label.toUpperCase(), margin, doc.y, { width: contentWidth });
       doc
@@ -1543,104 +1541,108 @@ function buildServiceOrderPdf({
         .moveTo(margin, doc.y + 3)
         .lineTo(doc.page.width - margin, doc.y + 3)
         .stroke();
-      doc.moveDown(0.7);
+      doc.moveDown(0.35);
       doc.fillColor(text);
     };
 
     const infoBox = (
       fields: Array<[string, string | number | null | undefined]>
     ): void => {
-      ensureSpace(76);
+      ensureSpace(58);
       const startY = doc.y;
       const half = contentWidth / 2;
-      const rowHeight = 22;
-      doc.roundedRect(margin, startY, contentWidth, 74, 4).fill(light);
+      const rowHeight = 17;
+      doc.roundedRect(margin, startY, contentWidth, 56, 4).fill(light);
       fields.slice(0, 6).forEach((field, index) => {
         const column = index % 2;
         const row = Math.floor(index / 2);
         const x = margin + column * half + 12;
         const y = startY + row * rowHeight + 9;
         doc
-          .fontSize(7.5)
+          .fontSize(6.8)
           .fillColor(muted)
           .text(field[0].toUpperCase(), x, y, { width: half - 24 });
         doc
-          .fontSize(9.5)
+          .fontSize(8.2)
           .fillColor(text)
           .text(String(field[1] || "-"), x, y + 9, { width: half - 24 });
       });
-      doc.y = startY + 86;
+      doc.y = startY + 62;
     };
 
     const textBox = (label: string, value?: string | null): void => {
       const body = value || "-";
       const height = Math.max(
-        46,
-        doc.heightOfString(body, { width: contentWidth - 24 }) + 28
+        34,
+        Math.min(50, doc.heightOfString(body, { width: contentWidth - 18 }) + 22)
       );
       ensureSpace(height + 8);
       const startY = doc.y;
       doc.roundedRect(margin, startY, contentWidth, height, 4).stroke(border);
       doc
-        .fontSize(8)
+        .fontSize(7)
         .fillColor(muted)
-        .text(label.toUpperCase(), margin + 12, startY + 9, {
-          width: contentWidth - 24
+        .text(label.toUpperCase(), margin + 9, startY + 7, {
+          width: contentWidth - 18
         });
       doc
-        .fontSize(10)
+        .fontSize(8.5)
         .fillColor(text)
-        .text(body, margin + 12, startY + 22, { width: contentWidth - 24 });
-      doc.y = startY + height + 10;
+        .text(body, margin + 9, startY + 18, {
+          width: contentWidth - 18,
+          height: height - 22,
+          ellipsis: true
+        });
+      doc.y = startY + height + 6;
     };
 
     const drawItemsHeader = (): void => {
       const { y } = doc;
-      doc.rect(margin, y, contentWidth, 24).fill(primary);
-      doc.fillColor("#ffffff").fontSize(8.5);
-      doc.text("Tipo", margin + 8, y + 8, { width: 54 });
-      doc.text("Descricao", margin + 66, y + 8, { width: 224 });
-      doc.text("Qtd.", margin + 300, y + 8, { width: 40, align: "right" });
-      doc.text("Valor unit.", margin + 350, y + 8, {
+      doc.rect(margin, y, contentWidth, 19).fill(primary);
+      doc.fillColor("#ffffff").fontSize(7.5);
+      doc.text("Tipo", margin + 7, y + 6, { width: 52 });
+      doc.text("Descricao", margin + 62, y + 6, { width: 230 });
+      doc.text("Qtd.", margin + 305, y + 6, { width: 34, align: "right" });
+      doc.text("Valor unit.", margin + 350, y + 6, {
         width: 76,
         align: "right"
       });
-      doc.text("Total", margin + 436, y + 8, {
+      doc.text("Total", margin + 436, y + 6, {
         width: contentWidth - 444,
         align: "right"
       });
-      doc.y = y + 24;
+      doc.y = y + 19;
       doc.fillColor(text);
     };
 
     const drawItemRow = (item: ServiceOrderItem, index: number): void => {
       const rowColor = index % 2 === 0 ? "#ffffff" : light;
       const description = item.description || "-";
-      const rowHeight = Math.max(
-        28,
-        doc.heightOfString(description, { width: 224 }) + 14
-      );
-      ensureSpace(rowHeight + 28);
-      if (doc.y < 140) drawItemsHeader();
+      const rowHeight = 18;
+      ensureSpace(rowHeight + 24);
       const { y } = doc;
       doc.rect(margin, y, contentWidth, rowHeight).fill(rowColor);
-      doc.fillColor(text).fontSize(8.8);
+      doc.fillColor(text).fontSize(7.7);
       doc.text(
         item.itemType === "service" ? "Servico" : "Produto",
-        margin + 8,
-        y + 8,
-        { width: 54 }
+        margin + 7,
+        y + 5,
+        { width: 52 }
       );
-      doc.text(description, margin + 66, y + 8, { width: 224 });
-      doc.text(String(item.quantity || 0), margin + 300, y + 8, {
-        width: 40,
+      doc.text(description, margin + 62, y + 5, {
+        width: 230,
+        height: 10,
+        ellipsis: true
+      });
+      doc.text(String(item.quantity || 0), margin + 305, y + 5, {
+        width: 34,
         align: "right"
       });
-      doc.text(formatCurrency(item.unitPrice), margin + 350, y + 8, {
+      doc.text(formatCurrency(item.unitPrice), margin + 350, y + 5, {
         width: 76,
         align: "right"
       });
-      doc.text(formatCurrency(item.totalPrice), margin + 436, y + 8, {
+      doc.text(formatCurrency(item.totalPrice), margin + 436, y + 5, {
         width: contentWidth - 444,
         align: "right"
       });
@@ -1668,22 +1670,23 @@ function buildServiceOrderPdf({
     if (items.length) {
       drawItemsHeader();
       items.forEach((item, index) => drawItemRow(item, index));
-      ensureSpace(42);
+      ensureSpace(30);
+      const totalY = doc.y;
       doc
-        .rect(margin, doc.y, contentWidth, 34)
+        .rect(margin, totalY, contentWidth, 26)
         .fill("#eef4fb")
         .fillColor(primary)
-        .fontSize(11)
-        .text("Total geral", margin + 300, doc.y + 11, {
+        .fontSize(9.5)
+        .text("Total geral", margin + 300, totalY + 8, {
           width: 126,
           align: "right"
         })
-        .fontSize(12)
-        .text(formatCurrency(itemsTotal), margin + 436, doc.y - 12, {
+        .fontSize(10.5)
+        .text(formatCurrency(itemsTotal), margin + 436, totalY + 8, {
           width: contentWidth - 444,
           align: "right"
         });
-      doc.y += 44;
+      doc.y = totalY + 32;
       doc.fillColor(text);
     } else {
       textBox("Itens", "Nenhum servico ou produto informado.");
@@ -1704,9 +1707,9 @@ function buildServiceOrderPdf({
         ["Motivo cancelamento", serviceOrder.cancelReason]
       ]);
     } else {
-      ensureSpace(90);
-      doc.moveDown(1.3);
-      const signatureY = doc.y + 28;
+      ensureSpace(58);
+      doc.moveDown(0.4);
+      const signatureY = doc.y + 20;
       doc
         .strokeColor("#111827")
         .lineWidth(0.8)
