@@ -39,6 +39,11 @@ serviceOrderRoutes.get(
   isAuth,
   ServiceOrderController.listInventoryAuditLogs
 );
+serviceOrderRoutes.get(
+  "/service/financial-audit",
+  isAuth,
+  ServiceOrderController.listFinancialAuditLogs
+);
 serviceOrderRoutes.post(
   "/service/inventory",
   isAuth,
@@ -88,6 +93,11 @@ serviceOrderRoutes.get(
   "/service/orders-dashboard",
   isAuth,
   ServiceOrderController.dashboard
+);
+serviceOrderRoutes.get(
+  "/service/orders-financial-report",
+  isAuth,
+  ServiceOrderController.financialReport
 );
 serviceOrderRoutes.get(
   "/service/orders/:serviceOrderId",

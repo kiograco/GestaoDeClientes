@@ -8,6 +8,7 @@ export const ListarEstoqueServico = () => request({ url: '/service/inventory', m
 export const ListarEstoqueBaixoServico = () => request({ url: '/service/inventory-low-stock', method: 'get' })
 export const ListarMovimentacoesEstoqueServico = () => request({ url: '/service/inventory-movements', method: 'get' })
 export const ListarAuditoriaEstoqueServico = () => request({ url: '/service/inventory-audit', method: 'get' })
+export const ListarAuditoriaFinanceiraServico = () => request({ url: '/service/financial-audit', method: 'get' })
 export const CriarItemEstoqueServico = data => request({ url: '/service/inventory', method: 'post', data })
 export const AlterarItemEstoqueServico = data => request({ url: `/service/inventory/${data.id}`, method: 'put', data })
 export const ExcluirItemEstoqueServico = id => request({ url: `/service/inventory/${id}`, method: 'delete' })
@@ -20,6 +21,8 @@ export const ExcluirTipoServico = id => request({ url: `/service/types/${id}`, m
 
 export const ListarOrdensServico = params => request({ url: '/service/orders', method: 'get', params })
 export const DashboardOrdensServico = params => request({ url: '/service/orders-dashboard', method: 'get', params })
+export const RelatorioFinanceiroOrdensServico = params => request({ url: '/service/orders-financial-report', method: 'get', params })
+export const BaixarRelatorioFinanceiroOrdensServico = params => request({ url: '/service/orders-financial-report', method: 'get', params: { ...params, format: 'csv' }, responseType: 'blob' })
 export const ObterOrdemServico = id => request({ url: `/service/orders/${id}`, method: 'get' })
 export const CriarOrdemServico = data => request({ url: '/service/orders', method: 'post', data })
 export const AlterarOrdemServico = data => request({ url: `/service/orders/${data.id}`, method: 'put', data })

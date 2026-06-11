@@ -177,6 +177,158 @@ describe("service orders inventory API", () => {
       .expect(({ body }) => {
         expect(body).toHaveLength(0);
       });
+
+    await request(app)
+      .get("/service/orders")
+      .query({ financialView: "dueSoon" })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ id: created.body.id })
+          ])
+        );
+      });
+
+    await request(app)
+      .put(`/service/orders/${created.body.id}`)
+      .set("Authorization", authorization)
+      .send({
+        ...orderPayload(contact.id, inventoryItem.id, 2, "concluida"),
+        financialStatus: "pago",
+        paymentMethod: "pix",
+        chargedAmount: 150,
+        paidAmount: 150,
+        paidAt: "2026-06-16T00:00:00.000Z",
+        financialObservation: "Pagamento quitado"
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          financialStatus: "pago",
+          paymentMethod: "pix",
+          chargedAmount: "150.00",
+          paidAmount: "150.00",
+          financialObservation: "Pagamento quitado"
+        });
+      });
+
+    const financialAuditLog = await AuditLog.findOne({
+      where: {
+        action: "service_order_financial_updated",
+        resource: "service_order_financial",
+        resourceId: String(created.body.id)
+      }
+    });
+    expect(financialAuditLog).toMatchObject({
+      tenantId: user.tenantId,
+      userId: user.id
+    });
+    expect(financialAuditLog?.metadata).toMatchObject({
+      serviceOrderId: created.body.id,
+      changedFields: expect.arrayContaining([
+        "financialStatus",
+        "paidAmount",
+        "paidAt",
+        "financialObservation"
+      ])
+    });
+
+    await request(app)
+      .get("/service/orders")
+      .query({ financialView: "paid" })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ id: created.body.id, financialStatus: "pago" })
+          ])
+        );
+      });
+
+    await request(app)
+      .get("/service/orders-dashboard")
+      .query({ financialView: "paid" })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.totalCharged).toBe(150);
+        expect(body.totalReceivable).toBe(0);
+        expect(body.totalReceived).toBe(150);
+        expect(body.paidOrders).toBe(1);
+        expect(body.grossProfitPaid).toBe(125);
+        expect(body.grossProfitPending).toBe(0);
+      });
+
+    await request(app)
+      .get("/service/financial-audit")
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              action: "service_order_financial_updated",
+              resource: "service_order_financial",
+              resourceId: String(created.body.id),
+              user: expect.objectContaining({ id: user.id })
+            })
+          ])
+        );
+      });
+
+    await request(app)
+      .get("/service/orders-financial-report")
+      .query({
+        financialView: "paid",
+        dateField: "paidAt",
+        start: "2026-06-01T00:00:00.000Z",
+        end: "2026-06-30T23:59:59.999Z"
+      })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.summary).toMatchObject({
+          orders: 1,
+          totalCharged: 150,
+          totalReceived: 150,
+          totalReceivable: 0,
+          serviceRevenue: 150,
+          productCost: 25,
+          grossProfit: 125,
+          paidOrders: 1
+        });
+        expect(body.rows).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              id: created.body.id,
+              customerName: contact.name,
+              financialStatus: "pago",
+              grossProfit: 125
+            })
+          ])
+        );
+      });
+
+    await request(app)
+      .get("/service/orders-financial-report")
+      .query({
+        format: "csv",
+        financialView: "paid",
+        dateField: "paidAt",
+        start: "2026-06-01T00:00:00.000Z",
+        end: "2026-06-30T23:59:59.999Z"
+      })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect("Content-Type", /text\/csv/)
+      .expect(({ text }) => {
+        expect(text).toContain('"OS","Cliente","Servico"');
+        expect(text).toContain('"Instalacao com produto"');
+        expect(text).toContain('"125"');
+      });
   });
 
   it("bloqueia conclusao sem saldo e registra auditoria da falha", async () => {
@@ -255,6 +407,10 @@ describe("service orders inventory API", () => {
     const agent = await createAgentUser({ tenantId: user.tenantId });
     await request(app)
       .get("/service/inventory-audit")
+      .set("Authorization", bearerTokenFor(agent))
+      .expect(403);
+    await request(app)
+      .get("/service/financial-audit")
       .set("Authorization", bearerTokenFor(agent))
       .expect(403);
   });

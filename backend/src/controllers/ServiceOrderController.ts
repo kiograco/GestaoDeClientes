@@ -144,6 +144,91 @@ const auditStockAction = async (
     metadata
   });
 
+const auditFinancialAction = async (
+  req: Request,
+  action: string,
+  resourceId?: string | number | null,
+  metadata?: Record<string, unknown>
+): Promise<void> =>
+  createAuditLog({
+    tenantId: req.user.tenantId,
+    userId: req.user.id,
+    action,
+    resource: "service_order_financial",
+    resourceId,
+    ip: req.ip,
+    userAgent: req.get("user-agent"),
+    metadata
+  });
+
+const financialAuditFields = [
+  "financialStatus",
+  "paymentMethod",
+  "chargedAmount",
+  "paidAmount",
+  "paymentDueDate",
+  "paidAt",
+  "financialObservation"
+];
+
+const comparableFinancialValue = (value: unknown): string | null => {
+  if (value === undefined || value === null || value === "") return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "number") return value.toFixed(2);
+  if (typeof value === "string" && !Number.isNaN(Number(value))) {
+    return Number(value).toFixed(2);
+  }
+  if (typeof value === "string" && !Number.isNaN(Date.parse(value))) {
+    return new Date(value).toISOString();
+  }
+  return String(value);
+};
+
+const financialChanges = (
+  before: LegacyAny,
+  after: LegacyAny,
+  payload: LegacyAny
+): Record<string, { before: string | null; after: string | null }> =>
+  financialAuditFields.reduce((acc, field) => {
+    if (!(field in payload)) return acc;
+    const oldValue = comparableFinancialValue(before[field]);
+    const newValue = comparableFinancialValue(after[field]);
+    if (oldValue !== newValue) {
+      acc[field] = { before: oldValue, after: newValue };
+    }
+    return acc;
+  }, {} as Record<string, { before: string | null; after: string | null }>);
+
+const escapeCsvValue = (value: unknown): string => {
+  if (value === undefined || value === null) return "";
+  const text = value instanceof Date ? value.toISOString() : String(value);
+  return `"${text.replace(/"/g, '""')}"`;
+};
+
+const buildFinancialReportCsv = (rows: LegacyAny[]): string => {
+  const columns = [
+    ["id", "OS"],
+    ["customerName", "Cliente"],
+    ["title", "Servico"],
+    ["financialStatus", "Status financeiro"],
+    ["paymentMethod", "Forma pagamento"],
+    ["chargedAmount", "Cobrado"],
+    ["paidAmount", "Pago"],
+    ["openAmount", "Aberto"],
+    ["paymentDueDate", "Vencimento"],
+    ["paidAt", "Pago em"],
+    ["serviceRevenue", "Receita servicos"],
+    ["productCost", "Custo produtos"],
+    ["grossProfit", "Lucro bruto"]
+  ];
+  return [
+    columns.map(([, label]) => escapeCsvValue(label)).join(","),
+    ...rows.map(row =>
+      columns.map(([field]) => escapeCsvValue(row[field])).join(",")
+    )
+  ].join("\n");
+};
+
 export const listAttendants = async (
   req: Request,
   res: Response
@@ -208,6 +293,20 @@ export const listInventoryAuditLogs = async (
     await listAuditLogs({
       tenantId: req.user.tenantId,
       resource: "service_inventory",
+      limit: Number(req.query.limit) || 100
+    })
+  );
+};
+
+export const listFinancialAuditLogs = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  ensureCanManageStock(req.user.profile);
+  return res.json(
+    await listAuditLogs({
+      tenantId: req.user.tenantId,
+      resource: "service_order_financial",
       limit: Number(req.query.limit) || 100
     })
   );
@@ -370,6 +469,25 @@ export const dashboard = async (
 ): Promise<Response> =>
   res.json(await ServiceOrder.getDashboard(req.user.tenantId, req.query));
 
+export const financialReport = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const report = await ServiceOrder.getFinancialReport(
+    req.user.tenantId,
+    req.query
+  );
+  if (req.query.format === "csv") {
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=relatorio-financeiro-os.csv"
+    );
+    return res.send(buildFinancialReportCsv(report.rows as LegacyAny[]));
+  }
+  return res.json(report);
+};
+
 export const showOrder = async (
   req: Request,
   res: Response
@@ -401,13 +519,35 @@ export const updateOrder = async (
   res: Response
 ): Promise<Response> => {
   try {
+    const previous = await ServiceOrder.showOrder(
+      req.user.tenantId,
+      req.user.profile,
+      req.params.serviceOrderId
+    );
+    const data = await validate<ServiceOrder.ServiceOrderData>(
+      orderSchema,
+      req.body
+    );
     const serviceOrder = await ServiceOrder.updateOrder(
       req.user.tenantId,
       req.user.id,
       req.user.profile,
       req.params.serviceOrderId,
-      await validate<ServiceOrder.ServiceOrderData>(orderSchema, req.body)
+      data
     );
+    const changes = financialChanges(previous, serviceOrder, req.body);
+    if (Object.keys(changes).length) {
+      await auditFinancialAction(
+        req,
+        "service_order_financial_updated",
+        serviceOrder.id,
+        {
+          serviceOrderId: serviceOrder.id,
+          changedFields: Object.keys(changes),
+          changes
+        }
+      );
+    }
     if (req.body.status === "concluida" && serviceOrder.inventoryDeductedAt) {
       await auditStockAction(
         req,

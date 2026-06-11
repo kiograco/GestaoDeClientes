@@ -177,9 +177,19 @@ const applyServiceOrderFinancialFilters = (
   if (filters.financialStatus) where.financialStatus = filters.financialStatus;
   if (filters.paymentMethod) where.paymentMethod = filters.paymentMethod;
   if (filters.financialView === "paid") where.financialStatus = "pago";
+  if (filters.financialView === "partial") where.financialStatus = "parcial";
   if (filters.financialView === "overdue") {
     where.financialStatus = { [Op.notIn]: ["pago", "cancelado"] };
     where.paymentDueDate = { [Op.lt]: new Date() };
+  }
+  if (filters.financialView === "dueSoon") {
+    const dueLimit = new Date();
+    dueLimit.setDate(dueLimit.getDate() + 7);
+    where.financialStatus = { [Op.notIn]: ["pago", "cancelado"] };
+    where.paymentDueDate = { [Op.between]: [new Date(), dueLimit] };
+  }
+  if (filters.financialView === "open") {
+    where.financialStatus = { [Op.notIn]: ["pago", "cancelado"] };
   }
 };
 
@@ -1156,6 +1166,116 @@ export const getDashboard = async (
   };
 };
 
+const financialReportDateFields = ["paymentDueDate", "paidAt", "createdAt"];
+
+export const getFinancialReport = async (
+  tenantId: string | number,
+  filters: LegacyAny
+): Promise<Record<string, unknown>> => {
+  const where: LegacyAny = { tenantId };
+  applyServiceOrderFinancialFilters(where, filters);
+  if (filters.paymentMethod) where.paymentMethod = filters.paymentMethod;
+  if (filters.financialStatus) where.financialStatus = filters.financialStatus;
+
+  const dateField = financialReportDateFields.includes(filters.dateField)
+    ? filters.dateField
+    : "paymentDueDate";
+  if (filters.start && filters.end) {
+    where[dateField] = {
+      [Op.between]: [new Date(filters.start), new Date(filters.end)]
+    };
+  }
+
+  const orders = await ServiceOrder.findAll({
+    where,
+    include: [
+      { model: Contact },
+      {
+        model: ServiceOrderItem,
+        as: "items",
+        include: [{ model: ServiceInventoryItem }]
+      }
+    ],
+    order: [[dateField, "ASC"]]
+  });
+
+  const rows = orders.map(order => {
+    let serviceRevenue = 0;
+    let productCost = 0;
+    (order.items || []).forEach(item => {
+      const quantity = Number(item.quantity || 0);
+      if (item.itemType === "service") {
+        serviceRevenue += Number(item.totalPrice || 0);
+      }
+      if (item.itemType === "product") {
+        productCost += Number(item.inventoryItem?.costPrice || 0) * quantity;
+      }
+    });
+    const chargedAmount = Number(order.chargedAmount || 0);
+    const paidAmount = Number(order.paidAmount || 0);
+    const openAmount = Math.max(0, chargedAmount - paidAmount);
+    const grossProfit = serviceRevenue - productCost;
+    return {
+      id: order.id,
+      title: order.title,
+      customerName: order.contact?.name || "Sem cliente",
+      financialStatus: order.financialStatus,
+      paymentMethod: order.paymentMethod,
+      chargedAmount: Number(chargedAmount.toFixed(2)),
+      paidAmount: Number(paidAmount.toFixed(2)),
+      openAmount: Number(openAmount.toFixed(2)),
+      paymentDueDate: order.paymentDueDate,
+      paidAt: order.paidAt,
+      serviceRevenue: Number(serviceRevenue.toFixed(2)),
+      productCost: Number(productCost.toFixed(2)),
+      grossProfit: Number(grossProfit.toFixed(2))
+    };
+  });
+
+  const summary = rows.reduce(
+    (acc, row) => {
+      acc.totalCharged += Number(row.chargedAmount || 0);
+      acc.totalReceived += Number(row.paidAmount || 0);
+      acc.totalReceivable += Number(row.openAmount || 0);
+      acc.serviceRevenue += Number(row.serviceRevenue || 0);
+      acc.productCost += Number(row.productCost || 0);
+      acc.grossProfit += Number(row.grossProfit || 0);
+      if (row.financialStatus === "pago") acc.paidOrders += 1;
+      if (row.financialStatus === "parcial") acc.partialOrders += 1;
+      if (
+        !["pago", "cancelado"].includes(String(row.financialStatus)) &&
+        row.paymentDueDate &&
+        new Date(row.paymentDueDate).getTime() < Date.now()
+      ) {
+        acc.overdueOrders += 1;
+        acc.overdueAmount += Number(row.openAmount || 0);
+      }
+      return acc;
+    },
+    {
+      orders: rows.length,
+      totalCharged: 0,
+      totalReceived: 0,
+      totalReceivable: 0,
+      serviceRevenue: 0,
+      productCost: 0,
+      grossProfit: 0,
+      paidOrders: 0,
+      partialOrders: 0,
+      overdueOrders: 0,
+      overdueAmount: 0
+    }
+  );
+
+  Object.keys(summary).forEach(key => {
+    if (typeof summary[key] === "number") {
+      summary[key] = Number(summary[key].toFixed(2));
+    }
+  });
+
+  return { summary, rows };
+};
+
 export const showOrder = async (
   tenantId: string | number,
   profile: string,
@@ -1169,7 +1289,7 @@ const buildOrderPayload = (
   data: ServiceOrderData
 ): LegacyAny => {
   const recurrence = normalizeRecurrence(data);
-  return {
+  const payload: LegacyAny = {
     tenantId,
     contactId: data.contactId,
     attendantId: data.attendantId || null,
@@ -1215,6 +1335,10 @@ const buildOrderPayload = (
     attachmentUrls: data.attachmentUrls || [],
     cancelReason: cleanText(data.cancelReason)
   };
+  Object.keys(payload).forEach(key => {
+    if (payload[key] === undefined) delete payload[key];
+  });
+  return payload;
 };
 
 const buildOrderItemPayload = (

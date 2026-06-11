@@ -29,6 +29,7 @@
     <q-tabs v-model="aba" dense align="left" active-color="primary" indicator-color="primary" class="q-mb-md">
       <q-tab name="agenda" icon="mdi-calendar-clock" label="Agenda" />
       <q-tab name="dashboard" icon="mdi-chart-box-outline" label="Dashboard" />
+      <q-tab name="financeiro" icon="mdi-cash-multiple" label="Financeiro" />
       <q-tab name="estoque" icon="mdi-package-variant-closed" label="Estoque" />
       <q-tab v-if="podeGerenciarEstoque" name="auditoria" icon="mdi-shield-search" label="Auditoria" />
       <q-tab name="tipos" icon="mdi-format-list-bulleted-type" label="Tipos de serviço" />
@@ -113,6 +114,74 @@
             <strong>{{ formatarMoeda(item.grossProfit) }} <small>{{ item.grossMarginPercent }}%</small></strong>
           </div>
         </q-card-section>
+      </q-card>
+    </div>
+
+    <div v-else-if="aba === 'financeiro'" class="q-mb-md">
+      <div class="dashboard-grid q-mb-md">
+        <q-card v-for="card in financeiroCards" :key="card.label" flat bordered>
+          <q-card-section>
+            <div class="text-caption text-grey-7">{{ card.label }}</div>
+            <div class="text-h5 text-weight-medium">{{ card.value }}</div>
+          </q-card-section>
+        </q-card>
+      </div>
+      <q-card flat bordered>
+        <q-card-section class="row items-center">
+          <div>
+            <div class="text-subtitle1 text-weight-medium">Contas a receber de OS</div>
+            <div class="text-caption text-grey-7">Cobranças vencidas, abertas, parciais e pagas</div>
+          </div>
+          <q-space />
+          <q-btn flat color="primary" icon="mdi-file-delimited-outline" label="CSV" @click="baixarRelatorioFinanceiro" />
+          <q-btn flat color="primary" icon="mdi-refresh" label="Atualizar" @click="carregarTudo" />
+        </q-card-section>
+        <q-table
+          flat
+          :data="ordensFinanceiras"
+          :columns="colunasFinanceiro"
+          row-key="id"
+          :pagination="{ rowsPerPage: 15 }"
+        >
+          <template v-slot:body-cell-financialStatus="props">
+            <q-td :props="props">
+              <q-badge :color="corStatusFinanceiro(props.row)" :label="rotuloStatusFinanceiro(props.row.financialStatus)" />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-paymentMethod="props">
+            <q-td :props="props">
+              <q-select
+                dense
+                borderless
+                emit-value
+                map-options
+                clearable
+                :value="props.row.paymentMethod"
+                :options="paymentMethodOptions"
+                @input="value => atualizarFinanceiroOrdem(props.row, { paymentMethod: value })"
+              />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-actions="props">
+            <q-td :props="props" auto-width>
+              <q-btn flat round dense icon="mdi-file-document-edit-outline" color="primary" @click="marcarComoCobrada(props.row)">
+                <q-tooltip>Marcar como cobrada</q-tooltip>
+              </q-btn>
+              <q-btn flat round dense icon="mdi-cash-check" color="positive" @click="marcarComoPaga(props.row)">
+                <q-tooltip>Marcar como paga</q-tooltip>
+              </q-btn>
+              <q-btn flat round dense icon="mdi-cash-plus" color="amber-9" @click="registrarPagamentoParcial(props.row)">
+                <q-tooltip>Registrar pagamento parcial</q-tooltip>
+              </q-btn>
+              <q-btn flat round dense icon="mdi-calendar-edit" color="primary" @click="alterarVencimentoFinanceiro(props.row)">
+                <q-tooltip>Alterar vencimento</q-tooltip>
+              </q-btn>
+              <q-btn flat round dense icon="mdi-note-edit-outline" color="primary" @click="alterarObservacaoFinanceira(props.row)">
+                <q-tooltip>Observação financeira</q-tooltip>
+              </q-btn>
+            </q-td>
+          </template>
+        </q-table>
       </q-card>
     </div>
 
@@ -219,6 +288,34 @@
           <template v-slot:body-cell-metadata="props">
             <q-td :props="props">
               <div class="audit-metadata">{{ descreverAuditoriaEstoque(props.row) }}</div>
+            </q-td>
+          </template>
+        </q-table>
+      </q-card>
+      <q-card flat bordered class="q-mt-md">
+        <q-card-section class="row items-center">
+          <div>
+            <div class="text-subtitle1 text-weight-medium">Auditoria financeira</div>
+            <div class="text-caption text-grey-7">AlteraÃ§Ãµes em cobranÃ§a, pagamento, vencimento e observaÃ§Ãµes financeiras</div>
+          </div>
+          <q-space />
+          <q-btn flat color="primary" icon="mdi-refresh" label="Atualizar" @click="carregarAuditoriaFinanceira" />
+        </q-card-section>
+        <q-table
+          flat
+          :data="auditoriaFinanceira"
+          :columns="colunasAuditoriaFinanceira"
+          row-key="id"
+          :pagination="{ rowsPerPage: 15 }"
+        >
+          <template v-slot:body-cell-action="props">
+            <q-td :props="props">
+              <q-badge color="primary" outline :label="formatarAcaoAuditoriaFinanceira(props.row.action)" />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-metadata="props">
+            <q-td :props="props">
+              <div class="audit-metadata">{{ descreverAuditoriaFinanceira(props.row) }}</div>
             </q-td>
           </template>
         </q-table>
@@ -865,6 +962,7 @@ import {
   ListarEstoqueBaixoServico,
   ListarMovimentacoesEstoqueServico,
   ListarAuditoriaEstoqueServico,
+  ListarAuditoriaFinanceiraServico,
   CriarItemEstoqueServico,
   AlterarItemEstoqueServico,
   ExcluirItemEstoqueServico,
@@ -875,6 +973,7 @@ import {
   ExcluirTipoServico,
   ListarOrdensServico,
   DashboardOrdensServico,
+  BaixarRelatorioFinanceiroOrdensServico,
   CriarOrdemServico,
   AlterarOrdemServico,
   DocumentoOrdemServico,
@@ -955,6 +1054,7 @@ export default {
       filtrarEstoqueBaixo: false,
       movimentacoesEstoque: [],
       auditoriaEstoque: [],
+      auditoriaFinanceira: [],
       tiposServico: [],
       clientes: [],
       ordemSelecionada: null,
@@ -979,8 +1079,11 @@ export default {
         { label: 'Transferência', value: 'transferencia' }
       ],
       financialViewOptions: [
+        { label: 'Em aberto', value: 'open' },
         { label: 'Pagas', value: 'paid' },
-        { label: 'Vencidas', value: 'overdue' }
+        { label: 'Parciais', value: 'partial' },
+        { label: 'Vencidas', value: 'overdue' },
+        { label: 'A vencer', value: 'dueSoon' }
       ],
       recurrenceOptions: [
         { label: 'Dia fixo todo mês', value: 'monthly_fixed_day' },
@@ -1028,6 +1131,26 @@ export default {
         { name: 'ip', label: 'IP', field: row => row.ip || '-', align: 'left' },
         { name: 'metadata', label: 'Detalhes', field: 'metadata', align: 'left' }
       ],
+      colunasAuditoriaFinanceira: [
+        { name: 'createdAt', label: 'Data', field: row => this.formatarData(row.createdAt), align: 'left', sortable: true },
+        { name: 'action', label: 'Evento', field: 'action', align: 'left', sortable: true },
+        { name: 'resourceId', label: 'OS', field: row => row.resourceId ? `#${row.resourceId}` : '-', align: 'left' },
+        { name: 'user', label: 'Usuario', field: row => row.user ? row.user.name : '-', align: 'left' },
+        { name: 'ip', label: 'IP', field: row => row.ip || '-', align: 'left' },
+        { name: 'metadata', label: 'Detalhes', field: 'metadata', align: 'left' }
+      ],
+      colunasFinanceiro: [
+        { name: 'id', label: 'OS', field: row => `#${row.id}`, align: 'left', sortable: true },
+        { name: 'customer', label: 'Cliente', field: row => row.contact ? row.contact.name : '-', align: 'left', sortable: true },
+        { name: 'title', label: 'Serviço', field: 'title', align: 'left', sortable: true },
+        { name: 'financialStatus', label: 'Status', field: 'financialStatus', align: 'center', sortable: true },
+        { name: 'paymentMethod', label: 'Forma', field: row => this.rotuloFormaPagamento(row.paymentMethod), align: 'left', sortable: true },
+        { name: 'chargedAmount', label: 'Cobrado', field: row => this.formatarMoeda(row.chargedAmount), align: 'right', sortable: true },
+        { name: 'paidAmount', label: 'Pago', field: row => this.formatarMoeda(row.paidAmount), align: 'right', sortable: true },
+        { name: 'openAmount', label: 'Aberto', field: row => this.formatarMoeda(this.valorAbertoOrdem(row)), align: 'right', sortable: true },
+        { name: 'paymentDueDate', label: 'Vencimento', field: row => this.formatarDataCurta(row.paymentDueDate), align: 'left', sortable: true },
+        { name: 'actions', label: '', field: 'actions', align: 'right' }
+      ],
       colunasTiposServico: [
         { name: 'name', label: 'Tipo', field: 'name', align: 'left', sortable: true },
         { name: 'defaultPrice', label: 'Preço padrão', field: row => this.formatarMoeda(row.defaultPrice), align: 'right', sortable: true },
@@ -1062,6 +1185,38 @@ export default {
       if (!this.filtrarEstoqueBaixo) return this.estoque
       const baixoEstoqueIds = new Set(this.baixoEstoque.map(item => item.id))
       return this.estoque.filter(item => baixoEstoqueIds.has(item.id))
+    },
+    ordensFinanceiras () {
+      return [...this.ordens].sort((a, b) => {
+        const aDue = a.paymentDueDate ? new Date(a.paymentDueDate).getTime() : Number.MAX_SAFE_INTEGER
+        const bDue = b.paymentDueDate ? new Date(b.paymentDueDate).getTime() : Number.MAX_SAFE_INTEGER
+        return aDue - bDue
+      })
+    },
+    resumoFinanceiroLocal () {
+      return this.ordensFinanceiras.reduce((acc, ordem) => {
+        const charged = this.parseMoeda(ordem.chargedAmount) || 0
+        const paid = this.parseMoeda(ordem.paidAmount) || 0
+        const open = Math.max(0, charged - paid)
+        const isPaid = ordem.financialStatus === 'pago'
+        const isCanceled = ordem.financialStatus === 'cancelado'
+        const isOverdue = !isPaid && !isCanceled && ordem.paymentDueDate && new Date(ordem.paymentDueDate) < new Date()
+        acc.open += !isPaid && !isCanceled ? open : 0
+        acc.received += paid
+        acc.overdue += isOverdue ? open : 0
+        acc.overdueCount += isOverdue ? 1 : 0
+        acc.dueSoon += !isPaid && !isCanceled && !isOverdue ? open : 0
+        return acc
+      }, { open: 0, received: 0, overdue: 0, overdueCount: 0, dueSoon: 0 })
+    },
+    financeiroCards () {
+      return [
+        { label: 'Em aberto', value: this.formatarMoeda(this.resumoFinanceiroLocal.open) },
+        { label: 'Vencido', value: this.formatarMoeda(this.resumoFinanceiroLocal.overdue) },
+        { label: 'A vencer', value: this.formatarMoeda(this.resumoFinanceiroLocal.dueSoon) },
+        { label: 'Recebido', value: this.formatarMoeda(this.resumoFinanceiroLocal.received) },
+        { label: 'Inadimplentes', value: this.resumoFinanceiroLocal.overdueCount }
+      ]
     },
     totalItensOrdem () {
       const total = this.form.items.reduce((sum, item) => {
@@ -1138,6 +1293,7 @@ export default {
         this.carregarEstoqueBaixo(),
         this.carregarMovimentacoesEstoque(),
         this.carregarAuditoriaEstoque(),
+        this.carregarAuditoriaFinanceira(),
         this.carregarTiposServico(),
         this.carregarOrdens(),
         this.carregarDashboard()
@@ -1166,6 +1322,14 @@ export default {
       }
       const { data } = await ListarAuditoriaEstoqueServico()
       this.auditoriaEstoque = data
+    },
+    async carregarAuditoriaFinanceira () {
+      if (!this.podeGerenciarEstoque) {
+        this.auditoriaFinanceira = []
+        return
+      }
+      const { data } = await ListarAuditoriaFinanceiraServico()
+      this.auditoriaFinanceira = data
     },
     async carregarTiposServico () {
       const { data } = await ListarTiposServico()
@@ -1321,6 +1485,7 @@ export default {
         await this.carregarEstoqueBaixo()
         await this.carregarMovimentacoesEstoque()
         await this.carregarAuditoriaEstoque()
+        await this.carregarAuditoriaFinanceira()
       } catch (error) {
         this.$notificarErro('Não foi possível ajustar o estoque', error)
       } finally {
@@ -1371,6 +1536,112 @@ export default {
     },
     atualizarTipoServicoDigitado (value) {
       this.form.serviceType = value
+    },
+    rotuloStatusFinanceiro (status) {
+      const option = this.financialStatusOptions.find(item => item.value === status)
+      return option ? option.label : status || 'Não cobrado'
+    },
+    rotuloFormaPagamento (method) {
+      const option = this.paymentMethodOptions.find(item => item.value === method)
+      return option ? option.label : '-'
+    },
+    corStatusFinanceiro (ordem) {
+      if (ordem.financialStatus === 'pago') return 'positive'
+      if (ordem.financialStatus === 'parcial') return 'amber-9'
+      if (ordem.financialStatus === 'cancelado') return 'grey'
+      if (this.ordemFinanceiraVencida(ordem)) return 'negative'
+      if (ordem.financialStatus === 'cobrado') return 'primary'
+      return 'grey-7'
+    },
+    ordemFinanceiraVencida (ordem) {
+      return Boolean(
+        ordem &&
+        !['pago', 'cancelado'].includes(ordem.financialStatus) &&
+        ordem.paymentDueDate &&
+        new Date(ordem.paymentDueDate) < new Date()
+      )
+    },
+    valorAbertoOrdem (ordem) {
+      const charged = this.parseMoeda(ordem.chargedAmount) || 0
+      const paid = this.parseMoeda(ordem.paidAmount) || 0
+      return Math.max(0, charged - paid)
+    },
+    totalServicosOrdem (ordem) {
+      return (ordem.items || []).reduce((sum, item) => {
+        if (item.itemType !== 'service') return sum
+        const quantity = this.parseInteiro(item.quantity) || 1
+        const unitPrice = this.parseMoeda(item.unitPrice) || 0
+        return sum + (quantity * unitPrice)
+      }, 0)
+    },
+    formatarDataCurta (value) {
+      if (!value) return '-'
+      return new Date(value).toLocaleDateString('pt-BR')
+    },
+    async atualizarFinanceiroOrdem (ordem, changes) {
+      await this.salvarStatus({
+        ...ordem,
+        ...changes,
+        chargedAmount: changes.chargedAmount !== undefined ? changes.chargedAmount : ordem.chargedAmount,
+        paidAmount: changes.paidAmount !== undefined ? changes.paidAmount : ordem.paidAmount
+      })
+    },
+    async marcarComoCobrada (ordem) {
+      await this.atualizarFinanceiroOrdem(ordem, { financialStatus: 'cobrado' })
+    },
+    async marcarComoPaga (ordem) {
+      const charged = this.parseMoeda(ordem.chargedAmount) || this.totalServicosOrdem(ordem)
+      await this.atualizarFinanceiroOrdem(ordem, {
+        financialStatus: 'pago',
+        chargedAmount: charged,
+        paidAmount: charged || this.parseMoeda(ordem.paidAmount) || 0,
+        paidAt: localDateInput()
+      })
+    },
+    registrarPagamentoParcial (ordem) {
+      this.$q.dialog({
+        title: 'Pagamento parcial',
+        message: 'Informe o valor pago',
+        prompt: {
+          model: this.formatarMoedaCampo(ordem.paidAmount),
+          type: 'text'
+        },
+        cancel: true,
+        persistent: true
+      }).onOk(async value => {
+        await this.atualizarFinanceiroOrdem(ordem, {
+          financialStatus: 'parcial',
+          paidAmount: this.parseMoeda(value) || 0
+        })
+      })
+    },
+    alterarVencimentoFinanceiro (ordem) {
+      this.$q.dialog({
+        title: 'Alterar vencimento',
+        message: 'Informe a nova data de vencimento',
+        prompt: {
+          model: ordem.paymentDueDate ? this.toInputDate(ordem.paymentDueDate).slice(0, 10) : localDateInput(),
+          type: 'date'
+        },
+        cancel: true,
+        persistent: true
+      }).onOk(async value => {
+        await this.atualizarFinanceiroOrdem(ordem, { paymentDueDate: value })
+      })
+    },
+    alterarObservacaoFinanceira (ordem) {
+      this.$q.dialog({
+        title: 'Observação financeira',
+        message: 'Informe uma observação',
+        prompt: {
+          model: ordem.financialObservation || '',
+          type: 'textarea'
+        },
+        cancel: true,
+        persistent: true
+      }).onOk(async value => {
+        await this.atualizarFinanceiroOrdem(ordem, { financialObservation: value })
+      })
     },
     parseInteiro (value) {
       const parsed = parseInt(value, 10)
@@ -1500,6 +1771,7 @@ export default {
         await this.carregarEstoqueBaixo()
         await this.carregarMovimentacoesEstoque()
         await this.carregarAuditoriaEstoque()
+        await this.carregarAuditoriaFinanceira()
       } catch (error) {
         this.$notificarErro('Não foi possível salvar a ordem de serviço', error)
       } finally {
@@ -1538,6 +1810,7 @@ export default {
         await this.carregarEstoqueBaixo()
         await this.carregarMovimentacoesEstoque()
         await this.carregarAuditoriaEstoque()
+        await this.carregarAuditoriaFinanceira()
       } catch (error) {
         this.$notificarErro('Não foi possível alterar o status', error)
       }
@@ -1805,6 +2078,51 @@ export default {
       if (metadata.movementType) return `${metadata.movementType}: ${metadata.quantity}`
       if (metadata.serviceOrderId) return `OS #${metadata.serviceOrderId}`
       return '-'
+    },
+    formatarAcaoAuditoriaFinanceira (action) {
+      const labels = {
+        service_order_financial_updated: 'Financeiro alterado'
+      }
+      return labels[action] || action
+    },
+    descreverAuditoriaFinanceira (log) {
+      const metadata = log.metadata || {}
+      const changedFields = metadata.changedFields || []
+      if (!changedFields.length) return metadata.serviceOrderId ? `OS #${metadata.serviceOrderId}` : '-'
+      return changedFields.map(field => this.rotuloCampoFinanceiro(field)).join(', ')
+    },
+    rotuloCampoFinanceiro (field) {
+      const labels = {
+        financialStatus: 'status',
+        paymentMethod: 'forma de pagamento',
+        chargedAmount: 'valor cobrado',
+        paidAmount: 'valor pago',
+        paymentDueDate: 'vencimento',
+        paidAt: 'data de pagamento',
+        financialObservation: 'observacao'
+      }
+      return labels[field] || field
+    },
+    parametrosFinanceirosAtuais () {
+      const { start, end } = this.periodoAgenda()
+      return {
+        ...this.filtros,
+        start: start.toISOString(),
+        end: end.toISOString()
+      }
+    },
+    async baixarRelatorioFinanceiro () {
+      try {
+        const { data } = await BaixarRelatorioFinanceiroOrdensServico(this.parametrosFinanceirosAtuais())
+        const url = URL.createObjectURL(new Blob([data], { type: 'text/csv;charset=utf-8' }))
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `relatorio-financeiro-os-${localDateInput()}.csv`
+        link.click()
+        URL.revokeObjectURL(url)
+      } catch (error) {
+        this.$notificarErro('NÃ£o foi possÃ­vel baixar o relatÃ³rio financeiro', error)
+      }
     },
     alternarRecorrencia (active) {
       if (!active) {
