@@ -781,7 +781,7 @@
             @blur="form.paidAmount = formatarMoedaCampo(form.paidAmount)"
           />
           <q-input dense outlined type="date" class="col-12 col-md-3" label="Vencimento" v-model="form.paymentDueDate" />
-          <q-input dense outlined type="date" class="col-12 col-md-3" label="Data pagamento" v-model="form.paidAt" />
+          <q-input dense outlined type="date" class="col-12 col-md-3" label="Pagamento em" v-model="form.paidAt" />
           <q-input dense outlined type="textarea" class="col-12 col-md-6" label="Observação financeira" v-model="form.financialObservation" />
           <div class="col-12">
             <q-separator class="q-my-sm" />
