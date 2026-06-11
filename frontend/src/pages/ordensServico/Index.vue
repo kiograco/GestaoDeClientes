@@ -126,6 +126,25 @@
           </q-card-section>
         </q-card>
       </div>
+      <q-card flat bordered class="q-mb-md">
+        <q-card-section class="row items-center q-col-gutter-sm">
+          <div class="col-12 col-md">
+            <div class="text-subtitle1 text-weight-medium">Fechamento mensal</div>
+            <div class="text-caption text-grey-7">Recebidos, abertos, vencidos, custos e lucro bruto do mes</div>
+          </div>
+          <q-input dense outlined type="month" class="col-12 col-md-2" label="Mes" v-model="mesFechamento" @input="carregarFechamentoMensal" />
+          <q-btn flat color="primary" icon="mdi-file-delimited-outline" label="CSV" @click="baixarFechamentoMensal" />
+          <q-btn flat color="primary" icon="mdi-refresh" label="Atualizar" @click="carregarFechamentoMensal" />
+        </q-card-section>
+        <q-card-section class="dashboard-grid">
+          <q-card v-for="card in fechamentoMensalCards" :key="card.label" flat bordered>
+            <q-card-section>
+              <div class="text-caption text-grey-7">{{ card.label }}</div>
+              <div class="text-h6 text-weight-medium">{{ card.value }}</div>
+            </q-card-section>
+          </q-card>
+        </q-card-section>
+      </q-card>
       <q-card flat bordered>
         <q-card-section class="row items-center">
           <div>
@@ -178,6 +197,9 @@
               </q-btn>
               <q-btn flat round dense icon="mdi-note-edit-outline" color="primary" @click="alterarObservacaoFinanceira(props.row)">
                 <q-tooltip>Observação financeira</q-tooltip>
+              </q-btn>
+              <q-btn flat round dense icon="mdi-bell-ring-outline" color="deep-orange" @click="enviarLembreteCobranca(props.row)">
+                <q-tooltip>Enviar lembrete de cobranca</q-tooltip>
               </q-btn>
             </q-td>
           </template>
@@ -974,11 +996,14 @@ import {
   ListarOrdensServico,
   DashboardOrdensServico,
   BaixarRelatorioFinanceiroOrdensServico,
+  FechamentoMensalOrdensServico,
+  BaixarFechamentoMensalOrdensServico,
   CriarOrdemServico,
   AlterarOrdemServico,
   DocumentoOrdemServico,
   DocumentoInternoOrdemServico,
-  NotificarOrdemServico
+  NotificarOrdemServico,
+  EnviarLembreteCobrancaOrdemServico
 } from 'src/service/ordensServico'
 
 const socket = socketIO()
@@ -1031,6 +1056,7 @@ export default {
       aba: 'agenda',
       salvando: false,
       dataAgenda: localDateInput(),
+      mesFechamento: localDateInput().slice(0, 7),
       modalOrdem: false,
       modalAtendente: false,
       modalEstoque: false,
@@ -1061,6 +1087,7 @@ export default {
       ordemArrastada: null,
       contextHorario: null,
       dashboard: {},
+      fechamentoMensal: {},
       filtros: {},
       priorityOptions: ['baixa', 'media', 'alta', 'urgente'],
       statusOptions: ['rascunho', 'agendada', 'em_atendimento', 'concluida', 'cancelada', 'reagendada'],
@@ -1218,6 +1245,17 @@ export default {
         { label: 'Inadimplentes', value: this.resumoFinanceiroLocal.overdueCount }
       ]
     },
+    fechamentoMensalCards () {
+      const summary = this.fechamentoMensal.summary || {}
+      return [
+        { label: 'Recebido no mes', value: this.formatarMoeda(summary.totalReceived) },
+        { label: 'Em aberto', value: this.formatarMoeda(summary.totalOpen) },
+        { label: 'Vencido', value: this.formatarMoeda(summary.overdueAmount) },
+        { label: 'Custo produtos', value: this.formatarMoeda(summary.productCost) },
+        { label: 'Lucro bruto', value: this.formatarMoeda(summary.grossProfit) },
+        { label: 'Margem', value: `${summary.grossMarginPercent || 0}%` }
+      ]
+    },
     totalItensOrdem () {
       const total = this.form.items.reduce((sum, item) => {
         const quantity = this.parseInteiro(item.quantity) || 1
@@ -1296,7 +1334,8 @@ export default {
         this.carregarAuditoriaFinanceira(),
         this.carregarTiposServico(),
         this.carregarOrdens(),
-        this.carregarDashboard()
+        this.carregarDashboard(),
+        this.carregarFechamentoMensal()
       ])
     },
     async carregarAtendentes () {
@@ -1347,6 +1386,10 @@ export default {
     async carregarDashboard () {
       const { data } = await DashboardOrdensServico(this.filtros)
       this.dashboard = data
+    },
+    async carregarFechamentoMensal () {
+      const { data } = await FechamentoMensalOrdensServico({ month: this.mesFechamento })
+      this.fechamentoMensal = data
     },
     async filtrarClientes (val, update) {
       const { data } = await ListarClientes({ searchParam: val })
@@ -1641,6 +1684,31 @@ export default {
         persistent: true
       }).onOk(async value => {
         await this.atualizarFinanceiroOrdem(ordem, { financialObservation: value })
+      })
+    },
+    enviarLembreteCobranca (ordem) {
+      this.$q.dialog({
+        title: 'Lembrete de cobranca',
+        message: `Enviar lembrete para a OS #${ordem.id}?`,
+        options: {
+          type: 'checkbox',
+          model: ['internal'],
+          items: this.notificationOptions
+        },
+        cancel: true,
+        persistent: true
+      }).onOk(async channels => {
+        try {
+          const { data } = await EnviarLembreteCobrancaOrdemServico(ordem.id, { channels })
+          const falhas = Object.keys(data.failed || {})
+          this.$q.notify({
+            type: falhas.length ? 'warning' : 'positive',
+            message: falhas.length ? `Lembrete parcial. Falhas: ${falhas.join(', ')}` : 'Lembrete enviado.'
+          })
+          await this.carregarAuditoriaFinanceira()
+        } catch (error) {
+          this.$notificarErro('Nao foi possivel enviar o lembrete de cobranca', error)
+        }
       })
     },
     parseInteiro (value) {
@@ -2081,13 +2149,18 @@ export default {
     },
     formatarAcaoAuditoriaFinanceira (action) {
       const labels = {
-        service_order_financial_updated: 'Financeiro alterado'
+        service_order_financial_updated: 'Financeiro alterado',
+        service_order_billing_reminder_sent: 'Lembrete enviado',
+        service_order_billing_reminder_failed: 'Lembrete falhou'
       }
       return labels[action] || action
     },
     descreverAuditoriaFinanceira (log) {
       const metadata = log.metadata || {}
       const changedFields = metadata.changedFields || []
+      if (metadata.sent || metadata.failed) {
+        return `Enviado: ${(metadata.sent || []).join(', ') || '-'}`
+      }
       if (!changedFields.length) return metadata.serviceOrderId ? `OS #${metadata.serviceOrderId}` : '-'
       return changedFields.map(field => this.rotuloCampoFinanceiro(field)).join(', ')
     },
@@ -2122,6 +2195,19 @@ export default {
         URL.revokeObjectURL(url)
       } catch (error) {
         this.$notificarErro('NÃ£o foi possÃ­vel baixar o relatÃ³rio financeiro', error)
+      }
+    },
+    async baixarFechamentoMensal () {
+      try {
+        const { data } = await BaixarFechamentoMensalOrdensServico({ month: this.mesFechamento })
+        const url = URL.createObjectURL(new Blob([data], { type: 'text/csv;charset=utf-8' }))
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `fechamento-financeiro-${this.mesFechamento}.csv`
+        link.click()
+        URL.revokeObjectURL(url)
+      } catch (error) {
+        this.$notificarErro('Nao foi possivel baixar o fechamento mensal', error)
       }
     },
     alternarRecorrencia (active) {

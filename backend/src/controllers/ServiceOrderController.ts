@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
+import { Op } from "sequelize";
 import * as Yup from "yup";
 import AppError from "../errors/AppError";
 import { STOCK_MANAGER_PROFILES } from "../helpers/UserSecurity";
+import AuditLog from "../models/AuditLog";
 import createAuditLog, { listAuditLogs } from "../services/AuditLogService";
 import * as ServiceOrder from "../services/ServiceOrderServices/ServiceOrderService";
 
@@ -103,6 +105,10 @@ const notificationSchema = Yup.object().shape({
     .min(1)
     .required(),
   message: nullableString
+});
+
+const billingReminderSchema = notificationSchema.shape({
+  force: Yup.boolean()
 });
 
 const validate = async <T>(schema: Yup.ObjectSchema, data: LegacyAny) => {
@@ -229,6 +235,56 @@ const buildFinancialReportCsv = (rows: LegacyAny[]): string => {
   ].join("\n");
 };
 
+const buildMonthlyClosingCsv = (rows: LegacyAny[]): string => {
+  const columns = [
+    ["id", "OS"],
+    ["customerName", "Cliente"],
+    ["attendantName", "Tecnico"],
+    ["title", "Servico"],
+    ["serviceType", "Tipo servico"],
+    ["financialStatus", "Status financeiro"],
+    ["chargedAmount", "Cobrado"],
+    ["paidAmount", "Pago"],
+    ["openAmount", "Aberto"],
+    ["paymentDueDate", "Vencimento"],
+    ["paidAt", "Pago em"],
+    ["serviceRevenue", "Receita servicos"],
+    ["productCost", "Custo produtos"],
+    ["grossProfit", "Lucro bruto"],
+    ["paidInMonth", "Recebido no mes"],
+    ["overdueAtClosing", "Vencido no fechamento"]
+  ];
+  return [
+    columns.map(([, label]) => escapeCsvValue(label)).join(","),
+    ...rows.map(row =>
+      columns.map(([field]) => escapeCsvValue(row[field])).join(",")
+    )
+  ].join("\n");
+};
+
+const auditBillingReminderAction = async (
+  req: Request,
+  action: string,
+  resourceId?: string | number | null,
+  metadata?: Record<string, unknown>
+): Promise<void> =>
+  createAuditLog({
+    tenantId: req.user.tenantId,
+    userId: req.user.id,
+    action,
+    resource: "service_order_billing_reminder",
+    resourceId,
+    ip: req.ip,
+    userAgent: req.get("user-agent"),
+    metadata
+  });
+
+const startOfCurrentDay = (): Date => {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
 export const listAttendants = async (
   req: Request,
   res: Response
@@ -306,7 +362,7 @@ export const listFinancialAuditLogs = async (
   return res.json(
     await listAuditLogs({
       tenantId: req.user.tenantId,
-      resource: "service_order_financial",
+      resources: ["service_order_financial", "service_order_billing_reminder"],
       limit: Number(req.query.limit) || 100
     })
   );
@@ -488,6 +544,36 @@ export const financialReport = async (
   return res.json(report);
 };
 
+export const monthlyFinancialClosing = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const report = await ServiceOrder.getMonthlyFinancialClosing(
+    req.user.tenantId,
+    req.query
+  );
+  if (req.query.format === "csv") {
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=fechamento-financeiro-${report.month}.csv`
+    );
+    return res.send(buildMonthlyClosingCsv(report.rows as LegacyAny[]));
+  }
+  return res.json(report);
+};
+
+export const billingReminderCandidates = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await ServiceOrder.listOrders(req.user.tenantId, req.user.profile, {
+      ...req.query,
+      financialView: req.query.financialView || "overdue"
+    })
+  );
+
 export const showOrder = async (
   req: Request,
   res: Response
@@ -626,3 +712,47 @@ export const notifyOrder = async (
       )
     )
   );
+
+export const sendBillingReminder = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const data = await validate<ServiceOrder.ServiceOrderBillingReminderData>(
+    billingReminderSchema,
+    req.body
+  );
+  const alreadySentToday = await AuditLog.findOne({
+    where: {
+      tenantId: req.user.tenantId,
+      action: "service_order_billing_reminder_sent",
+      resource: "service_order_billing_reminder",
+      resourceId: String(req.params.serviceOrderId),
+      createdAt: { [Op.gte]: startOfCurrentDay() }
+    }
+  });
+  if (alreadySentToday && !data.force) {
+    throw new AppError("ERR_SERVICE_ORDER_BILLING_REMINDER_DUPLICATED", 409);
+  }
+
+  const result = await ServiceOrder.sendBillingReminder(
+    req.user.tenantId,
+    req.params.serviceOrderId,
+    req.user.id,
+    data
+  );
+  await auditBillingReminderAction(
+    req,
+    result.sent && Array.isArray(result.sent) && result.sent.length
+      ? "service_order_billing_reminder_sent"
+      : "service_order_billing_reminder_failed",
+    req.params.serviceOrderId,
+    {
+      serviceOrderId: req.params.serviceOrderId,
+      channels: data.channels,
+      sent: result.sent,
+      failed: result.failed,
+      forced: Boolean(data.force)
+    }
+  );
+  return res.json(result);
+};

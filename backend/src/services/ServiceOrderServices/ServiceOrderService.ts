@@ -108,6 +108,11 @@ export interface ServiceOrderNotificationData {
   message?: string | null;
 }
 
+export interface ServiceOrderBillingReminderData
+  extends ServiceOrderNotificationData {
+  force?: boolean;
+}
+
 export interface ServiceInventoryItemData {
   name: string;
   sku?: string | null;
@@ -667,6 +672,92 @@ const buildPublicNotificationMessage = (
       : ""
   ];
   return parts.filter(Boolean).join("\n");
+};
+
+const buildBillingReminderMessage = (
+  serviceOrder: ServiceOrder,
+  customMessage?: string | null
+): string => {
+  const chargedAmount = Number(serviceOrder.chargedAmount || 0);
+  const paidAmount = Number(serviceOrder.paidAmount || 0);
+  const openAmount = Math.max(0, chargedAmount - paidAmount);
+  const parts = [
+    customMessage ||
+      `Lembrete de pagamento da ordem de servico #${serviceOrder.id}`,
+    `Servico: ${serviceOrder.serviceType}`,
+    `Cliente: ${serviceOrder.contact?.name || ""}`,
+    `Valor em aberto: ${formatCurrency(openAmount)}`,
+    serviceOrder.paymentDueDate
+      ? `Vencimento: ${formatDateTime(serviceOrder.paymentDueDate)}`
+      : "",
+    serviceOrder.paymentMethod
+      ? `Forma de pagamento: ${serviceOrder.paymentMethod}`
+      : "",
+    "Caso o pagamento ja tenha sido realizado, desconsidere esta mensagem."
+  ];
+  return parts.filter(Boolean).join("\n");
+};
+
+const sendServiceOrderMessage = async (
+  tenantId: string | number,
+  userId: string | number,
+  serviceOrder: ServiceOrder,
+  channels: Array<"internal" | "email" | "whatsapp">,
+  message: string,
+  subject: string,
+  internalEvent: string
+): Promise<{ sent: string[]; failed: Record<string, string> }> => {
+  const sent: string[] = [];
+  const failed: Record<string, string> = {};
+
+  if (channels.includes("internal")) {
+    emitServiceOrderEvent(tenantId, internalEvent, serviceOrder);
+    sent.push("internal");
+  }
+
+  if (channels.includes("email")) {
+    try {
+      if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
+        throw new Error(
+          "RESEND_API_KEY and RESEND_FROM_EMAIL must be configured"
+        );
+      }
+      if (!serviceOrder.contact?.email) throw new Error("Cliente sem e-mail");
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const { error } = await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL,
+        to: serviceOrder.contact.email,
+        subject,
+        html: `<pre>${escapePublicText(message)}</pre>`
+      });
+      if (error) throw new Error(error.message);
+      sent.push("email");
+    } catch (error) {
+      failed.email = error instanceof Error ? error.message : "Falha no e-mail";
+    }
+  }
+
+  if (channels.includes("whatsapp")) {
+    try {
+      const ticket = await Ticket.findOne({
+        where: { tenantId, contactId: serviceOrder.contactId },
+        include: [{ model: Contact }]
+      });
+      if (!ticket) throw new Error("Cliente sem ticket/canal para WhatsApp");
+      await SendMessageSystemProxy({
+        ticket,
+        messageData: { body: message },
+        media: null,
+        userId
+      });
+      sent.push("whatsapp");
+    } catch (error) {
+      failed.whatsapp =
+        error instanceof Error ? error.message : "Falha no WhatsApp";
+    }
+  }
+
+  return { sent, failed };
 };
 
 export const listAttendants = async (
@@ -1274,6 +1365,184 @@ export const getFinancialReport = async (
   });
 
   return { summary, rows };
+};
+
+const monthRange = (
+  month?: string
+): { start: Date; end: Date; key: string } => {
+  const match = month?.match(/^(\d{4})-(\d{2})$/);
+  const now = new Date();
+  const year = match ? Number(match[1]) : now.getFullYear();
+  const monthIndex = match ? Number(match[2]) - 1 : now.getMonth();
+  const start = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0, 0));
+  const end = new Date(Date.UTC(year, monthIndex + 1, 0, 23, 59, 59, 999));
+  return {
+    start,
+    end,
+    key: `${year}-${String(monthIndex + 1).padStart(2, "0")}`
+  };
+};
+
+const addMetric = (
+  target: Record<string, number>,
+  key: string | null | undefined,
+  value: number
+): void => {
+  const safeKey = key || "Sem valor";
+  target[safeKey] = Number(((target[safeKey] || 0) + value).toFixed(2));
+};
+
+const sortedMetricEntries = (
+  values: Record<string, number>,
+  limit = 10
+): Array<Record<string, unknown>> =>
+  Object.entries(values)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => Number(b.value || 0) - Number(a.value || 0))
+    .slice(0, limit);
+
+export const getMonthlyFinancialClosing = async (
+  tenantId: string | number,
+  filters: LegacyAny
+): Promise<Record<string, unknown>> => {
+  const { start, end, key } = monthRange(filters.month);
+  const where: LegacyAny = {
+    tenantId,
+    [Op.or]: [
+      { paidAt: { [Op.between]: [start, end] } },
+      { paymentDueDate: { [Op.lte]: end } },
+      { createdAt: { [Op.between]: [start, end] } }
+    ]
+  };
+  const orders = await ServiceOrder.findAll({
+    where,
+    include: [
+      { model: ServiceAttendant },
+      { model: Contact },
+      {
+        model: ServiceOrderItem,
+        as: "items",
+        include: [{ model: ServiceInventoryItem }]
+      }
+    ],
+    order: [["paymentDueDate", "ASC"]]
+  });
+
+  const rankings = {
+    byAttendant: {} as Record<string, number>,
+    byCustomer: {} as Record<string, number>,
+    byServiceType: {} as Record<string, number>
+  };
+
+  const rows = orders.map(order => {
+    let serviceRevenue = 0;
+    let productCost = 0;
+    (order.items || []).forEach(item => {
+      const quantity = Number(item.quantity || 0);
+      if (item.itemType === "service") {
+        serviceRevenue += Number(item.totalPrice || 0);
+      }
+      if (item.itemType === "product") {
+        productCost += Number(item.inventoryItem?.costPrice || 0) * quantity;
+      }
+    });
+    const chargedAmount = Number(order.chargedAmount || 0);
+    const paidAmount = Number(order.paidAmount || 0);
+    const openAmount = Math.max(0, chargedAmount - paidAmount);
+    const paidInMonth =
+      order.paidAt &&
+      new Date(order.paidAt).getTime() >= start.getTime() &&
+      new Date(order.paidAt).getTime() <= end.getTime();
+    const isOpen = !["pago", "cancelado"].includes(order.financialStatus);
+    const isOverdue =
+      isOpen &&
+      order.paymentDueDate &&
+      new Date(order.paymentDueDate).getTime() <= end.getTime() &&
+      openAmount > 0;
+    const grossProfit = serviceRevenue - productCost;
+    if (paidInMonth) {
+      addMetric(
+        rankings.byAttendant,
+        order.attendant?.name || "Sem tecnico",
+        paidAmount
+      );
+      addMetric(
+        rankings.byCustomer,
+        order.contact?.name || "Sem cliente",
+        paidAmount
+      );
+      addMetric(rankings.byServiceType, order.serviceType, paidAmount);
+    }
+    return {
+      id: order.id,
+      title: order.title,
+      customerName: order.contact?.name || "Sem cliente",
+      attendantName: order.attendant?.name || "Sem tecnico",
+      serviceType: order.serviceType,
+      financialStatus: order.financialStatus,
+      chargedAmount: Number(chargedAmount.toFixed(2)),
+      paidAmount: Number(paidAmount.toFixed(2)),
+      openAmount: Number(openAmount.toFixed(2)),
+      paymentDueDate: order.paymentDueDate,
+      paidAt: order.paidAt,
+      serviceRevenue: Number(serviceRevenue.toFixed(2)),
+      productCost: Number(productCost.toFixed(2)),
+      grossProfit: Number(grossProfit.toFixed(2)),
+      paidInMonth: Boolean(paidInMonth),
+      overdueAtClosing: Boolean(isOverdue)
+    };
+  });
+
+  const summary = rows.reduce(
+    (acc, row) => {
+      acc.totalCharged += Number(row.chargedAmount || 0);
+      acc.serviceRevenue += Number(row.serviceRevenue || 0);
+      acc.productCost += Number(row.productCost || 0);
+      if (row.paidInMonth) acc.totalReceived += Number(row.paidAmount || 0);
+      if (!["pago", "cancelado"].includes(String(row.financialStatus))) {
+        acc.totalOpen += Number(row.openAmount || 0);
+      }
+      if (row.overdueAtClosing) {
+        acc.overdueAmount += Number(row.openAmount || 0);
+        acc.overdueOrders += 1;
+      }
+      return acc;
+    },
+    {
+      orders: rows.length,
+      totalCharged: 0,
+      totalReceived: 0,
+      totalOpen: 0,
+      overdueAmount: 0,
+      overdueOrders: 0,
+      serviceRevenue: 0,
+      productCost: 0,
+      grossProfit: 0,
+      grossMarginPercent: 0
+    }
+  );
+  summary.grossProfit = Number(
+    (summary.serviceRevenue - summary.productCost).toFixed(2)
+  );
+  summary.grossMarginPercent = summary.serviceRevenue
+    ? Number(((summary.grossProfit / summary.serviceRevenue) * 100).toFixed(2))
+    : 0;
+  Object.keys(summary).forEach(field => {
+    summary[field] = Number(summary[field].toFixed(2));
+  });
+
+  return {
+    month: key,
+    start,
+    end,
+    summary,
+    rankings: {
+      byAttendant: sortedMetricEntries(rankings.byAttendant),
+      byCustomer: sortedMetricEntries(rankings.byCustomer),
+      byServiceType: sortedMetricEntries(rankings.byServiceType)
+    },
+    rows
+  };
 };
 
 export const showOrder = async (
@@ -2120,55 +2389,15 @@ export const notifyOrder = async (
     serviceOrder,
     cleanText(data.message)
   );
-  const sent: string[] = [];
-  const failed: Record<string, string> = {};
-
-  if (data.channels.includes("internal")) {
-    emitServiceOrderEvent(tenantId, "service_order_notification", serviceOrder);
-    sent.push("internal");
-  }
-
-  if (data.channels.includes("email")) {
-    try {
-      if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
-        throw new Error(
-          "RESEND_API_KEY and RESEND_FROM_EMAIL must be configured"
-        );
-      }
-      if (!serviceOrder.contact?.email) throw new Error("Cliente sem e-mail");
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      const { error } = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL,
-        to: serviceOrder.contact.email,
-        subject: `Ordem de Servico #${serviceOrder.id}`,
-        html: `<pre>${escapePublicText(message)}</pre>`
-      });
-      if (error) throw new Error(error.message);
-      sent.push("email");
-    } catch (error) {
-      failed.email = error instanceof Error ? error.message : "Falha no e-mail";
-    }
-  }
-
-  if (data.channels.includes("whatsapp")) {
-    try {
-      const ticket = await Ticket.findOne({
-        where: { tenantId, contactId: serviceOrder.contactId },
-        include: [{ model: Contact }]
-      });
-      if (!ticket) throw new Error("Cliente sem ticket/canal para WhatsApp");
-      await SendMessageSystemProxy({
-        ticket,
-        messageData: { body: message },
-        media: null,
-        userId
-      });
-      sent.push("whatsapp");
-    } catch (error) {
-      failed.whatsapp =
-        error instanceof Error ? error.message : "Falha no WhatsApp";
-    }
-  }
+  const { sent, failed } = await sendServiceOrderMessage(
+    tenantId,
+    userId,
+    serviceOrder,
+    data.channels,
+    message,
+    `Ordem de Servico #${serviceOrder.id}`,
+    "service_order_notification"
+  );
 
   await logOrder(
     serviceOrder.id,
@@ -2180,4 +2409,46 @@ export const notifyOrder = async (
   );
 
   return { sent, failed };
+};
+
+export const sendBillingReminder = async (
+  tenantId: string | number,
+  serviceOrderId: string,
+  userId: string | number,
+  data: ServiceOrderBillingReminderData
+): Promise<Record<string, unknown>> => {
+  const serviceOrder = await loadOrder(tenantId, serviceOrderId);
+  if (["pago", "cancelado"].includes(serviceOrder.financialStatus)) {
+    throw new AppError("ERR_SERVICE_ORDER_BILLING_NOT_OPEN", 400);
+  }
+  const chargedAmount = Number(serviceOrder.chargedAmount || 0);
+  const paidAmount = Number(serviceOrder.paidAmount || 0);
+  if (Math.max(0, chargedAmount - paidAmount) <= 0) {
+    throw new AppError("ERR_SERVICE_ORDER_BILLING_NOT_OPEN", 400);
+  }
+
+  const message = buildBillingReminderMessage(
+    serviceOrder,
+    cleanText(data.message)
+  );
+  const { sent, failed } = await sendServiceOrderMessage(
+    tenantId,
+    userId,
+    serviceOrder,
+    data.channels,
+    message,
+    `Lembrete de pagamento OS #${serviceOrder.id}`,
+    "service_order_billing_reminder"
+  );
+
+  await logOrder(
+    serviceOrder.id,
+    userId,
+    "billing_reminder_sent",
+    "Lembrete de cobranca da ordem de servico processado",
+    null,
+    { channels: data.channels, sent, failed }
+  );
+
+  return { sent, failed, message };
 };

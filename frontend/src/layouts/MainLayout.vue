@@ -79,6 +79,10 @@
                 <q-item-section avatar><q-icon name="mdi-message-bookmark-outline" /></q-item-section>
                 <q-item-section>Nova campanha</q-item-section>
               </q-item>
+              <q-item clickable v-close-popup @click="$router.push({ name: 'pipeline-vendas' })">
+                <q-item-section avatar><q-icon name="mdi-chart-timeline-variant" /></q-item-section>
+                <q-item-section>Nova oportunidade</q-item-section>
+              </q-item>
             </q-list>
           </q-btn-dropdown>
           <q-btn
@@ -396,6 +400,13 @@
                 <q-item-label caption>Dados comerciais e endereco</q-item-label>
               </q-item-section>
             </q-item>
+            <q-item clickable v-close-popup @click="$router.push({ name: 'pipeline-vendas' })">
+              <q-item-section avatar><q-icon name="mdi-chart-timeline-variant" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Pipeline de vendas</q-item-label>
+                <q-item-label caption>Funil, oportunidades e conversao em OS</q-item-label>
+              </q-item-section>
+            </q-item>
             <q-item clickable v-close-popup @click="$router.push({ name: 'campanhas' })">
               <q-item-section avatar><q-icon name="mdi-message-bookmark-outline" /></q-item-section>
               <q-item-section>
@@ -469,6 +480,12 @@ const objMenu = [
     caption: 'Cadastro comercial',
     icon: 'mdi-account-cash-outline',
     routeName: 'clientes'
+  },
+  {
+    title: 'Pipeline',
+    caption: 'Funil comercial',
+    icon: 'mdi-chart-timeline-variant',
+    routeName: 'pipeline-vendas'
   },
   {
     title: 'Ordens de Serviço',

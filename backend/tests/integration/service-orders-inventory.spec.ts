@@ -192,6 +192,40 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
+      .post(`/service/orders/${created.body.id}/billing-reminder`)
+      .set("Authorization", authorization)
+      .send({ channels: ["internal"] })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.sent).toEqual(["internal"]);
+        expect(body.failed).toEqual({});
+        expect(body.message).toContain("Valor em aberto");
+      });
+
+    await request(app)
+      .post(`/service/orders/${created.body.id}/billing-reminder`)
+      .set("Authorization", authorization)
+      .send({ channels: ["internal"] })
+      .expect(409);
+
+    const billingReminderAudit = await AuditLog.findOne({
+      where: {
+        action: "service_order_billing_reminder_sent",
+        resource: "service_order_billing_reminder",
+        resourceId: String(created.body.id)
+      }
+    });
+    expect(billingReminderAudit).toMatchObject({
+      tenantId: user.tenantId,
+      userId: user.id
+    });
+    expect(billingReminderAudit?.metadata).toMatchObject({
+      serviceOrderId: String(created.body.id),
+      channels: ["internal"],
+      sent: ["internal"]
+    });
+
+    await request(app)
       .put(`/service/orders/${created.body.id}`)
       .set("Authorization", authorization)
       .send({
@@ -277,6 +311,15 @@ describe("service orders inventory API", () => {
             })
           ])
         );
+        expect(body).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              action: "service_order_billing_reminder_sent",
+              resource: "service_order_billing_reminder",
+              resourceId: String(created.body.id)
+            })
+          ])
+        );
       });
 
     await request(app)
@@ -328,6 +371,40 @@ describe("service orders inventory API", () => {
         expect(text).toContain('"OS","Cliente","Servico"');
         expect(text).toContain('"Instalacao com produto"');
         expect(text).toContain('"125"');
+      });
+
+    await request(app)
+      .get("/service/orders-monthly-closing")
+      .query({ month: "2026-06" })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.month).toBe("2026-06");
+        expect(body.summary).toMatchObject({
+          orders: 1,
+          totalReceived: 150,
+          totalOpen: 0,
+          productCost: 25,
+          grossProfit: 125,
+          grossMarginPercent: 83.33
+        });
+        expect(body.rankings.byCustomer).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ label: contact.name, value: 150 })
+          ])
+        );
+      });
+
+    await request(app)
+      .get("/service/orders-monthly-closing")
+      .query({ month: "2026-06", format: "csv" })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect("Content-Type", /text\/csv/)
+      .expect(({ text }) => {
+        expect(text).toContain('"OS","Cliente","Tecnico"');
+        expect(text).toContain('"Instalacao com produto"');
+        expect(text).toContain('"true"');
       });
   });
 

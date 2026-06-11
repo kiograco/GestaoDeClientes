@@ -28,6 +28,7 @@ import deliveryCatalogRoutes from "./deliveryCatalogRoutes";
 import deliveryAddressRoutes from "./deliveryAddressRoutes";
 import deliveryOrderRoutes from "./deliveryOrderRoutes";
 import salesCustomerRoutes from "./salesCustomerRoutes";
+import salesPipelineRoutes from "./salesPipelineRoutes";
 import serviceOrderRoutes from "./serviceOrderRoutes";
 
 const routes = Router();
@@ -61,6 +62,7 @@ routes.use(deliveryCatalogRoutes);
 routes.use(deliveryAddressRoutes);
 routes.use(deliveryOrderRoutes);
 routes.use(salesCustomerRoutes);
+routes.use(salesPipelineRoutes);
 routes.use(serviceOrderRoutes);
 
 export default routes;

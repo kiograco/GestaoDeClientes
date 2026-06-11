@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import AuditLog from "../models/AuditLog";
 import User from "../models/User";
 import { logger } from "../utils/logger";
@@ -33,17 +34,20 @@ const createAuditLog = async (data: AuditLogData): Promise<void> => {
 export const listAuditLogs = async ({
   tenantId,
   resource,
+  resources,
   limit = 100
 }: {
   tenantId: string | number;
   resource?: string;
+  resources?: string[];
   limit?: number;
 }): Promise<Array<Record<string, unknown>>> => {
   const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
   const logs = await AuditLog.findAll({
     where: {
       tenantId,
-      ...(resource ? { resource } : {})
+      ...(resources?.length ? { resource: { [Op.in]: resources } } : {}),
+      ...(!resources?.length && resource ? { resource } : {})
     },
     order: [["createdAt", "DESC"]],
     limit: safeLimit

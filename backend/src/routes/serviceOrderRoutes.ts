@@ -100,6 +100,16 @@ serviceOrderRoutes.get(
   ServiceOrderController.financialReport
 );
 serviceOrderRoutes.get(
+  "/service/orders-monthly-closing",
+  isAuth,
+  ServiceOrderController.monthlyFinancialClosing
+);
+serviceOrderRoutes.get(
+  "/service/orders-billing-reminders",
+  isAuth,
+  ServiceOrderController.billingReminderCandidates
+);
+serviceOrderRoutes.get(
   "/service/orders/:serviceOrderId",
   isAuth,
   ServiceOrderController.showOrder
@@ -128,6 +138,11 @@ serviceOrderRoutes.post(
   "/service/orders/:serviceOrderId/notify",
   isAuth,
   ServiceOrderController.notifyOrder
+);
+serviceOrderRoutes.post(
+  "/service/orders/:serviceOrderId/billing-reminder",
+  isAuth,
+  ServiceOrderController.sendBillingReminder
 );
 
 export default serviceOrderRoutes;
