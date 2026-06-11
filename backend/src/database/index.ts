@@ -51,6 +51,7 @@ import ServiceOrderLog from "../models/ServiceOrderLog";
 import ServiceType from "../models/ServiceType";
 import SalesOpportunity from "../models/SalesOpportunity";
 import SalesOpportunityLog from "../models/SalesOpportunityLog";
+import SalesProposal from "../models/SalesProposal";
 import * as QueueJobs from "../libs/Queue";
 import { logger } from "../utils/logger";
 
@@ -117,7 +118,8 @@ const models = [
   ServiceOrderLog,
   ServiceType,
   SalesOpportunity,
-  SalesOpportunityLog
+  SalesOpportunityLog,
+  SalesProposal
 ];
 
 sequelize.addModels(models);

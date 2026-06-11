@@ -1,10 +1,14 @@
 import { Op, Transaction } from "sequelize";
+import PDFDocument from "pdfkit";
 import sequelize from "../../database";
 import AppError from "../../errors/AppError";
 import Contact from "../../models/Contact";
 import SalesOpportunity from "../../models/SalesOpportunity";
 import SalesOpportunityLog from "../../models/SalesOpportunityLog";
+import SalesProposal from "../../models/SalesProposal";
 import ServiceOrder from "../../models/ServiceOrder";
+import ServiceOrderItem from "../../models/ServiceOrderItem";
+import Tenant from "../../models/Tenant";
 import User from "../../models/User";
 
 export const SALES_PIPELINE_STAGES = [
@@ -14,6 +18,14 @@ export const SALES_PIPELINE_STAGES = [
   "negociacao",
   "ganho",
   "perdido"
+];
+
+export const SALES_PROPOSAL_STATUSES = [
+  "rascunho",
+  "enviada",
+  "aprovada",
+  "rejeitada",
+  "convertida"
 ];
 
 export interface SalesOpportunityData {
@@ -38,6 +50,22 @@ export interface ConvertOpportunityData {
   state?: string | null;
   publicObservation?: string | null;
   internalObservation?: string | null;
+}
+
+export interface SalesProposalItemData {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface SalesProposalData {
+  title: string;
+  introduction?: string | null;
+  status?: string;
+  validUntil?: string | Date | null;
+  items: SalesProposalItemData[];
+  discount?: number | null;
+  observation?: string | null;
 }
 
 const includeOpportunity = [
@@ -71,12 +99,29 @@ const normalizeDate = (value?: string | Date | null): Date | null => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
+const formatCurrency = (value?: number | string | null): string =>
+  Number(value || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
+
+const formatDate = (value?: Date | string | null): string =>
+  value ? new Date(value).toLocaleDateString("pt-BR") : "-";
+
 const ensureStage = (stage?: string): string => {
   const safeStage = stage || "novo";
   if (!SALES_PIPELINE_STAGES.includes(safeStage)) {
     throw new AppError("ERR_INVALID_SALES_PIPELINE_STAGE", 400);
   }
   return safeStage;
+};
+
+const ensureProposalStatus = (status?: string): string => {
+  const safeStatus = status || "rascunho";
+  if (!SALES_PROPOSAL_STATUSES.includes(safeStatus)) {
+    throw new AppError("ERR_INVALID_SALES_PROPOSAL_STATUS", 400);
+  }
+  return safeStatus;
 };
 
 const ensureContact = async (
@@ -127,6 +172,55 @@ const buildOpportunityPayload = (
     lostReason: stage === "perdido" ? cleanText(data.lostReason) : null,
     notes: cleanText(data.notes),
     ...stageDates(stage)
+  };
+};
+
+const normalizeProposalItems = (
+  items: SalesProposalItemData[] = []
+): Array<Record<string, unknown>> => {
+  const normalized = items
+    .filter(item => cleanText(item.description))
+    .map(item => {
+      const quantity = Math.max(1, Number(item.quantity || 1));
+      const unitPrice = normalizeMoney(item.unitPrice);
+      return {
+        description: cleanText(item.description),
+        quantity,
+        unitPrice,
+        totalPrice: Number((quantity * unitPrice).toFixed(2))
+      };
+    });
+  if (!normalized.length) throw new AppError("ERR_PROPOSAL_ITEMS_REQUIRED", 400);
+  return normalized;
+};
+
+const buildProposalPayload = (
+  tenantId: string | number,
+  opportunity: SalesOpportunity,
+  userId: string | number,
+  data: SalesProposalData
+): Record<string, unknown> => {
+  const items = normalizeProposalItems(data.items);
+  const subtotal = Number(
+    items
+      .reduce((sum, item) => sum + Number(item.totalPrice || 0), 0)
+      .toFixed(2)
+  );
+  const discount = Math.min(normalizeMoney(data.discount), subtotal);
+  return {
+    tenantId,
+    salesOpportunityId: opportunity.id,
+    contactId: opportunity.contactId,
+    createdByUserId: Number(userId),
+    title: cleanText(data.title),
+    introduction: cleanText(data.introduction),
+    status: ensureProposalStatus(data.status),
+    validUntil: normalizeDate(data.validUntil),
+    items,
+    subtotal,
+    discount,
+    total: Number((subtotal - discount).toFixed(2)),
+    observation: cleanText(data.observation)
   };
 };
 
@@ -326,6 +420,338 @@ export const updateOpportunity = async (
     );
   });
   return loadOpportunity(tenantId, opportunityId);
+};
+
+const loadProposal = async (
+  tenantId: string | number,
+  proposalId: string | number
+): Promise<SalesProposal> => {
+  const proposal = await SalesProposal.findOne({
+    where: { id: proposalId, tenantId },
+    include: [
+      { model: Contact, attributes: ["id", "name", "number", "email"] },
+      { model: SalesOpportunity },
+      { model: User, as: "createdBy", attributes: ["id", "name", "email"] },
+      {
+        model: ServiceOrder,
+        attributes: ["id", "title", "status"],
+        required: false
+      }
+    ]
+  });
+  if (!proposal) throw new AppError("ERR_SALES_PROPOSAL_NOT_FOUND", 404);
+  return proposal;
+};
+
+export const listProposals = async (
+  tenantId: string | number,
+  opportunityId: string
+): Promise<SalesProposal[]> => {
+  await loadOpportunity(tenantId, opportunityId);
+  return SalesProposal.findAll({
+    where: { tenantId, salesOpportunityId: opportunityId },
+    include: [
+      { model: Contact, attributes: ["id", "name", "number", "email"] },
+      {
+        model: ServiceOrder,
+        attributes: ["id", "title", "status"],
+        required: false
+      }
+    ],
+    order: [["createdAt", "DESC"]]
+  });
+};
+
+export const createProposal = async (
+  tenantId: string | number,
+  userId: string | number,
+  opportunityId: string,
+  data: SalesProposalData
+): Promise<SalesProposal> => {
+  const created = await sequelize.transaction(async transaction => {
+    const opportunity = await SalesOpportunity.findOne({
+      where: { id: opportunityId, tenantId },
+      transaction,
+      lock: transaction.LOCK.UPDATE
+    });
+    if (!opportunity) {
+      throw new AppError("ERR_SALES_OPPORTUNITY_NOT_FOUND", 404);
+    }
+    const proposal = await SalesProposal.create(
+      buildProposalPayload(tenantId, opportunity, userId, data),
+      { transaction }
+    );
+    await opportunity.update(
+      { stage: "proposta_enviada", estimatedValue: proposal.total },
+      { transaction }
+    );
+    await logOpportunity(
+      opportunity.id,
+      userId,
+      "proposal_created",
+      "Proposta criada para a oportunidade",
+      null,
+      { proposalId: proposal.id, total: proposal.total },
+      transaction
+    );
+    return proposal;
+  });
+  return loadProposal(tenantId, created.id);
+};
+
+export const updateProposal = async (
+  tenantId: string | number,
+  userId: string | number,
+  proposalId: string,
+  data: SalesProposalData
+): Promise<SalesProposal> => {
+  await sequelize.transaction(async transaction => {
+    const proposal = await SalesProposal.findOne({
+      where: { id: proposalId, tenantId },
+      include: [{ model: SalesOpportunity }],
+      transaction,
+      lock: transaction.LOCK.UPDATE
+    });
+    if (!proposal) throw new AppError("ERR_SALES_PROPOSAL_NOT_FOUND", 404);
+    if (proposal.convertedServiceOrderId) {
+      throw new AppError("ERR_SALES_PROPOSAL_ALREADY_CONVERTED", 409);
+    }
+    const opportunity = proposal.salesOpportunity;
+    const oldValue = {
+      status: proposal.status,
+      total: proposal.total
+    };
+    await proposal.update(
+      buildProposalPayload(tenantId, opportunity, userId, data),
+      { transaction }
+    );
+    await logOpportunity(
+      proposal.salesOpportunityId,
+      userId,
+      "proposal_updated",
+      "Proposta atualizada",
+      oldValue,
+      {
+        proposalId: proposal.id,
+        status: proposal.status,
+        total: proposal.total
+      },
+      transaction
+    );
+  });
+  return loadProposal(tenantId, proposalId);
+};
+
+export const generateProposalDocument = async (
+  tenantId: string | number,
+  proposalId: string
+): Promise<Buffer> => {
+  const proposal = await loadProposal(tenantId, proposalId);
+  const tenant = await Tenant.findByPk(tenantId);
+  const doc = new PDFDocument({ margin: 36, size: "A4" });
+  const chunks: Buffer[] = [];
+  doc.on("data", chunk => chunks.push(chunk));
+  const done = new Promise<Buffer>(resolve => {
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+  });
+
+  const margin = 36;
+  const width = doc.page.width - margin * 2;
+  doc.fontSize(18).fillColor("#111827").text("Proposta Comercial", margin, 36);
+  doc
+    .fontSize(10)
+    .fillColor("#4b5563")
+    .text(tenant?.name || "Empresa", margin, 62)
+    .text(`Proposta #${proposal.id}`, margin, 78)
+    .text(`Validade: ${formatDate(proposal.validUntil)}`, margin, 94);
+
+  doc
+    .moveTo(margin, 118)
+    .lineTo(doc.page.width - margin, 118)
+    .strokeColor("#d1d5db")
+    .stroke();
+
+  doc.fontSize(11).fillColor("#111827");
+  doc.text(`Cliente: ${proposal.contact?.name || "-"}`, margin, 134);
+  doc.text(
+    `Contato: ${proposal.contact?.number || proposal.contact?.email || "-"}`,
+    margin,
+    150
+  );
+  doc.text(`Titulo: ${proposal.title}`, margin, 166);
+
+  let y = 196;
+  if (proposal.introduction) {
+    doc.fontSize(10).fillColor("#374151").text(proposal.introduction, margin, y, {
+      width,
+      lineGap: 2
+    });
+    y = doc.y + 18;
+  }
+
+  doc.fontSize(10).fillColor("#111827").text("Itens", margin, y);
+  y += 18;
+  doc
+    .fontSize(9)
+    .fillColor("#374151")
+    .text("Descricao", margin, y, { width: 260 })
+    .text("Qtd.", margin + 270, y, { width: 50, align: "right" })
+    .text("Unitario", margin + 330, y, { width: 80, align: "right" })
+    .text("Total", margin + 420, y, { width: 90, align: "right" });
+  y += 14;
+  (proposal.items || []).forEach(item => {
+    doc
+      .fontSize(9)
+      .text(String(item.description || "-"), margin, y, { width: 260 })
+      .text(String(item.quantity || 0), margin + 270, y, {
+        width: 50,
+        align: "right"
+      })
+      .text(formatCurrency(Number(item.unitPrice || 0)), margin + 330, y, {
+        width: 80,
+        align: "right"
+      })
+      .text(formatCurrency(Number(item.totalPrice || 0)), margin + 420, y, {
+        width: 90,
+        align: "right"
+      });
+    y += 18;
+  });
+
+  y += 10;
+  doc
+    .fontSize(10)
+    .fillColor("#111827")
+    .text(`Subtotal: ${formatCurrency(proposal.subtotal)}`, margin + 330, y, {
+      width: 180,
+      align: "right"
+    })
+    .text(
+      `Desconto: ${formatCurrency(proposal.discount)}`,
+      margin + 330,
+      y + 16,
+      {
+        width: 180,
+        align: "right"
+      }
+    )
+    .fontSize(12)
+    .text(`Total: ${formatCurrency(proposal.total)}`, margin + 330, y + 34, {
+      width: 180,
+      align: "right"
+    });
+
+  if (proposal.observation) {
+    doc.fontSize(9).fillColor("#374151").text("Observacoes", margin, y + 70);
+    doc.text(proposal.observation, margin, y + 86, { width });
+  }
+  doc
+    .fontSize(8)
+    .fillColor("#6b7280")
+    .text(
+      `Documento gerado em ${new Date().toLocaleString("pt-BR")}`,
+      margin,
+      780,
+      {
+        width,
+        align: "center"
+      }
+    );
+  doc.end();
+  return done;
+};
+
+export const convertProposalToServiceOrder = async (
+  tenantId: string | number,
+  userId: string | number,
+  proposalId: string,
+  data: ConvertOpportunityData
+): Promise<ServiceOrder> => {
+  const serviceOrder = await sequelize.transaction(async transaction => {
+    const proposal = await SalesProposal.findOne({
+      where: { id: proposalId, tenantId },
+      include: [{ model: SalesOpportunity }],
+      transaction,
+      lock: transaction.LOCK.UPDATE
+    });
+    if (!proposal) throw new AppError("ERR_SALES_PROPOSAL_NOT_FOUND", 404);
+    if (proposal.convertedServiceOrderId) {
+      throw new AppError("ERR_SALES_PROPOSAL_ALREADY_CONVERTED", 409);
+    }
+    const opportunity = proposal.salesOpportunity;
+    const oldValue = {
+      stage: opportunity.stage,
+      proposalStatus: proposal.status
+    };
+    const order = await ServiceOrder.create(
+      {
+        tenantId,
+        contactId: proposal.contactId,
+        attendantId: null,
+        createdByUserId: Number(userId),
+        title: proposal.title,
+        description: proposal.introduction || opportunity.description,
+        serviceType: cleanText(data.serviceType) || proposal.title,
+        priority: "media",
+        status: data.scheduledStart ? "agendada" : "rascunho",
+        financialStatus: "nao_cobrado",
+        chargedAmount: proposal.total || 0,
+        paidAmount: 0,
+        scheduledStart: normalizeDate(data.scheduledStart),
+        scheduledEnd: normalizeDate(data.scheduledEnd),
+        address: cleanText(data.address),
+        city: cleanText(data.city),
+        state: cleanText(data.state)?.toUpperCase() || null,
+        publicObservation: cleanText(data.publicObservation),
+        internalObservation:
+          cleanText(data.internalObservation) ||
+          `Gerada pela proposta #${proposal.id}`
+      },
+      { transaction }
+    );
+    await ServiceOrderItem.bulkCreate(
+      (proposal.items || []).map(item => ({
+        tenantId,
+        serviceOrderId: order.id,
+        itemType: "service",
+        serviceTypeId: null,
+        inventoryItemId: null,
+        description: String(item.description || "Servico"),
+        quantity: Math.max(1, Number(item.quantity || 1)),
+        unitPrice: normalizeMoney(String(item.unitPrice || 0)),
+        totalPrice: normalizeMoney(String(item.totalPrice || 0))
+      })),
+      { transaction }
+    );
+    await proposal.update(
+      {
+        status: "convertida",
+        convertedAt: new Date(),
+        convertedServiceOrderId: order.id
+      },
+      { transaction }
+    );
+    await opportunity.update(
+      {
+        stage: "ganho",
+        wonAt: new Date(),
+        estimatedValue: proposal.total,
+        convertedServiceOrderId: order.id
+      },
+      { transaction }
+    );
+    await logOpportunity(
+      opportunity.id,
+      userId,
+      "proposal_converted_to_service_order",
+      "Proposta convertida em ordem de servico",
+      oldValue,
+      { stage: "ganho", proposalId: proposal.id, serviceOrderId: order.id },
+      transaction
+    );
+    return order;
+  });
+  return serviceOrder;
 };
 
 export const convertOpportunityToServiceOrder = async (

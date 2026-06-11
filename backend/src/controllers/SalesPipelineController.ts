@@ -31,6 +31,22 @@ const convertSchema = Yup.object().shape({
   internalObservation: nullableString
 });
 
+const proposalItemSchema = Yup.object().shape({
+  description: Yup.string().trim().required().min(2),
+  quantity: Yup.number().integer().min(1).required(),
+  unitPrice: Yup.number().min(0).required()
+});
+
+const proposalSchema = Yup.object().shape({
+  title: Yup.string().trim().required().min(2),
+  introduction: nullableString,
+  status: Yup.string().oneOf(SalesPipeline.SALES_PROPOSAL_STATUSES),
+  validUntil: Yup.date().nullable(),
+  items: Yup.array().of(proposalItemSchema).min(1).required(),
+  discount: Yup.number().min(0).nullable(),
+  observation: nullableString
+});
+
 const validate = async <T>(schema: Yup.ObjectSchema, data: LegacyAny) => {
   try {
     return (await schema.validate(data, { stripUnknown: true })) as T;
@@ -82,6 +98,85 @@ export const update = async (req: Request, res: Response): Promise<Response> =>
       )
     )
   );
+
+export const listProposals = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await SalesPipeline.listProposals(
+      req.user.tenantId,
+      req.params.opportunityId
+    )
+  );
+
+export const createProposal = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res
+    .status(201)
+    .json(
+      await SalesPipeline.createProposal(
+        req.user.tenantId,
+        req.user.id,
+        req.params.opportunityId,
+        await validate<SalesPipeline.SalesProposalData>(
+          proposalSchema,
+          req.body
+        )
+      )
+    );
+
+export const updateProposal = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await SalesPipeline.updateProposal(
+      req.user.tenantId,
+      req.user.id,
+      req.params.proposalId,
+      await validate<SalesPipeline.SalesProposalData>(
+        proposalSchema,
+        req.body
+      )
+    )
+  );
+
+export const proposalDocument = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const pdf = await SalesPipeline.generateProposalDocument(
+    req.user.tenantId,
+    req.params.proposalId
+  );
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader(
+    "Content-Disposition",
+    `inline; filename=proposta-${req.params.proposalId}.pdf`
+  );
+  return res.send(pdf);
+};
+
+export const convertProposalToServiceOrder = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res
+    .status(201)
+    .json(
+      await SalesPipeline.convertProposalToServiceOrder(
+        req.user.tenantId,
+        req.user.id,
+        req.params.proposalId,
+        await validate<SalesPipeline.ConvertOpportunityData>(
+          convertSchema,
+          req.body
+        )
+      )
+    );
 
 export const convertToServiceOrder = async (
   req: Request,

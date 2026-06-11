@@ -15,6 +15,31 @@ salesPipelineRoutes.get(
   SalesPipelineController.dashboard
 );
 salesPipelineRoutes.get(
+  "/sales/proposals/:proposalId/document",
+  isAuth,
+  SalesPipelineController.proposalDocument
+);
+salesPipelineRoutes.put(
+  "/sales/proposals/:proposalId",
+  isAuth,
+  SalesPipelineController.updateProposal
+);
+salesPipelineRoutes.post(
+  "/sales/proposals/:proposalId/convert-service-order",
+  isAuth,
+  SalesPipelineController.convertProposalToServiceOrder
+);
+salesPipelineRoutes.get(
+  "/sales/pipeline/:opportunityId/proposals",
+  isAuth,
+  SalesPipelineController.listProposals
+);
+salesPipelineRoutes.post(
+  "/sales/pipeline/:opportunityId/proposals",
+  isAuth,
+  SalesPipelineController.createProposal
+);
+salesPipelineRoutes.get(
   "/sales/pipeline/:opportunityId",
   isAuth,
   SalesPipelineController.show

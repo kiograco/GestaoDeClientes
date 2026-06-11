@@ -68,6 +68,7 @@
                 </q-item>
               </q-list>
             </q-btn-dropdown>
+            <q-btn dense flat color="primary" icon="mdi-file-document-edit-outline" label="Proposta" @click="abrirProposta(item)" />
             <q-btn v-if="item.stage !== 'ganho' || !item.convertedServiceOrderId" dense flat color="positive" icon="mdi-clipboard-plus-outline" label="OS" @click="abrirConversao(item)" />
           </q-card-actions>
         </q-card>
@@ -94,6 +95,66 @@
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
           <q-btn unelevated label="Salvar" color="primary" :loading="salvando" @click="salvarOportunidade" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="modalProposta" persistent>
+      <q-card style="width: 840px; max-width: 95vw">
+        <q-card-section class="row items-center">
+          <div>
+            <div class="text-h6">Proposta comercial</div>
+            <div class="text-caption text-grey-7">{{ oportunidadeProposta ? oportunidadeProposta.title : '' }}</div>
+          </div>
+          <q-space />
+          <q-btn v-if="proposta.id" flat round dense icon="mdi-file-pdf-box" color="negative" @click="abrirPdfProposta(proposta)">
+            <q-tooltip>Gerar PDF</q-tooltip>
+          </q-btn>
+        </q-card-section>
+        <q-card-section class="row q-col-gutter-sm">
+          <q-input dense outlined class="col-12 col-md-8" label="Titulo" v-model="proposta.title" />
+          <q-select dense outlined emit-value map-options class="col-12 col-md-4" label="Status" v-model="proposta.status" :options="proposalStatusOptions" />
+          <q-input dense outlined type="date" class="col-12 col-md-4" label="Validade" v-model="proposta.validUntil" />
+          <q-input dense outlined class="col-12 col-md-4" label="Desconto" v-model="proposta.discount" @blur="proposta.discount = formatarMoedaCampo(proposta.discount)" />
+          <q-input dense outlined readonly class="col-12 col-md-4" label="Total" :value="formatarMoeda(totalProposta)" />
+          <q-input dense outlined type="textarea" class="col-12" label="Introducao" v-model="proposta.introduction" />
+          <div class="col-12">
+            <div class="row items-center q-mb-sm">
+              <div class="text-subtitle2 text-weight-medium">Itens</div>
+              <q-space />
+              <q-btn dense flat color="primary" icon="mdi-plus" label="Item" @click="adicionarItemProposta" />
+            </div>
+            <q-markup-table flat bordered dense>
+              <thead>
+                <tr>
+                  <th class="text-left">Descricao</th>
+                  <th class="text-right">Qtd.</th>
+                  <th class="text-right">Unitario</th>
+                  <th class="text-right">Total</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(item, index) in proposta.items" :key="index">
+                  <td><q-input dense borderless v-model="item.description" /></td>
+                  <td><q-input dense borderless type="number" min="1" v-model.number="item.quantity" /></td>
+                  <td><q-input dense borderless v-model="item.unitPrice" @blur="item.unitPrice = formatarMoedaCampo(item.unitPrice)" /></td>
+                  <td class="text-right">{{ formatarMoeda(totalItemProposta(item)) }}</td>
+                  <td class="text-right">
+                    <q-btn flat round dense icon="mdi-delete" color="negative" @click="removerItemProposta(index)" />
+                  </td>
+                </tr>
+              </tbody>
+            </q-markup-table>
+          </div>
+          <q-input dense outlined type="textarea" class="col-12" label="Observacao" v-model="proposta.observation" />
+        </q-card-section>
+        <q-card-actions align="between">
+          <q-btn v-if="proposta.id" flat color="positive" icon="mdi-clipboard-plus-outline" label="Converter em OS" @click="abrirConversaoProposta(proposta)" />
+          <div>
+            <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+            <q-btn unelevated label="Salvar" color="primary" :loading="salvando" @click="salvarProposta" />
+          </div>
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -126,7 +187,12 @@ import {
   DashboardPipeline,
   CriarOportunidade,
   AlterarOportunidade,
-  ConverterOportunidadeOrdemServico
+  ConverterOportunidadeOrdemServico,
+  ListarPropostas,
+  CriarProposta,
+  AlterarProposta,
+  DocumentoProposta,
+  ConverterPropostaOrdemServico
 } from 'src/service/pipelineVendas'
 import { ListarClientes } from 'src/service/clientes'
 import { ListarUsuarios } from 'src/service/user'
@@ -144,6 +210,18 @@ const emptyOpportunity = () => ({
   notes: ''
 })
 
+const emptyProposal = () => ({
+  title: '',
+  introduction: '',
+  status: 'rascunho',
+  validUntil: '',
+  discount: '0,00',
+  observation: '',
+  items: [
+    { description: '', quantity: 1, unitPrice: '0,00' }
+  ]
+})
+
 export default {
   name: 'PipelineVendas',
   data () {
@@ -151,6 +229,7 @@ export default {
       salvando: false,
       modalOportunidade: false,
       modalConversao: false,
+      modalProposta: false,
       filtros: {},
       oportunidades: [],
       dashboard: {},
@@ -158,6 +237,9 @@ export default {
       usuarios: [],
       oportunidade: emptyOpportunity(),
       oportunidadeConversao: null,
+      oportunidadeProposta: null,
+      propostaConversao: null,
+      proposta: emptyProposal(),
       conversao: {
         serviceType: '',
         scheduledStart: '',
@@ -173,6 +255,13 @@ export default {
         { label: 'Negociacao', value: 'negociacao' },
         { label: 'Ganho', value: 'ganho' },
         { label: 'Perdido', value: 'perdido' }
+      ],
+      proposalStatusOptions: [
+        { label: 'Rascunho', value: 'rascunho' },
+        { label: 'Enviada', value: 'enviada' },
+        { label: 'Aprovada', value: 'aprovada' },
+        { label: 'Rejeitada', value: 'rejeitada' },
+        { label: 'Convertida', value: 'convertida' }
       ]
     }
   },
@@ -196,6 +285,12 @@ export default {
         { label: 'Ganho', value: this.formatarMoeda(this.dashboard.wonValue) },
         { label: 'Conversao', value: `${this.dashboard.conversionRate || 0}%` }
       ]
+    },
+    totalProposta () {
+      const subtotal = (this.proposta.items || [])
+        .reduce((sum, item) => sum + this.totalItemProposta(item), 0)
+      const discount = this.parseMoeda(this.proposta.discount) || 0
+      return Math.max(0, subtotal - discount)
     }
   },
   mounted () {
@@ -288,13 +383,18 @@ export default {
       if (!this.oportunidadeConversao) return
       this.salvando = true
       try {
-        await ConverterOportunidadeOrdemServico(this.oportunidadeConversao.id, {
+        const converter = this.propostaConversao
+          ? ConverterPropostaOrdemServico
+          : ConverterOportunidadeOrdemServico
+        await converter(this.oportunidadeConversao.id, {
           ...this.conversao,
           scheduledStart: this.toApiDate(this.conversao.scheduledStart),
           scheduledEnd: this.toApiDate(this.conversao.scheduledEnd)
         })
         this.$q.notify({ type: 'positive', message: 'Ordem de servico criada.' })
         this.modalConversao = false
+        this.modalProposta = false
+        this.propostaConversao = null
         await this.carregarOportunidades()
         await this.carregarDashboard()
       } catch (error) {
@@ -302,6 +402,96 @@ export default {
       } finally {
         this.salvando = false
       }
+    },
+    async abrirProposta (item) {
+      this.oportunidadeProposta = item
+      const { data } = await ListarPropostas(item.id)
+      const current = data[0]
+      this.proposta = current
+        ? {
+          ...current,
+          validUntil: current.validUntil ? current.validUntil.slice(0, 10) : '',
+          discount: this.formatarMoedaCampo(current.discount),
+          items: (current.items || []).map(proposalItem => ({
+            ...proposalItem,
+            unitPrice: this.formatarMoedaCampo(proposalItem.unitPrice)
+          }))
+        }
+        : {
+          ...emptyProposal(),
+          title: item.title,
+          introduction: item.description || ''
+        }
+      this.modalProposta = true
+    },
+    adicionarItemProposta () {
+      this.proposta.items.push({ description: '', quantity: 1, unitPrice: '0,00' })
+    },
+    removerItemProposta (index) {
+      if (this.proposta.items.length === 1) return
+      this.proposta.items.splice(index, 1)
+    },
+    totalItemProposta (item) {
+      const quantity = Number(item.quantity || 1)
+      const unitPrice = this.parseMoeda(item.unitPrice) || 0
+      return quantity * unitPrice
+    },
+    async salvarProposta () {
+      if (!this.oportunidadeProposta) return
+      this.salvando = true
+      try {
+        const payload = {
+          ...this.proposta,
+          discount: this.parseMoeda(this.proposta.discount) || 0,
+          validUntil: this.proposta.validUntil || null,
+          items: this.proposta.items.map(item => ({
+            description: item.description,
+            quantity: Number(item.quantity || 1),
+            unitPrice: this.parseMoeda(item.unitPrice) || 0
+          }))
+        }
+        const { data } = payload.id
+          ? await AlterarProposta(payload)
+          : await CriarProposta(this.oportunidadeProposta.id, payload)
+        this.proposta = {
+          ...data,
+          validUntil: data.validUntil ? data.validUntil.slice(0, 10) : '',
+          discount: this.formatarMoedaCampo(data.discount),
+          items: (data.items || []).map(item => ({
+            ...item,
+            unitPrice: this.formatarMoedaCampo(item.unitPrice)
+          }))
+        }
+        this.$q.notify({ type: 'positive', message: 'Proposta salva.' })
+        await this.carregarOportunidades()
+        await this.carregarDashboard()
+      } catch (error) {
+        this.$notificarErro('Nao foi possivel salvar a proposta', error)
+      } finally {
+        this.salvando = false
+      }
+    },
+    async abrirPdfProposta (proposal) {
+      try {
+        const { data } = await DocumentoProposta(proposal.id)
+        const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
+        window.open(url, '_blank')
+      } catch (error) {
+        this.$notificarErro('Nao foi possivel gerar a proposta em PDF', error)
+      }
+    },
+    abrirConversaoProposta (proposal) {
+      this.propostaConversao = proposal
+      this.oportunidadeConversao = proposal
+      this.conversao = {
+        serviceType: proposal.title,
+        scheduledStart: '',
+        scheduledEnd: '',
+        address: '',
+        city: '',
+        state: ''
+      }
+      this.modalConversao = true
     },
     async filtrarClientes (val, update) {
       const { data } = await ListarClientes({ searchParam: val })
