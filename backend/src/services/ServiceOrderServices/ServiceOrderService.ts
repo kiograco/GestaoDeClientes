@@ -170,6 +170,19 @@ const canSeeInternalObservation = (profile: string): boolean =>
 const canManageServiceOrders = (profile: string): boolean =>
   managerProfiles.includes(profile);
 
+const applyServiceOrderFinancialFilters = (
+  where: LegacyAny,
+  filters: LegacyAny
+): void => {
+  if (filters.financialStatus) where.financialStatus = filters.financialStatus;
+  if (filters.paymentMethod) where.paymentMethod = filters.paymentMethod;
+  if (filters.financialView === "paid") where.financialStatus = "pago";
+  if (filters.financialView === "overdue") {
+    where.financialStatus = { [Op.notIn]: ["pago", "cancelado"] };
+    where.paymentDueDate = { [Op.lt]: new Date() };
+  }
+};
+
 const emitServiceOrderEvent = (
   tenantId: number | string,
   type: string,
@@ -896,7 +909,7 @@ export const listOrders = async (
   const rangeStart = filters.start ? new Date(filters.start) : null;
   const rangeEnd = filters.end ? new Date(filters.end) : null;
   if (filters.status) where.status = filters.status;
-  if (filters.financialStatus) where.financialStatus = filters.financialStatus;
+  applyServiceOrderFinancialFilters(where, filters);
   if (filters.priority) where.priority = filters.priority;
   if (filters.serviceType) where.serviceType = filters.serviceType;
   if (filters.attendantId) where.attendantId = filters.attendantId;
@@ -932,7 +945,7 @@ export const getDashboard = async (
   const where: LegacyAny = { tenantId };
   if (filters.attendantId) where.attendantId = filters.attendantId;
   if (filters.status) where.status = filters.status;
-  if (filters.financialStatus) where.financialStatus = filters.financialStatus;
+  applyServiceOrderFinancialFilters(where, filters);
   if (filters.priority) where.priority = filters.priority;
   if (filters.serviceType) where.serviceType = filters.serviceType;
   if (filters.start && filters.end) {
@@ -1028,6 +1041,30 @@ export const getDashboard = async (
       const grossProfit = Number(
         (orderServiceRevenue - orderProductCost).toFixed(2)
       );
+      const chargedAmount = Number(order.chargedAmount || 0);
+      const paidAmount = Number(order.paidAmount || 0);
+      const receivableAmount = Math.max(0, chargedAmount - paidAmount);
+      const isPaid = order.financialStatus === "pago";
+      const isCanceledFinancial = order.financialStatus === "cancelado";
+      const isOverdue =
+        !isPaid &&
+        !isCanceledFinancial &&
+        order.paymentDueDate &&
+        new Date(order.paymentDueDate).getTime() < now;
+      acc.totalCharged += chargedAmount;
+      acc.totalReceived += paidAmount;
+      if (!isPaid && !isCanceledFinancial) {
+        acc.totalReceivable += receivableAmount;
+        acc.grossProfitPending += grossProfit;
+      }
+      if (isPaid) {
+        acc.paidOrders += 1;
+        acc.grossProfitPaid += grossProfit;
+      }
+      if (isOverdue) {
+        acc.overdueOrders += 1;
+        acc.overdueAmount += receivableAmount;
+      }
       acc.ordersProfitability.push({
         id: order.id,
         title: order.title,
@@ -1047,6 +1084,14 @@ export const getDashboard = async (
       productItemsValue: 0,
       serviceRevenue: 0,
       productCost: 0,
+      totalCharged: 0,
+      totalReceivable: 0,
+      totalReceived: 0,
+      overdueAmount: 0,
+      overdueOrders: 0,
+      paidOrders: 0,
+      grossProfitPaid: 0,
+      grossProfitPending: 0,
       servicesByQuantity: {} as Record<string, number>,
       servicesByValue: {} as Record<string, number>,
       productsByQuantity: {} as Record<string, number>,
@@ -1080,6 +1125,7 @@ export const getDashboard = async (
         )
       : 0,
     byStatus: grouped("status"),
+    byFinancialStatus: grouped("financialStatus"),
     byPriority: grouped("priority"),
     byServiceType: grouped("serviceType"),
     byAttendant,
@@ -1091,6 +1137,14 @@ export const getDashboard = async (
     productCost: Number(itemMetrics.productCost.toFixed(2)),
     grossProfit,
     grossMarginPercent,
+    totalCharged: Number(itemMetrics.totalCharged.toFixed(2)),
+    totalReceivable: Number(itemMetrics.totalReceivable.toFixed(2)),
+    totalReceived: Number(itemMetrics.totalReceived.toFixed(2)),
+    overdueAmount: Number(itemMetrics.overdueAmount.toFixed(2)),
+    overdueOrders: itemMetrics.overdueOrders,
+    paidOrders: itemMetrics.paidOrders,
+    grossProfitPaid: Number(itemMetrics.grossProfitPaid.toFixed(2)),
+    grossProfitPending: Number(itemMetrics.grossProfitPending.toFixed(2)),
     servicesByQuantity: itemMetrics.servicesByQuantity,
     servicesByValue: itemMetrics.servicesByValue,
     productsByQuantity: itemMetrics.productsByQuantity,
@@ -1125,13 +1179,28 @@ const buildOrderPayload = (
     serviceType: cleanText(data.serviceType),
     priority: data.priority || "baixa",
     status: data.status || "rascunho",
-    financialStatus: data.financialStatus || "nao_cobrado",
-    paymentMethod: cleanText(data.paymentMethod),
-    chargedAmount: normalizeMoney(data.chargedAmount),
-    paidAmount: normalizeMoney(data.paidAmount),
-    paymentDueDate: normalizeDate(data.paymentDueDate),
-    paidAt: normalizeDate(data.paidAt),
-    financialObservation: cleanText(data.financialObservation),
+    financialStatus: data.financialStatus,
+    paymentMethod:
+      data.paymentMethod === undefined
+        ? undefined
+        : cleanText(data.paymentMethod),
+    chargedAmount:
+      data.chargedAmount === undefined
+        ? undefined
+        : normalizeMoney(data.chargedAmount),
+    paidAmount:
+      data.paidAmount === undefined
+        ? undefined
+        : normalizeMoney(data.paidAmount),
+    paymentDueDate:
+      data.paymentDueDate === undefined
+        ? undefined
+        : normalizeDate(data.paymentDueDate),
+    paidAt: data.paidAt === undefined ? undefined : normalizeDate(data.paidAt),
+    financialObservation:
+      data.financialObservation === undefined
+        ? undefined
+        : cleanText(data.financialObservation),
     ...recurrence,
     scheduledStart: normalizeDate(data.scheduledStart),
     scheduledEnd: normalizeDate(data.scheduledEnd),

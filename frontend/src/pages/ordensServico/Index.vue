@@ -18,6 +18,8 @@
         <q-select dense outlined emit-value map-options clearable class="col-12 col-md-3" label="Técnico" v-model="filtros.attendantId" :options="opcoesAtendentes" @input="carregarOrdens" />
         <q-select dense outlined clearable class="col-12 col-md-2" label="Status" v-model="filtros.status" :options="statusOptions" @input="carregarOrdens" />
         <q-select dense outlined emit-value map-options clearable class="col-12 col-md-2" label="Financeiro" v-model="filtros.financialStatus" :options="financialStatusOptions" @input="carregarOrdens" />
+        <q-select dense outlined emit-value map-options clearable class="col-12 col-md-2" label="Forma pagto." v-model="filtros.paymentMethod" :options="paymentMethodOptions" @input="carregarOrdens" />
+        <q-select dense outlined emit-value map-options clearable class="col-12 col-md-2" label="Visão financeira" v-model="filtros.financialView" :options="financialViewOptions" @input="carregarOrdens" />
         <q-select dense outlined clearable class="col-12 col-md-2" label="Prioridade" v-model="filtros.priority" :options="priorityOptions" @input="carregarOrdens" />
         <q-input dense outlined clearable class="col-12 col-md-3" label="Tipo de serviço" v-model="filtros.serviceType" @keyup.enter="carregarOrdens" />
         <q-btn flat color="primary" icon="mdi-refresh" class="col-12 col-md-auto" label="Atualizar" @click="carregarTudo" />
@@ -43,6 +45,14 @@
         <q-card-section>
           <div class="text-subtitle1 text-weight-medium q-mb-sm">Por status</div>
           <div v-for="item in dashboardList(dashboard.byStatus)" :key="item.label" class="metric-row">
+            <span>{{ item.label }}</span><strong>{{ item.value }}</strong>
+          </div>
+        </q-card-section>
+      </q-card>
+      <q-card flat bordered class="dashboard-panel">
+        <q-card-section>
+          <div class="text-subtitle1 text-weight-medium q-mb-sm">Por financeiro</div>
+          <div v-for="item in dashboardList(dashboard.byFinancialStatus)" :key="item.label" class="metric-row">
             <span>{{ item.label }}</span><strong>{{ item.value }}</strong>
           </div>
         </q-card-section>
@@ -968,6 +978,10 @@ export default {
         { label: 'Boleto', value: 'boleto' },
         { label: 'Transferência', value: 'transferencia' }
       ],
+      financialViewOptions: [
+        { label: 'Pagas', value: 'paid' },
+        { label: 'Vencidas', value: 'overdue' }
+      ],
       recurrenceOptions: [
         { label: 'Dia fixo todo mês', value: 'monthly_fixed_day' },
         { label: 'Intervalo em dias', value: 'custom_interval' }
@@ -1097,7 +1111,13 @@ export default {
         { label: 'Receita serviços', value: this.formatarMoeda(this.dashboard.serviceRevenue) },
         { label: 'Custo produtos', value: this.formatarMoeda(this.dashboard.productCost) },
         { label: 'Lucro bruto', value: this.formatarMoeda(this.dashboard.grossProfit) },
-        { label: 'Margem bruta', value: `${this.dashboard.grossMarginPercent || 0}%` }
+        { label: 'Margem bruta', value: `${this.dashboard.grossMarginPercent || 0}%` },
+        { label: 'A receber', value: this.formatarMoeda(this.dashboard.totalReceivable) },
+        { label: 'Recebido', value: this.formatarMoeda(this.dashboard.totalReceived) },
+        { label: 'Vencido', value: this.formatarMoeda(this.dashboard.overdueAmount) },
+        { label: 'OS pagas', value: this.dashboard.paidOrders || 0 },
+        { label: 'Lucro pago', value: this.formatarMoeda(this.dashboard.grossProfitPaid) },
+        { label: 'Lucro pendente', value: this.formatarMoeda(this.dashboard.grossProfitPending) }
       ]
     },
     dashboardProfitabilityList () {

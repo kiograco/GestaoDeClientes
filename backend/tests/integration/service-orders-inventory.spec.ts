@@ -137,6 +137,12 @@ describe("service orders inventory API", () => {
         expect(body.productCost).toBe(25);
         expect(body.grossProfit).toBe(125);
         expect(body.grossMarginPercent).toBe(83.33);
+        expect(body.totalCharged).toBe(150);
+        expect(body.totalReceivable).toBe(100);
+        expect(body.totalReceived).toBe(50);
+        expect(body.overdueAmount).toBe(0);
+        expect(body.paidOrders).toBe(0);
+        expect(body.grossProfitPending).toBe(125);
         expect(body.productsByCost).toMatchObject({ "Filtro de agua": 25 });
         expect(body.ordersProfitability).toEqual(
           expect.arrayContaining([
@@ -148,6 +154,28 @@ describe("service orders inventory API", () => {
             })
           ])
         );
+      });
+
+    await request(app)
+      .get("/service/orders")
+      .query({ paymentMethod: "pix" })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ id: created.body.id })
+          ])
+        );
+      });
+
+    await request(app)
+      .get("/service/orders")
+      .query({ financialView: "paid" })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toHaveLength(0);
       });
   });
 
