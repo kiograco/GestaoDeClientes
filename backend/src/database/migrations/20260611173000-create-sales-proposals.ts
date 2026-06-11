@@ -90,10 +90,7 @@ module.exports = {
       "salesOpportunityId"
     ]);
     await queryInterface.addIndex("SalesProposals", ["tenantId", "status"]);
-    await queryInterface.addIndex("SalesProposals", [
-      "tenantId",
-      "validUntil"
-    ]);
+    await queryInterface.addIndex("SalesProposals", ["tenantId", "validUntil"]);
   },
 
   down: async (queryInterface: QueryInterface): Promise<void> => {

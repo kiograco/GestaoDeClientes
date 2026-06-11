@@ -137,10 +137,7 @@ export const updateProposal = async (
       req.user.tenantId,
       req.user.id,
       req.params.proposalId,
-      await validate<SalesPipeline.SalesProposalData>(
-        proposalSchema,
-        req.body
-      )
+      await validate<SalesPipeline.SalesProposalData>(proposalSchema, req.body)
     )
   );
 

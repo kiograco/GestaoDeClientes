@@ -190,7 +190,9 @@ const normalizeProposalItems = (
         totalPrice: Number((quantity * unitPrice).toFixed(2))
       };
     });
-  if (!normalized.length) throw new AppError("ERR_PROPOSAL_ITEMS_REQUIRED", 400);
+  if (!normalized.length) {
+    throw new AppError("ERR_PROPOSAL_ITEMS_REQUIRED", 400);
+  }
   return normalized;
 };
 
@@ -582,10 +584,13 @@ export const generateProposalDocument = async (
 
   let y = 196;
   if (proposal.introduction) {
-    doc.fontSize(10).fillColor("#374151").text(proposal.introduction, margin, y, {
-      width,
-      lineGap: 2
-    });
+    doc
+      .fontSize(10)
+      .fillColor("#374151")
+      .text(proposal.introduction, margin, y, {
+        width,
+        lineGap: 2
+      });
     y = doc.y + 18;
   }
 
@@ -642,7 +647,10 @@ export const generateProposalDocument = async (
     });
 
   if (proposal.observation) {
-    doc.fontSize(9).fillColor("#374151").text("Observacoes", margin, y + 70);
+    doc
+      .fontSize(9)
+      .fillColor("#374151")
+      .text("Observacoes", margin, y + 70);
     doc.text(proposal.observation, margin, y + 86, { width });
   }
   doc
