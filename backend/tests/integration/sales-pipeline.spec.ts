@@ -1,5 +1,8 @@
 import request from "supertest";
+import SalesOpportunity from "../../src/models/SalesOpportunity";
 import SalesOpportunityLog from "../../src/models/SalesOpportunityLog";
+import SalesProposal from "../../src/models/SalesProposal";
+import ServiceAttendant from "../../src/models/ServiceAttendant";
 import ServiceOrder from "../../src/models/ServiceOrder";
 import ServiceOrderItem from "../../src/models/ServiceOrderItem";
 import { bearerTokenFor } from "../helpers/auth";
@@ -53,6 +56,46 @@ describe("sales pipeline API", () => {
         estimatedValue: 800
       })
       .expect(201);
+
+    const staleDate = new Date();
+    staleDate.setDate(staleDate.getDate() - 10);
+    await SalesOpportunity.sequelize?.query(
+      'UPDATE "SalesOpportunities" SET "updatedAt" = :staleDate WHERE id = :id AND "tenantId" = :tenantId',
+      {
+        replacements: {
+          staleDate,
+          id: created.body.id,
+          tenantId: user.tenantId
+        }
+      }
+    );
+
+    await request(app)
+      .get("/sales/pipeline-followups?days=7")
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toHaveLength(1);
+        expect(body[0]).toMatchObject({ id: created.body.id });
+      });
+
+    await request(app)
+      .post("/sales/pipeline-followups/run")
+      .set("Authorization", authorization)
+      .send({ days: 7 })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({ total: 1, sent: 1, skipped: 0 });
+      });
+
+    await request(app)
+      .post("/sales/pipeline-followups/run")
+      .set("Authorization", authorization)
+      .send({ days: 7 })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({ total: 1, sent: 0, skipped: 1 });
+      });
 
     await request(app)
       .put(`/sales/pipeline/${created.body.id}`)
@@ -142,8 +185,33 @@ describe("sales pipeline API", () => {
           discount: "100.00",
           total: "1200.00"
         });
+        expect(body.publicToken).toBeTruthy();
         expect(body.items).toHaveLength(2);
       });
+
+    await request(app)
+      .get(`/portal/proposals/${proposal.body.publicToken}`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          id: proposal.body.id,
+          tenantId: user.tenantId,
+          total: "1200.00"
+        });
+      });
+
+    await request(app)
+      .post(`/portal/proposals/${proposal.body.publicToken}/approve`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.status).toBe("aprovada");
+        expect(body.approvedAt).toBeTruthy();
+      });
+
+    await request(app)
+      .get(`/portal/proposals/${proposal.body.publicToken}/document`)
+      .expect(200)
+      .expect("Content-Type", /pdf/);
 
     await request(app)
       .get(`/sales/pipeline/${created.body.id}/proposals`)
@@ -196,6 +264,17 @@ describe("sales pipeline API", () => {
     ).toBe(2);
 
     await request(app)
+      .get(`/portal/proposals/${proposal.body.publicToken}/service-order`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          id: proposalOrder.body.id,
+          tenantId: user.tenantId,
+          contactId: contact.id
+        });
+      });
+
+    await request(app)
       .post(`/sales/proposals/${proposal.body.id}/convert-service-order`)
       .set("Authorization", authorization)
       .send({ serviceType: "Manutencao preventiva" })
@@ -241,6 +320,68 @@ describe("sales pipeline API", () => {
       where: { id: converted.body.id, tenantId: user.tenantId }
     });
     expect(serviceOrder).toBeTruthy();
+    if (!serviceOrder) throw new Error("Service order not found");
+
+    const attendant = await ServiceAttendant.create({
+      tenantId: user.tenantId,
+      name: "Tecnico Meta",
+      email: "tecnico-meta@example.test",
+      phone: "11999990000",
+      specialty: "Manutencao",
+      active: true,
+      workingHours: {}
+    });
+    await serviceOrder.update({
+      attendantId: attendant.id,
+      status: "concluida",
+      completedAt: new Date()
+    });
+
+    const periodMonth = new Date().toISOString().slice(0, 7);
+    await request(app)
+      .post("/sales/performance-goals")
+      .set("Authorization", authorization)
+      .send({
+        roleType: "seller",
+        userId: user.id,
+        periodMonth,
+        targetCount: 2,
+        targetValue: 2500
+      })
+      .expect(201);
+
+    await request(app)
+      .post("/sales/performance-goals")
+      .set("Authorization", authorization)
+      .send({
+        roleType: "technician",
+        attendantId: attendant.id,
+        periodMonth,
+        targetCount: 1,
+        targetValue: 1300
+      })
+      .expect(201);
+
+    await request(app)
+      .get(`/sales/performance-goals-dashboard?periodMonth=${periodMonth}`)
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.goals).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              roleType: "seller",
+              achievedCount: 2,
+              achievedValue: 2500
+            }),
+            expect.objectContaining({
+              roleType: "technician",
+              achievedCount: 1,
+              achievedValue: 1300
+            })
+          ])
+        );
+      });
 
     await request(app)
       .post(`/sales/pipeline/${directOpportunity.body.id}/convert-service-order`)
@@ -256,6 +397,11 @@ describe("sales pipeline API", () => {
         }
       })
     ).toBe(1);
+
+    const approvedProposal = await SalesProposal.findOne({
+      where: { id: proposal.body.id, tenantId: user.tenantId }
+    });
+    expect(approvedProposal?.publicToken).toBe(proposal.body.publicToken);
 
     await request(app)
       .get("/sales/pipeline-dashboard")

@@ -47,6 +47,23 @@ const proposalSchema = Yup.object().shape({
   observation: nullableString
 });
 
+const followUpSchema = Yup.object().shape({
+  days: Yup.number().integer().min(1).max(90).nullable(),
+  message: nullableString
+});
+
+const performanceGoalSchema = Yup.object().shape({
+  roleType: Yup.string().oneOf(["seller", "technician"]).required(),
+  userId: Yup.number().integer().positive().nullable(),
+  attendantId: Yup.number().integer().positive().nullable(),
+  periodMonth: Yup.string()
+    .matches(/^\d{4}-\d{2}$/)
+    .required(),
+  targetCount: Yup.number().integer().min(0).nullable(),
+  targetValue: Yup.number().min(0).nullable(),
+  active: Yup.boolean()
+});
+
 const validate = async <T>(schema: Yup.ObjectSchema, data: LegacyAny) => {
   try {
     return (await schema.validate(data, { stripUnknown: true })) as T;
@@ -141,6 +158,26 @@ export const updateProposal = async (
     )
   );
 
+export const listStaleOpportunities = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await SalesPipeline.listStaleOpportunities(req.user.tenantId, req.query)
+  );
+
+export const runAutomaticFollowUps = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await SalesPipeline.runAutomaticFollowUps(
+      req.user.tenantId,
+      req.user.id,
+      await validate<SalesPipeline.FollowUpData>(followUpSchema, req.body)
+    )
+  );
+
 export const proposalDocument = async (
   req: Request,
   res: Response
@@ -156,6 +193,36 @@ export const proposalDocument = async (
   );
   return res.send(pdf);
 };
+
+export const portalProposal = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(await SalesPipeline.showPortalProposal(req.params.token));
+
+export const approvePortalProposal = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(await SalesPipeline.approvePortalProposal(req.params.token));
+
+export const portalProposalDocument = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const pdf = await SalesPipeline.generatePortalProposalDocument(
+    req.params.token
+  );
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", "inline; filename=proposta.pdf");
+  return res.send(pdf);
+};
+
+export const portalServiceOrder = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(await SalesPipeline.showPortalServiceOrder(req.params.token));
 
 export const convertProposalToServiceOrder = async (
   req: Request,
@@ -174,6 +241,41 @@ export const convertProposalToServiceOrder = async (
         )
       )
     );
+
+export const listPerformanceGoals = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await SalesPipeline.listPerformanceGoals(req.user.tenantId, req.query)
+  );
+
+export const savePerformanceGoal = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res
+    .status(201)
+    .json(
+      await SalesPipeline.savePerformanceGoal(
+        req.user.tenantId,
+        await validate<SalesPipeline.PerformanceGoalData>(
+          performanceGoalSchema,
+          req.body
+        )
+      )
+    );
+
+export const performanceGoalsDashboard = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await SalesPipeline.getPerformanceGoalsDashboard(
+      req.user.tenantId,
+      req.query
+    )
+  );
 
 export const convertToServiceOrder = async (
   req: Request,

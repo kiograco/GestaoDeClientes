@@ -7,6 +7,8 @@
       </div>
       <div class="col-12 col-md-auto row q-gutter-sm">
         <q-btn flat color="primary" icon="mdi-refresh" label="Atualizar" @click="carregarTudo" />
+        <q-btn flat color="warning" icon="mdi-bell-ring-outline" label="Follow-up" @click="executarFollowUpAutomatico" />
+        <q-btn flat color="secondary" icon="mdi-target" label="Meta" @click="abrirMeta()" />
         <q-btn unelevated color="primary" icon="mdi-plus" label="Nova oportunidade" @click="abrirOportunidade()" />
       </div>
     </div>
@@ -27,6 +29,44 @@
         </q-card-section>
       </q-card>
     </div>
+
+    <q-card flat bordered class="q-mb-md">
+      <q-card-section class="row items-center q-col-gutter-md">
+        <div class="col-12 col-md">
+          <div class="text-subtitle1 text-weight-medium">Metas do mes</div>
+          <div class="text-caption text-grey-7">Vendedores por oportunidades ganhas e tecnicos por OS concluidas</div>
+        </div>
+        <div class="col-12 col-md-auto text-right">
+          <div class="text-caption text-grey-7">Realizado</div>
+          <div class="text-h6">{{ metasDashboard.totals ? metasDashboard.totals.achievedCount : 0 }} / {{ metasDashboard.totals ? metasDashboard.totals.targetCount : 0 }}</div>
+        </div>
+        <div class="col-12">
+          <q-markup-table flat dense>
+            <thead>
+              <tr>
+                <th class="text-left">Perfil</th>
+                <th class="text-left">Responsavel</th>
+                <th class="text-right">Qtd.</th>
+                <th class="text-right">Valor</th>
+                <th class="text-right">Progresso</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="linha in metasDashboard.goals || []" :key="linha.id">
+                <td>{{ linha.roleType === 'seller' ? 'Vendedor' : 'Tecnico' }}</td>
+                <td>{{ linha.user ? linha.user.name : (linha.attendant ? linha.attendant.name : '-') }}</td>
+                <td class="text-right">{{ linha.achievedCount }} / {{ linha.targetCount }}</td>
+                <td class="text-right">{{ formatarMoeda(linha.achievedValue) }} / {{ formatarMoeda(linha.targetValue) }}</td>
+                <td class="text-right">{{ Math.max(linha.countProgress, linha.valueProgress) }}%</td>
+              </tr>
+              <tr v-if="!(metasDashboard.goals || []).length">
+                <td colspan="5" class="text-center text-grey-7">Nenhuma meta cadastrada para o mes.</td>
+              </tr>
+            </tbody>
+          </q-markup-table>
+        </div>
+      </q-card-section>
+    </q-card>
 
     <div class="pipeline-board">
       <div v-for="stage in stages" :key="stage.value" class="pipeline-column">
@@ -110,6 +150,9 @@
           <q-btn v-if="proposta.id" flat round dense icon="mdi-file-pdf-box" color="negative" @click="abrirPdfProposta(proposta)">
             <q-tooltip>Gerar PDF</q-tooltip>
           </q-btn>
+          <q-btn v-if="proposta.publicToken" flat round dense icon="mdi-link-variant" color="primary" @click="copiarLinkPortal(proposta)">
+            <q-tooltip>Copiar link do portal</q-tooltip>
+          </q-btn>
         </q-card-section>
         <q-card-section class="row q-col-gutter-sm">
           <q-input dense outlined class="col-12 col-md-8" label="Titulo" v-model="proposta.title" />
@@ -178,6 +221,26 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="modalMeta" persistent>
+      <q-card style="width: 520px; max-width: 95vw">
+        <q-card-section>
+          <div class="text-h6">Meta de desempenho</div>
+        </q-card-section>
+        <q-card-section class="row q-col-gutter-sm">
+          <q-select dense outlined emit-value map-options class="col-12 col-md-6" label="Perfil" v-model="meta.roleType" :options="metaRoleOptions" />
+          <q-input dense outlined type="month" class="col-12 col-md-6" label="Mes" v-model="meta.periodMonth" />
+          <q-select v-if="meta.roleType === 'seller'" dense outlined emit-value map-options class="col-12" label="Vendedor" v-model="meta.userId" :options="ownerOptions" />
+          <q-select v-else dense outlined emit-value map-options class="col-12" label="Tecnico" v-model="meta.attendantId" :options="attendantOptions" />
+          <q-input dense outlined type="number" min="0" class="col-12 col-md-6" label="Meta de quantidade" v-model.number="meta.targetCount" />
+          <q-input dense outlined class="col-12 col-md-6" label="Meta de valor" v-model="meta.targetValue" @blur="meta.targetValue = formatarMoedaCampo(meta.targetValue)" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn unelevated label="Salvar" color="primary" :loading="salvando" @click="salvarMeta" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -192,10 +255,14 @@ import {
   CriarProposta,
   AlterarProposta,
   DocumentoProposta,
-  ConverterPropostaOrdemServico
+  ConverterPropostaOrdemServico,
+  RodarFollowUpsPipeline,
+  SalvarMetaPipeline,
+  DashboardMetasPipeline
 } from 'src/service/pipelineVendas'
 import { ListarClientes } from 'src/service/clientes'
 import { ListarUsuarios } from 'src/service/user'
+import { ListarAtendentesServico } from 'src/service/ordensServico'
 
 const emptyOpportunity = () => ({
   contactId: null,
@@ -230,12 +297,23 @@ export default {
       modalOportunidade: false,
       modalConversao: false,
       modalProposta: false,
+      modalMeta: false,
       filtros: {},
       oportunidades: [],
       dashboard: {},
+      metasDashboard: {},
       clientes: [],
       usuarios: [],
+      atendentes: [],
       oportunidade: emptyOpportunity(),
+      meta: {
+        roleType: 'seller',
+        userId: null,
+        attendantId: null,
+        periodMonth: new Date().toISOString().slice(0, 7),
+        targetCount: 0,
+        targetValue: '0,00'
+      },
       oportunidadeConversao: null,
       oportunidadeProposta: null,
       propostaConversao: null,
@@ -262,6 +340,10 @@ export default {
         { label: 'Aprovada', value: 'aprovada' },
         { label: 'Rejeitada', value: 'rejeitada' },
         { label: 'Convertida', value: 'convertida' }
+      ],
+      metaRoleOptions: [
+        { label: 'Vendedor', value: 'seller' },
+        { label: 'Tecnico', value: 'technician' }
       ]
     }
   },
@@ -272,6 +354,9 @@ export default {
     ownerOptions () {
       return this.usuarios.map(user => ({ label: user.name, value: user.id }))
     },
+    attendantOptions () {
+      return this.atendentes.map(attendant => ({ label: attendant.name, value: attendant.id }))
+    },
     clienteOptions () {
       return this.clientes.map(cliente => ({ label: `${cliente.name} - ${cliente.number || cliente.email || ''}`, value: cliente.id }))
     },
@@ -281,6 +366,7 @@ export default {
         { label: 'Abertas', value: this.dashboard.open || 0 },
         { label: 'Ganhas', value: this.dashboard.won || 0 },
         { label: 'Perdidas', value: this.dashboard.lost || 0 },
+        { label: 'Paradas', value: this.dashboard.stale || 0 },
         { label: 'Em negociacao', value: this.formatarMoeda(this.dashboard.openValue) },
         { label: 'Ganho', value: this.formatarMoeda(this.dashboard.wonValue) },
         { label: 'Conversao', value: `${this.dashboard.conversionRate || 0}%` }
@@ -300,13 +386,19 @@ export default {
     async carregarTudo () {
       await Promise.all([
         this.carregarUsuarios(),
+        this.carregarAtendentes(),
         this.carregarOportunidades(),
-        this.carregarDashboard()
+        this.carregarDashboard(),
+        this.carregarMetas()
       ])
     },
     async carregarUsuarios () {
       const { data } = await ListarUsuarios()
       this.usuarios = data.users || data
+    },
+    async carregarAtendentes () {
+      const { data } = await ListarAtendentesServico()
+      this.atendentes = data
     },
     async carregarOportunidades () {
       const { data } = await ListarOportunidades(this.filtros)
@@ -315,6 +407,12 @@ export default {
     async carregarDashboard () {
       const { data } = await DashboardPipeline()
       this.dashboard = data
+    },
+    async carregarMetas () {
+      const { data } = await DashboardMetasPipeline({
+        periodMonth: new Date().toISOString().slice(0, 7)
+      })
+      this.metasDashboard = data
     },
     oportunidadesPorEtapa (stage) {
       return this.oportunidades.filter(item => item.stage === stage)
@@ -480,6 +578,15 @@ export default {
         this.$notificarErro('Nao foi possivel gerar a proposta em PDF', error)
       }
     },
+    async copiarLinkPortal (proposal) {
+      const url = `${window.location.origin}/#/portal/proposta/${proposal.publicToken}`
+      try {
+        await navigator.clipboard.writeText(url)
+        this.$q.notify({ type: 'positive', message: 'Link do portal copiado.' })
+      } catch (error) {
+        window.open(url, '_blank')
+      }
+    },
     abrirConversaoProposta (proposal) {
       this.propostaConversao = proposal
       this.oportunidadeConversao = proposal
@@ -492,6 +599,48 @@ export default {
         state: ''
       }
       this.modalConversao = true
+    },
+    async executarFollowUpAutomatico () {
+      try {
+        const { data } = await RodarFollowUpsPipeline({ days: 7 })
+        this.$q.notify({
+          type: 'positive',
+          message: `${data.sent} lembrete(s) registrado(s).`
+        })
+        await this.carregarOportunidades()
+        await this.carregarDashboard()
+      } catch (error) {
+        this.$notificarErro('Nao foi possivel executar follow-up automatico', error)
+      }
+    },
+    abrirMeta () {
+      this.meta = {
+        roleType: 'seller',
+        userId: this.usuarios[0]?.id || null,
+        attendantId: this.atendentes[0]?.id || null,
+        periodMonth: new Date().toISOString().slice(0, 7),
+        targetCount: 0,
+        targetValue: '0,00'
+      }
+      this.modalMeta = true
+    },
+    async salvarMeta () {
+      this.salvando = true
+      try {
+        await SalvarMetaPipeline({
+          ...this.meta,
+          targetValue: this.parseMoeda(this.meta.targetValue) || 0,
+          userId: this.meta.roleType === 'seller' ? this.meta.userId : null,
+          attendantId: this.meta.roleType === 'technician' ? this.meta.attendantId : null
+        })
+        this.$q.notify({ type: 'positive', message: 'Meta salva.' })
+        this.modalMeta = false
+        await this.carregarMetas()
+      } catch (error) {
+        this.$notificarErro('Nao foi possivel salvar a meta', error)
+      } finally {
+        this.salvando = false
+      }
     },
     async filtrarClientes (val, update) {
       const { data } = await ListarClientes({ searchParam: val })

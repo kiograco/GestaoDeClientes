@@ -1,11 +1,14 @@
 import { Op, Transaction } from "sequelize";
+import crypto from "crypto";
 import PDFDocument from "pdfkit";
 import sequelize from "../../database";
 import AppError from "../../errors/AppError";
 import Contact from "../../models/Contact";
+import PerformanceGoal from "../../models/PerformanceGoal";
 import SalesOpportunity from "../../models/SalesOpportunity";
 import SalesOpportunityLog from "../../models/SalesOpportunityLog";
 import SalesProposal from "../../models/SalesProposal";
+import ServiceAttendant from "../../models/ServiceAttendant";
 import ServiceOrder from "../../models/ServiceOrder";
 import ServiceOrderItem from "../../models/ServiceOrderItem";
 import Tenant from "../../models/Tenant";
@@ -68,6 +71,21 @@ export interface SalesProposalData {
   observation?: string | null;
 }
 
+export interface FollowUpData {
+  days?: number;
+  message?: string | null;
+}
+
+export interface PerformanceGoalData {
+  roleType: string;
+  userId?: number | null;
+  attendantId?: number | null;
+  periodMonth: string;
+  targetCount?: number | null;
+  targetValue?: number | null;
+  active?: boolean;
+}
+
 const includeOpportunity = [
   { model: Contact, attributes: ["id", "name", "number", "email"] },
   { model: User, as: "owner", attributes: ["id", "name", "email"] },
@@ -99,6 +117,11 @@ const normalizeDate = (value?: string | Date | null): Date | null => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
+const normalizeInteger = (value?: number | string | null): number => {
+  const parsed = Number(value || 0);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.trunc(parsed) : 0;
+};
+
 const formatCurrency = (value?: number | string | null): string =>
   Number(value || 0).toLocaleString("pt-BR", {
     style: "currency",
@@ -124,6 +147,39 @@ const ensureProposalStatus = (status?: string): string => {
   return safeStatus;
 };
 
+const ensureRoleType = (roleType?: string): string => {
+  if (!["seller", "technician"].includes(roleType || "")) {
+    throw new AppError("ERR_INVALID_PERFORMANCE_GOAL_ROLE", 400);
+  }
+  return String(roleType);
+};
+
+const normalizePeriodMonth = (value?: string | null): string => {
+  if (!value || !/^\d{4}-\d{2}$/.test(value)) {
+    throw new AppError("ERR_INVALID_PERFORMANCE_GOAL_PERIOD", 400);
+  }
+  return value;
+};
+
+const monthRange = (periodMonth: string): { start: Date; end: Date } => {
+  const [year, month] = periodMonth.split("-").map(Number);
+  return {
+    start: new Date(Date.UTC(year, month - 1, 1, 0, 0, 0)),
+    end: new Date(Date.UTC(year, month, 1, 0, 0, 0))
+  };
+};
+
+const currentPeriodMonth = (): string => new Date().toISOString().slice(0, 7);
+
+const publicToken = (): string => crypto.randomBytes(24).toString("hex");
+
+const staleCutoffDate = (days?: number | string | null): Date => {
+  const parsed = Math.max(1, Math.min(90, normalizeInteger(days || 7)));
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - parsed);
+  return cutoff;
+};
+
 const ensureContact = async (
   tenantId: string | number,
   contactId: number,
@@ -147,6 +203,19 @@ const ensureOwner = async (
     transaction
   });
   if (!owner) throw new AppError("ERR_USER_NOT_FOUND", 404);
+};
+
+const ensureAttendant = async (
+  tenantId: string | number,
+  attendantId?: number | null,
+  transaction?: Transaction
+): Promise<void> => {
+  if (!attendantId) return;
+  const attendant = await ServiceAttendant.findOne({
+    where: { id: attendantId, tenantId },
+    transaction
+  });
+  if (!attendant) throw new AppError("ERR_SERVICE_ATTENDANT_NOT_FOUND", 404);
 };
 
 const stageDates = (stage: string): Record<string, Date | null> => ({
@@ -223,6 +292,29 @@ const buildProposalPayload = (
     discount,
     total: Number((subtotal - discount).toFixed(2)),
     observation: cleanText(data.observation)
+  };
+};
+
+const buildPerformanceGoalPayload = (
+  tenantId: string | number,
+  data: PerformanceGoalData
+): Record<string, unknown> => {
+  const roleType = ensureRoleType(data.roleType);
+  if (roleType === "seller" && !data.userId) {
+    throw new AppError("ERR_PERFORMANCE_GOAL_SELLER_REQUIRED", 400);
+  }
+  if (roleType === "technician" && !data.attendantId) {
+    throw new AppError("ERR_PERFORMANCE_GOAL_TECHNICIAN_REQUIRED", 400);
+  }
+  return {
+    tenantId,
+    roleType,
+    userId: roleType === "seller" ? data.userId : null,
+    attendantId: roleType === "technician" ? data.attendantId : null,
+    periodMonth: normalizePeriodMonth(data.periodMonth),
+    targetCount: normalizeInteger(data.targetCount),
+    targetValue: normalizeMoney(data.targetValue),
+    active: data.active !== false
   };
 };
 
@@ -311,6 +403,8 @@ export const getDashboard = async (
   const open = opportunities.filter(
     item => !["ganho", "perdido"].includes(item.stage)
   );
+  const staleCutoff = staleCutoffDate(7);
+  const stale = open.filter(item => new Date(item.updatedAt) < staleCutoff);
   const byStage = SALES_PIPELINE_STAGES.reduce((acc, stage) => {
     const items = opportunities.filter(item => item.stage === stage);
     acc[stage] = {
@@ -336,6 +430,7 @@ export const getDashboard = async (
     open: open.length,
     won: won.length,
     lost: lost.length,
+    stale: stale.length,
     openValue: Number(
       open
         .reduce((sum, item) => sum + Number(item.estimatedValue || 0), 0)
@@ -392,8 +487,7 @@ export const updateOpportunity = async (
   await sequelize.transaction(async transaction => {
     const opportunity = await SalesOpportunity.findOne({
       where: { id: opportunityId, tenantId },
-      transaction,
-      lock: transaction.LOCK.UPDATE
+      transaction
     });
     if (!opportunity) {
       throw new AppError("ERR_SALES_OPPORTUNITY_NOT_FOUND", 404);
@@ -473,14 +567,16 @@ export const createProposal = async (
   const created = await sequelize.transaction(async transaction => {
     const opportunity = await SalesOpportunity.findOne({
       where: { id: opportunityId, tenantId },
-      transaction,
-      lock: transaction.LOCK.UPDATE
+      transaction
     });
     if (!opportunity) {
       throw new AppError("ERR_SALES_OPPORTUNITY_NOT_FOUND", 404);
     }
     const proposal = await SalesProposal.create(
-      buildProposalPayload(tenantId, opportunity, userId, data),
+      {
+        ...buildProposalPayload(tenantId, opportunity, userId, data),
+        publicToken: publicToken()
+      },
       { transaction }
     );
     await opportunity.update(
@@ -511,8 +607,7 @@ export const updateProposal = async (
     const proposal = await SalesProposal.findOne({
       where: { id: proposalId, tenantId },
       include: [{ model: SalesOpportunity }],
-      transaction,
-      lock: transaction.LOCK.UPDATE
+      transaction
     });
     if (!proposal) throw new AppError("ERR_SALES_PROPOSAL_NOT_FOUND", 404);
     if (proposal.convertedServiceOrderId) {
@@ -544,10 +639,315 @@ export const updateProposal = async (
   return loadProposal(tenantId, proposalId);
 };
 
-export const generateProposalDocument = async (
+export const listStaleOpportunities = async (
+  tenantId: string | number,
+  filters: LegacyAny = {}
+): Promise<SalesOpportunity[]> =>
+  SalesOpportunity.findAll({
+    where: {
+      tenantId,
+      stage: { [Op.notIn]: ["ganho", "perdido"] },
+      updatedAt: { [Op.lt]: staleCutoffDate(filters.days) }
+    },
+    include: includeOpportunity,
+    order: [["updatedAt", "ASC"]]
+  });
+
+export const runAutomaticFollowUps = async (
+  tenantId: string | number,
+  userId: string | number,
+  data: FollowUpData = {}
+): Promise<Record<string, unknown>> => {
+  const opportunities = await listStaleOpportunities(tenantId, data);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let sent = 0;
+  let skipped = 0;
+  const message =
+    cleanText(data.message) ||
+    "Lembrete automatico: oportunidade parada sem atualizacao recente.";
+
+  await sequelize.transaction(async transaction => {
+    await Promise.all(
+      opportunities.map(async opportunity => {
+        const alreadySent = await SalesOpportunityLog.findOne({
+          where: {
+            salesOpportunityId: opportunity.id,
+            action: "automatic_follow_up",
+            createdAt: { [Op.gte]: today }
+          },
+          transaction
+        });
+        if (alreadySent) {
+          skipped += 1;
+          return;
+        }
+        await logOpportunity(
+          opportunity.id,
+          userId,
+          "automatic_follow_up",
+          message,
+          null,
+          {
+            opportunityId: opportunity.id,
+            days: normalizeInteger(data.days || 7)
+          },
+          transaction
+        );
+        sent += 1;
+      })
+    );
+  });
+
+  return {
+    total: opportunities.length,
+    sent,
+    skipped,
+    opportunities: opportunities.map(item => ({
+      id: item.id,
+      title: item.title,
+      stage: item.stage,
+      updatedAt: item.updatedAt
+    }))
+  };
+};
+
+const loadPortalProposal = async (token: string): Promise<SalesProposal> => {
+  const proposal = await SalesProposal.findOne({
+    where: { publicToken: token },
+    include: [
+      { model: Contact, attributes: ["id", "name", "number", "email"] },
+      { model: SalesOpportunity, attributes: ["id", "title", "stage"] },
+      {
+        model: ServiceOrder,
+        attributes: [
+          "id",
+          "title",
+          "status",
+          "scheduledStart",
+          "scheduledEnd",
+          "address",
+          "city",
+          "state",
+          "publicObservation",
+          "chargedAmount"
+        ],
+        include: [{ model: ServiceOrderItem }],
+        required: false
+      }
+    ]
+  });
+  if (!proposal) throw new AppError("ERR_SALES_PROPOSAL_NOT_FOUND", 404);
+  return proposal;
+};
+
+export const showPortalProposal = (token: string): Promise<SalesProposal> =>
+  loadPortalProposal(token);
+
+export const approvePortalProposal = async (
+  token: string
+): Promise<SalesProposal> => {
+  const proposal = await sequelize.transaction(async transaction => {
+    const current = await SalesProposal.findOne({
+      where: { publicToken: token },
+      transaction
+    });
+    if (!current) throw new AppError("ERR_SALES_PROPOSAL_NOT_FOUND", 404);
+    if (!["enviada", "rascunho", "aprovada"].includes(current.status)) {
+      throw new AppError("ERR_SALES_PROPOSAL_CANNOT_BE_APPROVED", 409);
+    }
+    await current.update(
+      {
+        status: "aprovada",
+        approvedAt: current.approvedAt || new Date()
+      },
+      { transaction }
+    );
+    await SalesOpportunityLog.create(
+      {
+        salesOpportunityId: current.salesOpportunityId,
+        userId: null,
+        action: "proposal_approved_by_customer",
+        description: "Proposta aprovada no portal do cliente",
+        oldValue: null,
+        newValue: { proposalId: current.id, approvedAt: current.approvedAt }
+      },
+      { transaction }
+    );
+    return current;
+  });
+  return loadPortalProposal(proposal.publicToken);
+};
+
+export const showPortalServiceOrder = async (
+  token: string
+): Promise<ServiceOrder | null> => {
+  const proposal = await loadPortalProposal(token);
+  if (!proposal.convertedServiceOrderId) return null;
+  return ServiceOrder.findOne({
+    where: {
+      id: proposal.convertedServiceOrderId,
+      tenantId: proposal.tenantId,
+      contactId: proposal.contactId
+    },
+    include: [
+      { model: Contact, attributes: ["id", "name", "number", "email"] },
+      { model: ServiceAttendant, attributes: ["id", "name", "email"] },
+      { model: ServiceOrderItem }
+    ]
+  });
+};
+
+export const listPerformanceGoals = async (
+  tenantId: string | number,
+  filters: LegacyAny = {}
+): Promise<PerformanceGoal[]> => {
+  const goals = await PerformanceGoal.findAll({
+    where: {
+      tenantId,
+      ...(filters.roleType ? { roleType: filters.roleType } : {}),
+      periodMonth: normalizePeriodMonth(
+        filters.periodMonth || currentPeriodMonth()
+      )
+    },
+    include: [
+      { model: User, attributes: ["id", "name", "email"], required: false },
+      {
+        model: ServiceAttendant,
+        attributes: ["id", "name", "email"],
+        required: false
+      }
+    ],
+    order: [
+      ["roleType", "ASC"],
+      ["id", "ASC"]
+    ]
+  });
+  return goals;
+};
+
+export const savePerformanceGoal = async (
+  tenantId: string | number,
+  data: PerformanceGoalData
+): Promise<PerformanceGoal> => {
+  const payload = buildPerformanceGoalPayload(tenantId, data);
+  await ensureOwner(tenantId, payload.userId as number | null);
+  await ensureAttendant(tenantId, payload.attendantId as number | null);
+
+  const where: LegacyAny = {
+    tenantId,
+    roleType: payload.roleType,
+    periodMonth: payload.periodMonth,
+    userId: payload.userId,
+    attendantId: payload.attendantId
+  };
+  const existing = await PerformanceGoal.findOne({ where });
+  if (existing) {
+    await existing.update(payload);
+    return existing.reload({
+      include: [
+        { model: User, attributes: ["id", "name", "email"], required: false },
+        {
+          model: ServiceAttendant,
+          attributes: ["id", "name", "email"],
+          required: false
+        }
+      ]
+    });
+  }
+  return PerformanceGoal.create(payload);
+};
+
+export const getPerformanceGoalsDashboard = async (
+  tenantId: string | number,
+  filters: LegacyAny = {}
+): Promise<Record<string, unknown>> => {
+  const periodMonth = normalizePeriodMonth(
+    filters.periodMonth || currentPeriodMonth()
+  );
+  const range = monthRange(periodMonth);
+  const [goals, wonOpportunities, completedOrders] = await Promise.all([
+    listPerformanceGoals(tenantId, { periodMonth }),
+    SalesOpportunity.findAll({
+      where: {
+        tenantId,
+        stage: "ganho",
+        wonAt: { [Op.gte]: range.start, [Op.lt]: range.end }
+      },
+      include: [{ model: User, as: "owner", attributes: ["id", "name"] }]
+    }),
+    ServiceOrder.findAll({
+      where: {
+        tenantId,
+        status: "concluida",
+        completedAt: { [Op.gte]: range.start, [Op.lt]: range.end }
+      },
+      include: [
+        { model: ServiceAttendant, attributes: ["id", "name"], required: false }
+      ]
+    })
+  ]);
+
+  const rows = goals.map(goal => {
+    const sellerItems = wonOpportunities.filter(
+      item => item.ownerUserId === goal.userId
+    );
+    const technicianItems = completedOrders.filter(
+      item => item.attendantId === goal.attendantId
+    );
+    const achievedCount =
+      goal.roleType === "seller" ? sellerItems.length : technicianItems.length;
+    const achievedValue =
+      goal.roleType === "seller"
+        ? sellerItems.reduce(
+            (sum, item) => sum + Number(item.estimatedValue || 0),
+            0
+          )
+        : technicianItems.reduce(
+            (sum, item) => sum + Number(item.chargedAmount || 0),
+            0
+          );
+    const targetValue = Number(goal.targetValue || 0);
+    const targetCount = Number(goal.targetCount || 0);
+    return {
+      id: goal.id,
+      roleType: goal.roleType,
+      periodMonth: goal.periodMonth,
+      targetCount,
+      targetValue,
+      achievedCount,
+      achievedValue: Number(achievedValue.toFixed(2)),
+      countProgress: targetCount
+        ? Number(((achievedCount / targetCount) * 100).toFixed(2))
+        : 0,
+      valueProgress: targetValue
+        ? Number(((achievedValue / targetValue) * 100).toFixed(2))
+        : 0,
+      user: goal.user,
+      attendant: goal.attendant
+    };
+  });
+
+  return {
+    periodMonth,
+    goals: rows,
+    totals: {
+      targetCount: rows.reduce((sum, item) => sum + item.targetCount, 0),
+      achievedCount: rows.reduce((sum, item) => sum + item.achievedCount, 0),
+      targetValue: Number(
+        rows.reduce((sum, item) => sum + item.targetValue, 0).toFixed(2)
+      ),
+      achievedValue: Number(
+        rows.reduce((sum, item) => sum + item.achievedValue, 0).toFixed(2)
+      )
+    }
+  };
+};
+
+export async function generateProposalDocument(
   tenantId: string | number,
   proposalId: string
-): Promise<Buffer> => {
+): Promise<Buffer> {
   const proposal = await loadProposal(tenantId, proposalId);
   const tenant = await Tenant.findByPk(tenantId);
   const doc = new PDFDocument({ margin: 36, size: "A4" });
@@ -667,6 +1067,13 @@ export const generateProposalDocument = async (
     );
   doc.end();
   return done;
+}
+
+export const generatePortalProposalDocument = async (
+  token: string
+): Promise<Buffer> => {
+  const proposal = await loadPortalProposal(token);
+  return generateProposalDocument(proposal.tenantId, String(proposal.id));
 };
 
 export const convertProposalToServiceOrder = async (
@@ -679,8 +1086,7 @@ export const convertProposalToServiceOrder = async (
     const proposal = await SalesProposal.findOne({
       where: { id: proposalId, tenantId },
       include: [{ model: SalesOpportunity }],
-      transaction,
-      lock: transaction.LOCK.UPDATE
+      transaction
     });
     if (!proposal) throw new AppError("ERR_SALES_PROPOSAL_NOT_FOUND", 404);
     if (proposal.convertedServiceOrderId) {
@@ -771,8 +1177,7 @@ export const convertOpportunityToServiceOrder = async (
   const serviceOrder = await sequelize.transaction(async transaction => {
     const opportunity = await SalesOpportunity.findOne({
       where: { id: opportunityId, tenantId },
-      transaction,
-      lock: transaction.LOCK.UPDATE
+      transaction
     });
     if (!opportunity) {
       throw new AppError("ERR_SALES_OPPORTUNITY_NOT_FOUND", 404);

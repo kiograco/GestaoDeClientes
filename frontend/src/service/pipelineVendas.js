@@ -2,6 +2,11 @@ import request from 'src/service/request'
 
 export const ListarOportunidades = params => request({ url: '/sales/pipeline', method: 'get', params })
 export const DashboardPipeline = () => request({ url: '/sales/pipeline-dashboard', method: 'get' })
+export const ListarFollowUpsPipeline = params => request({ url: '/sales/pipeline-followups', method: 'get', params })
+export const RodarFollowUpsPipeline = data => request({ url: '/sales/pipeline-followups/run', method: 'post', data })
+export const ListarMetasPipeline = params => request({ url: '/sales/performance-goals', method: 'get', params })
+export const SalvarMetaPipeline = data => request({ url: '/sales/performance-goals', method: 'post', data })
+export const DashboardMetasPipeline = params => request({ url: '/sales/performance-goals-dashboard', method: 'get', params })
 export const ObterOportunidade = id => request({ url: `/sales/pipeline/${id}`, method: 'get' })
 export const CriarOportunidade = data => request({ url: '/sales/pipeline', method: 'post', data })
 export const AlterarOportunidade = data => request({ url: `/sales/pipeline/${data.id}`, method: 'put', data })

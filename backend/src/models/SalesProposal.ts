@@ -87,6 +87,12 @@ class SalesProposal extends Model<SalesProposal> {
   observation: string;
 
   @Column
+  publicToken: string;
+
+  @Column
+  approvedAt: Date;
+
+  @Column
   convertedAt: Date;
 
   @CreatedAt

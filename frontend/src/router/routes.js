@@ -122,6 +122,11 @@ const routes = [
     name: 'minha-assinatura',
     component: () => import('pages/assinatura/MinhaAssinatura.vue')
   },
+  {
+    path: '/portal/proposta/:token',
+    name: 'portal-cliente-proposta',
+    component: () => import('pages/portalCliente/Proposta.vue')
+  },
 
   // Always leave this as last one,
   // but you can also remove it

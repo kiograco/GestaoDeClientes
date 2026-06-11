@@ -5,6 +5,22 @@ import * as SalesPipelineController from "../controllers/SalesPipelineController
 const salesPipelineRoutes = express.Router();
 
 salesPipelineRoutes.get(
+  "/portal/proposals/:token",
+  SalesPipelineController.portalProposal
+);
+salesPipelineRoutes.post(
+  "/portal/proposals/:token/approve",
+  SalesPipelineController.approvePortalProposal
+);
+salesPipelineRoutes.get(
+  "/portal/proposals/:token/document",
+  SalesPipelineController.portalProposalDocument
+);
+salesPipelineRoutes.get(
+  "/portal/proposals/:token/service-order",
+  SalesPipelineController.portalServiceOrder
+);
+salesPipelineRoutes.get(
   "/sales/pipeline",
   isAuth,
   SalesPipelineController.index
@@ -13,6 +29,31 @@ salesPipelineRoutes.get(
   "/sales/pipeline-dashboard",
   isAuth,
   SalesPipelineController.dashboard
+);
+salesPipelineRoutes.get(
+  "/sales/pipeline-followups",
+  isAuth,
+  SalesPipelineController.listStaleOpportunities
+);
+salesPipelineRoutes.post(
+  "/sales/pipeline-followups/run",
+  isAuth,
+  SalesPipelineController.runAutomaticFollowUps
+);
+salesPipelineRoutes.get(
+  "/sales/performance-goals",
+  isAuth,
+  SalesPipelineController.listPerformanceGoals
+);
+salesPipelineRoutes.post(
+  "/sales/performance-goals",
+  isAuth,
+  SalesPipelineController.savePerformanceGoal
+);
+salesPipelineRoutes.get(
+  "/sales/performance-goals-dashboard",
+  isAuth,
+  SalesPipelineController.performanceGoalsDashboard
 );
 salesPipelineRoutes.get(
   "/sales/proposals/:proposalId/document",
