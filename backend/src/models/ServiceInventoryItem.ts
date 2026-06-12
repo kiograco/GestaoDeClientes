@@ -14,6 +14,7 @@ import {
 } from "sequelize-typescript";
 import ServiceInventoryBatch from "./ServiceInventoryBatch";
 import ServiceInventoryPestRecommendation from "./ServiceInventoryPestRecommendation";
+import ProductPest from "./ProductPest";
 import Tenant from "./Tenant";
 
 @Table
@@ -115,6 +116,9 @@ class ServiceInventoryItem extends Model<ServiceInventoryItem> {
 
   @HasMany(() => ServiceInventoryPestRecommendation)
   pestRecommendations: ServiceInventoryPestRecommendation[];
+
+  @HasMany(() => ProductPest)
+  productPests: ProductPest[];
 
   @CreatedAt
   createdAt: Date;

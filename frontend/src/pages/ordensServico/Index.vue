@@ -31,6 +31,7 @@
       <q-tab name="dashboard" icon="mdi-chart-box-outline" label="Dashboard" />
       <q-tab name="financeiro" icon="mdi-cash-multiple" label="Financeiro" />
       <q-tab name="estoque" icon="mdi-package-variant-closed" label="Estoque" />
+      <q-tab name="pragas" icon="mdi-bug-outline" label="Pragas" />
       <q-tab v-if="podeGerenciarEstoque" name="auditoria" icon="mdi-shield-search" label="Auditoria" />
       <q-tab name="tipos" icon="mdi-format-list-bulleted-type" label="Tipos de serviço" />
     </q-tabs>
@@ -297,6 +298,45 @@
       </q-card>
     </div>
 
+    <div v-else-if="aba === 'pragas'" class="q-mb-md">
+      <q-card flat bordered>
+        <q-card-section class="row items-center">
+          <div>
+            <div class="text-subtitle1 text-weight-medium">Cadastro de pragas</div>
+            <div class="text-caption text-grey-7">Cadastro central usado por produtos e serviços</div>
+          </div>
+          <q-space />
+          <q-btn unelevated color="primary" icon="mdi-plus" label="Nova praga" @click="abrirPraga()" />
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="row q-col-gutter-sm">
+          <q-input dense outlined clearable class="col-12 col-md-4" label="Pesquisar por nome comum ou científico" v-model="filtroPragas" @keyup.enter="carregarPragas" />
+          <q-btn flat color="primary" icon="mdi-magnify" label="Pesquisar" @click="carregarPragas" />
+        </q-card-section>
+        <q-table
+          flat
+          :data="pragas"
+          :columns="colunasPragas"
+          row-key="id"
+          :pagination="{ rowsPerPage: 15 }"
+        >
+          <template v-slot:body-cell-display="props">
+            <q-td :props="props">{{ rotuloPraga(props.row) }}</q-td>
+          </template>
+          <template v-slot:body-cell-actions="props">
+            <q-td :props="props" auto-width>
+              <q-btn flat round dense icon="mdi-pencil" color="primary" @click="abrirPraga(props.row)">
+                <q-tooltip>Editar praga</q-tooltip>
+              </q-btn>
+              <q-btn flat round dense icon="mdi-delete" color="negative" @click="confirmarExcluirPraga(props.row)">
+                <q-tooltip>Excluir praga</q-tooltip>
+              </q-btn>
+            </q-td>
+          </template>
+        </q-table>
+      </q-card>
+    </div>
+
     <div v-else-if="aba === 'auditoria' && podeGerenciarEstoque" class="q-mb-md">
       <q-card flat bordered>
         <q-card-section class="row items-center">
@@ -398,7 +438,7 @@
         <q-card-section class="row q-col-gutter-sm">
           <q-input dense outlined clearable class="col-12 col-md-3" label="Pesquisar por nome" v-model="filtrosTiposServico.search" @keyup.enter="carregarTiposServico" />
           <q-select dense outlined clearable emit-value map-options class="col-12 col-md-3" label="Categoria" v-model="filtrosTiposServico.category" :options="serviceCategoryOptions" @input="carregarTiposServico" />
-          <q-select dense outlined clearable use-input new-value-mode="add-unique" class="col-12 col-md-3" label="Praga" v-model="filtrosTiposServico.pest" :options="pestOptions" @input="carregarTiposServico" />
+          <q-select dense outlined clearable emit-value map-options class="col-12 col-md-3" label="Praga" v-model="filtrosTiposServico.pest" :options="opcoesPragasNome" @input="carregarTiposServico" />
           <q-select dense outlined clearable emit-value map-options class="col-12 col-md-2" label="Ambiente" v-model="filtrosTiposServico.environment" :options="environmentOptions" @input="carregarTiposServico" />
           <q-btn flat color="primary" icon="mdi-magnify" class="col-12 col-md-auto" label="Filtrar" @click="carregarTiposServico" />
         </q-card-section>
@@ -421,7 +461,7 @@
           </template>
           <template v-slot:body-cell-pests="props">
             <q-td :props="props">
-              <span>{{ (props.row.pests || []).map(item => item.name).join(', ') || '-' }}</span>
+              <span>{{ (props.row.pests || []).map(item => rotuloPraga(item.pest)).filter(Boolean).join(', ') || '-' }}</span>
             </q-td>
           </template>
           <template v-slot:body-cell-actions="props">
@@ -860,11 +900,11 @@
               />
               <q-btn flat color="primary" icon="mdi-plus" label="Serviço" :disable="!servicoOrdemSelecionado" @click="adicionarServicoNaOrdem" />
               <q-select
-                dense outlined clearable use-input new-value-mode="add-unique"
+                dense outlined clearable emit-value map-options
                 class="col-12 col-md-2"
                 label="Praga"
                 v-model="form.pestTarget"
-                :options="pestOptions"
+                :options="opcoesPragasNome"
               />
               <q-select
                 dense outlined emit-value map-options clearable
@@ -893,7 +933,7 @@
                     <q-input dense borderless v-model="item.description" />
                     <div v-if="item.itemType === 'product'" class="row q-col-gutter-xs">
                       <q-select dense outlined clearable class="col-12 col-md-3" label="Lote" v-model="item.inventoryBatchId" emit-value map-options :options="opcoesLotesProdutoOrdem(item.inventoryItemId)" />
-                      <q-select dense outlined clearable use-input new-value-mode="add-unique" class="col-12 col-md-3" label="Praga tratada" v-model="item.pestTarget" :options="pestOptions" @input="aplicarRecomendacaoProduto(item)" />
+                      <q-select dense outlined clearable emit-value map-options class="col-12 col-md-3" label="Praga tratada" v-model="item.pestTarget" :options="opcoesPragasNome" @input="aplicarRecomendacaoProduto(item)" />
                       <q-select dense outlined clearable emit-value map-options class="col-12 col-md-3" label="Metodo" v-model="item.applicationMethod" :options="opcoesMetodosProdutoOrdem(item.inventoryItemId)" />
                       <q-input dense outlined class="col-12 col-md-3" label="Diluicao" v-model="item.dilutionUsed" />
                       <q-input dense outlined type="textarea" class="col-12" label="Observacoes tecnicas" v-model="item.technicalObservation" />
@@ -979,6 +1019,7 @@
           <q-toggle class="col-12 col-md-3" label="Exibir vencimento na OS" v-model="itemEstoque.showLotExpirationOnOrder" />
           <q-select dense outlined multiple emit-value map-options class="col-12 col-md-3" label="Diluentes" v-model="itemEstoque.diluentTypes" :options="diluentOptions" />
           <q-select dense outlined multiple emit-value map-options class="col-12 col-md-3" label="Metodos de aplicacao" v-model="itemEstoque.applicationMethods" :options="applicationMethodOptions" />
+          <q-select dense outlined multiple emit-value map-options class="col-12 col-md-6" label="Pragas atendidas" v-model="itemEstoque.pestIds" :options="opcoesPragas" />
           <q-toggle class="col-12 col-md-3" label="Exibir metodo na OS" v-model="itemEstoque.showApplicationMethodOnOrder" />
           <div class="col-12 q-mt-sm row items-center">
             <div class="text-subtitle2">Lotes</div>
@@ -1003,7 +1044,7 @@
           </div>
           <q-card v-for="(rec, index) in itemEstoque.pestRecommendations" :key="`rec-${index}`" flat bordered class="col-12">
             <q-card-section class="row q-col-gutter-sm">
-              <q-select dense outlined use-input new-value-mode="add-unique" class="col-12 col-md-3" label="Praga" v-model="rec.pest" :options="pestOptions" />
+              <q-select dense outlined emit-value map-options class="col-12 col-md-3" label="Praga" v-model="rec.pestId" :options="opcoesPragas" />
               <q-input dense outlined type="number" min="0" step="0.001" class="col-6 col-md-2" label="Qtd. produto" v-model.number="rec.productQuantity" />
               <q-input dense outlined type="number" min="0" step="0.001" class="col-6 col-md-2" label="Qtd. diluente" v-model.number="rec.diluentQuantity" />
               <q-input dense outlined class="col-6 col-md-2" label="Unidade" v-model="rec.unit" />
@@ -1039,16 +1080,8 @@
 
           <div class="col-12 q-mt-sm row items-center">
             <div class="text-subtitle2">Pragas atendidas</div>
-            <q-space />
-            <q-btn flat dense color="primary" icon="mdi-plus" label="Adicionar praga" @click="adicionarPragaServico" />
           </div>
-          <div v-for="(pest, index) in tipoServico.pests" :key="`service-pest-${index}`" class="col-12 row q-col-gutter-sm items-center">
-            <q-select dense outlined use-input new-value-mode="add-unique" class="col-12 col-md-3" label="Nome da praga" v-model="pest.name" :options="pestOptions" />
-            <q-input dense outlined class="col-12 col-md-3" label="Nome científico" v-model="pest.scientificName" />
-            <q-select dense outlined emit-value map-options class="col-12 col-md-3" label="Categoria" v-model="pest.category" :options="serviceCategoryOptions" />
-            <q-toggle class="col-6 col-md-2" label="Ativa" v-model="pest.active" />
-            <q-btn flat round color="negative" icon="mdi-delete" class="col-auto" @click="removerPragaServico(index)" />
-          </div>
+          <q-select dense outlined multiple emit-value map-options class="col-12" label="Pragas atendidas" v-model="tipoServico.pestIds" :options="opcoesPragas" />
 
           <div class="col-12 q-mt-sm text-subtitle2">Garantia</div>
           <q-toggle class="col-12 col-md-3" label="Possui garantia?" v-model="tipoServico.warranty.hasWarranty" />
@@ -1090,6 +1123,22 @@
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
           <q-btn unelevated label="Salvar" color="primary" :loading="salvando" @click="salvarTipoServico" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="modalPraga">
+      <q-card style="width: 520px; max-width: 95vw">
+        <q-card-section>
+          <div class="text-h6">{{ praga.id ? 'Editar praga' : 'Nova praga' }}</div>
+        </q-card-section>
+        <q-card-section class="row q-col-gutter-sm">
+          <q-input dense outlined class="col-12" label="Nome comum" v-model="praga.commonName" />
+          <q-input dense outlined class="col-12" label="Nome científico" v-model="praga.scientificName" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
+          <q-btn unelevated label="Salvar" color="primary" :loading="salvando" @click="salvarPraga" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -1172,6 +1221,10 @@ import {
   AlterarItemEstoqueServico,
   ExcluirItemEstoqueServico,
   AjustarItemEstoqueServico,
+  ListarPragasServico,
+  CriarPragaServico,
+  AlterarPragaServico,
+  ExcluirPragaServico,
   ListarTiposServico,
   CriarTipoServico,
   AlterarTipoServico,
@@ -1245,6 +1298,7 @@ const emptyInventoryItem = () => ({
   showLotExpirationOnOrder: true,
   diluentTypes: [],
   applicationMethods: [],
+  pestIds: [],
   showApplicationMethodOnOrder: true,
   batches: [],
   pestRecommendations: [],
@@ -1269,7 +1323,7 @@ const emptyServiceType = () => ({
   description: '',
   technicalDescription: '',
   categories: [],
-  pests: [],
+  pestIds: [],
   environments: [],
   methods: [],
   products: [],
@@ -1305,12 +1359,14 @@ export default {
       modalEstoque: false,
       modalAjusteEstoque: false,
       modalTipoServico: false,
+      modalPraga: false,
       modalNotificacao: false,
       modalCliente: false,
       selectedContactId: null,
       form: emptyForm(),
       atendente: { active: true },
       itemEstoque: emptyInventoryItem(),
+      praga: { commonName: '', scientificName: '' },
       ajusteEstoque: { item: null, movementType: 'entry', quantity: 0, observation: '' },
       tipoServico: emptyServiceType(),
       filtrosTiposServico: {
@@ -1325,6 +1381,8 @@ export default {
       ordens: [],
       atendentes: [],
       estoque: [],
+      pragas: [],
+      filtroPragas: '',
       baixoEstoque: [],
       filtrarEstoqueBaixo: false,
       filtroEstoqueTexto: '',
@@ -1464,7 +1522,6 @@ export default {
         { label: 'Meses', value: 'meses' },
         { label: 'Anos', value: 'anos' }
       ],
-      pestOptions: ['Baratas', 'Formigas', 'Cupins', 'Ratos', 'Camundongos', 'Mosquitos', 'Escorpioes', 'Pulgas', 'Carrapatos', 'Pombos', 'Aranhas', 'Outros'],
       movementOptions: [
         { label: 'Entrada', value: 'entry' },
         { label: 'Saída', value: 'exit' },
@@ -1480,6 +1537,12 @@ export default {
         { name: 'batchStatus', label: 'Lotes', field: 'batchStatus', align: 'left' },
         { name: 'salePrice', label: 'Preço venda', field: row => this.formatarMoeda(row.salePrice), align: 'right', sortable: true },
         { name: 'active', label: 'Status', field: 'active', align: 'center' },
+        { name: 'actions', label: '', field: 'actions', align: 'right' }
+      ],
+      colunasPragas: [
+        { name: 'display', label: 'Praga', field: 'display', align: 'left', sortable: true },
+        { name: 'commonName', label: 'Nome comum', field: 'commonName', align: 'left', sortable: true },
+        { name: 'scientificName', label: 'Nome científico', field: 'scientificName', align: 'left', sortable: true },
         { name: 'actions', label: '', field: 'actions', align: 'right' }
       ],
       colunasMovimentacoesEstoque: [
@@ -1557,12 +1620,23 @@ export default {
         .filter(item => item.active)
         .map(item => ({ label: item.name, value: item.id }))
     },
+    opcoesPragas () {
+      return this.pragas.map(item => ({
+        label: this.rotuloPraga(item),
+        value: item.id
+      }))
+    },
+    opcoesPragasNome () {
+      return this.pragas.map(item => ({
+        label: this.rotuloPraga(item),
+        value: item.commonName
+      }))
+    },
     opcoesFabricantesEstoque () {
       return [...new Set(this.estoque.map(item => item.manufacturer).filter(Boolean))]
     },
     opcoesPragasEstoque () {
-      const pragas = this.estoque.flatMap(item => (item.pestRecommendations || []).map(rec => rec.pest))
-      return [...new Set(pragas.filter(Boolean))]
+      return this.opcoesPragasNome
     },
     estoqueFiltrado () {
       let rows = this.estoque
@@ -1701,6 +1775,7 @@ export default {
         this.carregarAuditoriaEstoque(),
         this.carregarAuditoriaFinanceira(),
         this.carregarAuditoriaServicos(),
+        this.carregarPragas(),
         this.carregarTiposServico(),
         this.carregarOrdens(),
         this.carregarDashboard(),
@@ -1718,6 +1793,10 @@ export default {
     async carregarEstoqueBaixo () {
       const { data } = await ListarEstoqueBaixoServico()
       this.baixoEstoque = data
+    },
+    async carregarPragas () {
+      const { data } = await ListarPragasServico({ search: this.filtroPragas })
+      this.pragas = data
     },
     async carregarMovimentacoesEstoque () {
       const { data } = await ListarMovimentacoesEstoqueServico()
@@ -1834,6 +1913,7 @@ export default {
       return emptyInventoryItem()
     },
     normalizarItemEstoqueFormulario (item) {
+      const pestIds = item.pestIds || (item.productPests || []).map(productPest => productPest.pestId)
       return {
         ...this.criarItemEstoqueVazio(),
         ...item,
@@ -1846,7 +1926,11 @@ export default {
         diluentTypes: item.diluentTypes || [],
         applicationMethods: item.applicationMethods || [],
         batches: item.batches || [],
-        pestRecommendations: item.pestRecommendations || [],
+        pestIds,
+        pestRecommendations: (item.pestRecommendations || []).map(rec => ({
+          ...rec,
+          pestId: rec.pestId || rec.pest?.id || null
+        })),
         printSettings: {
           ...this.criarItemEstoqueVazio().printSettings,
           ...(item.printSettings || {})
@@ -1888,7 +1972,7 @@ export default {
     },
     adicionarRecomendacaoEstoque () {
       this.itemEstoque.pestRecommendations.push({
-        pest: '',
+        pestId: null,
         productQuantity: 0,
         diluentQuantity: 0,
         unit: this.itemEstoque.unit || 'ml',
@@ -1913,6 +1997,45 @@ export default {
         this.$notificarErro('Não foi possível salvar o produto', error)
       } finally {
         this.salvando = false
+      }
+    },
+    abrirPraga (praga) {
+      this.praga = praga ? { ...praga } : { commonName: '', scientificName: '' }
+      this.modalPraga = true
+    },
+    async salvarPraga () {
+      this.salvando = true
+      try {
+        const payload = {
+          commonName: this.praga.commonName,
+          scientificName: this.praga.scientificName
+        }
+        if (this.praga.id) await AlterarPragaServico({ id: this.praga.id, ...payload })
+        else await CriarPragaServico(payload)
+        this.$q.notify({ type: 'positive', message: 'Praga salva.' })
+        this.modalPraga = false
+        await Promise.all([this.carregarPragas(), this.carregarEstoque(), this.carregarTiposServico()])
+      } catch (error) {
+        this.$notificarErro('Não foi possível salvar a praga', error)
+      } finally {
+        this.salvando = false
+      }
+    },
+    confirmarExcluirPraga (praga) {
+      this.$q.dialog({
+        title: 'Excluir praga',
+        message: `Confirma excluir ${this.rotuloPraga(praga)}?`,
+        cancel: true,
+        persistent: true
+      }).onOk(() => this.excluirPraga(praga))
+    },
+    async excluirPraga (praga) {
+      try {
+        await ExcluirPragaServico(praga.id)
+        this.$q.notify({ type: 'positive', message: 'Praga excluída.' })
+        await Promise.all([this.carregarPragas(), this.carregarEstoque(), this.carregarTiposServico()])
+      } catch (error) {
+        this.$notificarErro('Não foi possível excluir a praga', error)
       }
     },
     confirmarExcluirEstoque (item) {
@@ -1977,7 +2100,7 @@ export default {
         ...tipo,
         defaultPrice: this.formatarMoedaCampo(tipo.defaultPrice),
         categories: tipo.categories || [],
-        pests: tipo.pests || [],
+        pestIds: (tipo.pests || []).map(item => item.pestId || item.pest?.id).filter(Boolean),
         environments: (tipo.environments || []).map(item => item.environment),
         methods: (tipo.methods || []).map(item => item.method),
         products: (tipo.products || []).map(item => ({
@@ -2035,12 +2158,6 @@ export default {
       } catch (error) {
         this.$notificarErro('Não foi possível duplicar o serviço', error)
       }
-    },
-    adicionarPragaServico () {
-      this.tipoServico.pests.push({ name: '', scientificName: '', category: '', active: true })
-    },
-    removerPragaServico (index) {
-      this.tipoServico.pests.splice(index, 1)
     },
     adicionarProdutoServico () {
       this.tipoServico.products.push({ inventoryItemId: null, averageConsumption: 0 })
@@ -2266,6 +2383,7 @@ export default {
         salePrice: this.parseMoeda(item.salePrice),
         diluentTypes: item.diluentTypes || [],
         applicationMethods: item.applicationMethods || [],
+        pestIds: item.pestIds || [],
         batches: (item.batches || [])
           .filter(lote => lote.batchNumber)
           .map(lote => ({
@@ -2273,9 +2391,10 @@ export default {
             quantity: this.parseInteiro(lote.quantity)
           })),
         pestRecommendations: (item.pestRecommendations || [])
-          .filter(rec => rec.pest)
+          .filter(rec => rec.pestId)
           .map(rec => ({
             ...rec,
+            pestId: rec.pestId,
             productQuantity: this.parseMoeda(rec.productQuantity),
             diluentQuantity: this.parseMoeda(rec.diluentQuantity)
           })),
@@ -2287,7 +2406,7 @@ export default {
         ...tipo,
         defaultPrice: this.parseMoeda(tipo.defaultPrice),
         categories: tipo.categories || [],
-        pests: (tipo.pests || []).filter(pest => pest.name),
+        pests: (tipo.pestIds || []).map(pestId => ({ pestId })),
         environments: tipo.environments || [],
         methods: tipo.methods || [],
         products: (tipo.products || [])
@@ -2304,6 +2423,10 @@ export default {
     rotuloOpcao (options, value) {
       const option = options.find(item => item.value === value)
       return option ? option.label : value
+    },
+    rotuloPraga (pest) {
+      if (!pest) return ''
+      return [pest.commonName, pest.scientificName].filter(Boolean).join(' — ')
     },
     textoGarantiaServico (serviceType) {
       const warranty = (serviceType.warranties || [])[0]
@@ -2338,8 +2461,8 @@ export default {
       if (warrantyText && !String(this.form.publicObservation || '').includes(warrantyText)) {
         this.form.publicObservation = [this.form.publicObservation, warrantyText].filter(Boolean).join('\n\n')
       }
-      const activePests = (serviceType.pests || []).filter(pest => pest.active !== false)
-      if (!this.form.pestTarget && activePests.length) this.form.pestTarget = activePests[0].name
+      const servicePests = (serviceType.pests || []).map(item => item.pest).filter(Boolean)
+      if (!this.form.pestTarget && servicePests.length) this.form.pestTarget = servicePests[0].commonName
       this.form.items.push(this.criarItemOrdemBase({
         itemType: 'service',
         serviceTypeId: serviceType.id,
@@ -2367,10 +2490,18 @@ export default {
     },
     produtoRecomendadoParaPraga (product, pest) {
       if (!pest) return true
-      return (product.pestRecommendations || []).some(rec => String(rec.pest || '').toLowerCase() === String(pest).toLowerCase())
+      const normalizedPest = String(pest).toLowerCase()
+      return (product.productPests || []).some(item =>
+        String(item.pest?.commonName || '').toLowerCase() === normalizedPest
+      ) || (product.pestRecommendations || []).some(rec =>
+        String(rec.pest?.commonName || '').toLowerCase() === normalizedPest
+      )
     },
     recomendacaoProdutoPorPraga (product, pest) {
-      return (product?.pestRecommendations || []).find(rec => String(rec.pest || '').toLowerCase() === String(pest || '').toLowerCase())
+      const normalizedPest = String(pest || '').toLowerCase()
+      return (product?.pestRecommendations || []).find(rec =>
+        String(rec.pest?.commonName || '').toLowerCase() === normalizedPest
+      )
     },
     opcoesLotesProdutoOrdem (inventoryItemId) {
       const product = this.estoque.find(item => item.id === inventoryItemId)

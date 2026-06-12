@@ -7,15 +7,14 @@ import {
   PrimaryKey,
   AutoIncrement,
   ForeignKey,
-  BelongsTo,
-  DataType
+  BelongsTo
 } from "sequelize-typescript";
-import ServiceInventoryItem from "./ServiceInventoryItem";
 import Pest from "./Pest";
+import ServiceInventoryItem from "./ServiceInventoryItem";
 import Tenant from "./Tenant";
 
 @Table
-class ServiceInventoryPestRecommendation extends Model<ServiceInventoryPestRecommendation> {
+class ProductPest extends Model<ProductPest> {
   @PrimaryKey
   @AutoIncrement
   @Column
@@ -30,10 +29,10 @@ class ServiceInventoryPestRecommendation extends Model<ServiceInventoryPestRecom
 
   @ForeignKey(() => ServiceInventoryItem)
   @Column
-  inventoryItemId: number;
+  productId: number;
 
   @BelongsTo(() => ServiceInventoryItem)
-  inventoryItem: ServiceInventoryItem;
+  product: ServiceInventoryItem;
 
   @ForeignKey(() => Pest)
   @Column
@@ -42,21 +41,6 @@ class ServiceInventoryPestRecommendation extends Model<ServiceInventoryPestRecom
   @BelongsTo(() => Pest)
   pest: Pest;
 
-  @Column(DataType.DECIMAL(12, 3))
-  productQuantity: number;
-
-  @Column(DataType.DECIMAL(12, 3))
-  diluentQuantity: number;
-
-  @Column
-  unit: string;
-
-  @Column
-  actionTime: string;
-
-  @Column(DataType.TEXT)
-  technicalObservation: string;
-
   @CreatedAt
   createdAt: Date;
 
@@ -64,4 +48,4 @@ class ServiceInventoryPestRecommendation extends Model<ServiceInventoryPestRecom
   updatedAt: Date;
 }
 
-export default ServiceInventoryPestRecommendation;
+export default ProductPest;

@@ -11,6 +11,8 @@ import sequelize from "../../database";
 import AppError from "../../errors/AppError";
 import Contact from "../../models/Contact";
 import CustomerAddress from "../../models/CustomerAddress";
+import Pest from "../../models/Pest";
+import ProductPest from "../../models/ProductPest";
 import ServiceAttendant from "../../models/ServiceAttendant";
 import ServiceInventoryBatch from "../../models/ServiceInventoryBatch";
 import ServiceInventoryMovement from "../../models/ServiceInventoryMovement";
@@ -143,7 +145,7 @@ export interface ServiceInventoryBatchData {
 
 export interface ServiceInventoryPestRecommendationData {
   id?: number;
-  pest: string;
+  pestId: number;
   productQuantity?: number | null;
   diluentQuantity?: number | null;
   unit?: string | null;
@@ -176,6 +178,7 @@ export interface ServiceInventoryItemData {
   printSettings?: Record<string, boolean>;
   batches?: ServiceInventoryBatchData[];
   pestRecommendations?: ServiceInventoryPestRecommendationData[];
+  pestIds?: number[];
   active?: boolean;
 }
 
@@ -194,11 +197,7 @@ export interface ServiceTypeData {
   defaultPrice?: number | null;
   categories?: string[];
   pests?: {
-    id?: number;
-    name: string;
-    scientificName?: string | null;
-    category?: string | null;
-    active?: boolean;
+    pestId: number;
   }[];
   environments?: string[];
   methods?: string[];
@@ -223,6 +222,11 @@ export interface ServiceTypeData {
   customerRecommendations?: string | null;
   internalObservation?: string | null;
   active?: boolean;
+}
+
+export interface PestData {
+  commonName: string;
+  scientificName: string;
 }
 
 const relevantStatuses = ["agendada", "em_atendimento", "reagendada"];
@@ -1054,7 +1058,7 @@ const buildPestRecommendationPayload = (
 ): Record<string, unknown> => ({
   tenantId,
   inventoryItemId,
-  pest: cleanText(data.pest),
+  pestId: Number(data.pestId),
   productQuantity: normalizeNumber(data.productQuantity),
   diluentQuantity: normalizeNumber(data.diluentQuantity),
   unit: cleanText(data.unit),
@@ -1076,6 +1080,10 @@ const replaceInventoryChildren = async (
     where: { tenantId, inventoryItemId },
     transaction
   });
+  await ProductPest.destroy({
+    where: { tenantId, productId: inventoryItemId },
+    transaction
+  });
 
   const batches = (data.batches || []).filter(batch =>
     Boolean(cleanText(batch.batchNumber))
@@ -1087,8 +1095,34 @@ const replaceInventoryChildren = async (
     );
   }
 
+  const pestIds = [
+    ...new Set(
+      [
+        ...(data.pestIds || []).map(Number),
+        ...(data.pestRecommendations || []).map(item => Number(item.pestId))
+      ].filter(Boolean)
+    )
+  ];
+  if (pestIds.length) {
+    const foundPests = await Pest.count({
+      where: { tenantId, id: { [Op.in]: pestIds } },
+      transaction
+    });
+    if (foundPests !== pestIds.length) {
+      throw new AppError("ERR_PEST_NOT_FOUND", 404);
+    }
+    await ProductPest.bulkCreate(
+      pestIds.map(pestId => ({
+        tenantId,
+        productId: inventoryItemId,
+        pestId
+      })),
+      { transaction }
+    );
+  }
+
   const recommendations = (data.pestRecommendations || []).filter(item =>
-    Boolean(cleanText(item.pest))
+    Boolean(item.pestId)
   );
   if (recommendations.length) {
     await ServiceInventoryPestRecommendation.bulkCreate(
@@ -1102,7 +1136,8 @@ const replaceInventoryChildren = async (
 
 const inventoryInclude = [
   { model: ServiceInventoryBatch },
-  { model: ServiceInventoryPestRecommendation }
+  { model: ProductPest, include: [{ model: Pest }] },
+  { model: ServiceInventoryPestRecommendation, include: [{ model: Pest }] }
 ];
 
 export const listInventoryItems = async (
@@ -1430,6 +1465,87 @@ export const adjustInventoryItem = async (
     }
   );
 
+const buildPestPayload = (
+  tenantId: string | number,
+  data: PestData
+): Record<string, unknown> => ({
+  tenantId,
+  commonName: cleanText(data.commonName),
+  scientificName: cleanText(data.scientificName)
+});
+
+const ensureUniquePest = async (
+  tenantId: string | number,
+  data: PestData,
+  pestId?: string
+): Promise<void> => {
+  const commonName = cleanText(data.commonName) || "";
+  const scientificName = cleanText(data.scientificName) || "";
+  const existing = await Pest.findOne({
+    where: {
+      tenantId,
+      ...(pestId ? { id: { [Op.ne]: pestId } } : {}),
+      [Op.or]: [
+        { commonName: { [Op.iLike]: commonName } },
+        { scientificName: { [Op.iLike]: scientificName } }
+      ]
+    }
+  });
+  if (existing) {
+    throw new AppError("ERR_PEST_ALREADY_EXISTS", 409);
+  }
+};
+
+export const listPests = async (
+  tenantId: string | number,
+  filters: LegacyAny = {}
+): Promise<Pest[]> => {
+  const search = cleanText(filters.search);
+  return Pest.findAll({
+    where: {
+      tenantId,
+      ...(search
+        ? {
+            [Op.or]: [
+              { commonName: { [Op.iLike]: `%${search}%` } },
+              { scientificName: { [Op.iLike]: `%${search}%` } }
+            ]
+          }
+        : {})
+    },
+    order: [["commonName", "ASC"]]
+  });
+};
+
+export const createPest = async (
+  tenantId: string | number,
+  data: PestData
+): Promise<Pest> => {
+  await ensureUniquePest(tenantId, data);
+  return Pest.create(buildPestPayload(tenantId, data));
+};
+
+export const updatePest = async (
+  tenantId: string | number,
+  pestId: string,
+  data: PestData
+): Promise<Pest> => {
+  const pest = await Pest.findOne({ where: { id: pestId, tenantId } });
+  if (!pest) throw new AppError("ERR_PEST_NOT_FOUND", 404);
+  await ensureUniquePest(tenantId, data, pestId);
+  await pest.update(buildPestPayload(tenantId, data));
+  return pest;
+};
+
+export const deletePest = async (
+  tenantId: string | number,
+  pestId: string
+): Promise<void> => {
+  const pest = await Pest.findOne({ where: { id: pestId, tenantId } });
+  if (!pest) throw new AppError("ERR_PEST_NOT_FOUND", 404);
+  await pest.destroy();
+};
+
 const buildServiceTypePayload = (
   tenantId: string | number,
   data: ServiceTypeData,
@@ -1457,7 +1573,7 @@ const buildServiceTypePayload = (
 });
 
 const serviceTypeInclude = [
-  { model: ServicePest },
+  { model: ServicePest, include: [{ model: Pest }] },
   { model: ServiceEnvironment },
   { model: ServiceMethod },
   {
@@ -1492,18 +1608,24 @@ const replaceServiceTypeChildren = async (
     ServiceWarranty.destroy({ where: { tenantId, serviceTypeId }, transaction })
   ]);
 
-  const pests = (data.pests || []).filter(item =>
-    Boolean(cleanText(item.name))
-  );
-  if (pests.length) {
+  const pestIds = [
+    ...new Set(
+      (data.pests || []).map(item => Number(item.pestId)).filter(Boolean)
+    )
+  ];
+  if (pestIds.length) {
+    const foundPests = await Pest.count({
+      where: { tenantId, id: { [Op.in]: pestIds } },
+      transaction
+    });
+    if (foundPests !== pestIds.length) {
+      throw new AppError("ERR_PEST_NOT_FOUND", 404);
+    }
     await ServicePest.bulkCreate(
-      pests.map(item => ({
+      pestIds.map(pestId => ({
         tenantId,
         serviceTypeId,
-        name: cleanText(item.name),
-        scientificName: cleanText(item.scientificName),
-        category: cleanText(item.category),
-        active: item.active !== false
+        pestId
       })),
       { transaction }
     );
@@ -1606,9 +1728,19 @@ export const listServiceTypes = async (
     filters.pest
       ? {
           model: ServicePest,
-          where: { name: { [Op.iLike]: `%${filters.pest}%` } }
+          include: [
+            {
+              model: Pest,
+              where: {
+                [Op.or]: [
+                  { commonName: { [Op.iLike]: `%${filters.pest}%` } },
+                  { scientificName: { [Op.iLike]: `%${filters.pest}%` } }
+                ]
+              }
+            }
+          ]
         }
-      : { model: ServicePest }
+      : { model: ServicePest, include: [{ model: Pest }] }
   );
 
   return ServiceType.findAll({
@@ -1711,6 +1843,9 @@ export const duplicateServiceType = async (
     products: (source.products || []).map((item: LegacyAny) => ({
       inventoryItemId: item.inventoryItemId,
       averageConsumption: item.averageConsumption
+    })),
+    pests: (source.pests || []).map((item: LegacyAny) => ({
+      pestId: item.pestId
     })),
     environments: (source.environments || []).map(
       (item: LegacyAny) => item.environment

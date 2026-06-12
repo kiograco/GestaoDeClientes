@@ -18,6 +18,11 @@ export const AlterarItemEstoqueServico = data => request({ url: `/service/invent
 export const ExcluirItemEstoqueServico = id => request({ url: `/service/inventory/${id}`, method: 'delete' })
 export const AjustarItemEstoqueServico = (id, data) => request({ url: `/service/inventory/${id}/adjust`, method: 'post', data })
 
+export const ListarPragasServico = params => request({ url: '/service/pests', method: 'get', params })
+export const CriarPragaServico = data => request({ url: '/service/pests', method: 'post', data })
+export const AlterarPragaServico = data => request({ url: `/service/pests/${data.id}`, method: 'put', data })
+export const ExcluirPragaServico = id => request({ url: `/service/pests/${id}`, method: 'delete' })
+
 export const ListarTiposServico = params => request({ url: '/service/types', method: 'get', params })
 export const CriarTipoServico = data => request({ url: '/service/types', method: 'post', data })
 export const AlterarTipoServico = data => request({ url: `/service/types/${data.id}`, method: 'put', data })

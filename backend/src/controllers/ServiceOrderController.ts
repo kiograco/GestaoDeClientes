@@ -89,7 +89,7 @@ const inventoryItemSchema = Yup.object().shape({
   ),
   pestRecommendations: Yup.array().of(
     Yup.object().shape({
-      pest: Yup.string().trim().required(),
+      pestId: Yup.number().integer().positive().required(),
       productQuantity: Yup.number().min(0).nullable(),
       diluentQuantity: Yup.number().min(0).nullable(),
       unit: nullableString,
@@ -97,6 +97,7 @@ const inventoryItemSchema = Yup.object().shape({
       technicalObservation: nullableString
     })
   ),
+  pestIds: Yup.array().of(Yup.number().integer().positive()),
   active: Yup.boolean()
 });
 
@@ -115,10 +116,7 @@ const serviceTypeSchema = Yup.object().shape({
   categories: Yup.array().of(Yup.string().trim()),
   pests: Yup.array().of(
     Yup.object().shape({
-      name: Yup.string().trim().required(),
-      scientificName: nullableString,
-      category: nullableString,
-      active: Yup.boolean()
+      pestId: Yup.number().integer().positive().required()
     })
   ),
   environments: Yup.array().of(Yup.string().trim()),
@@ -147,6 +145,11 @@ const serviceTypeSchema = Yup.object().shape({
   customerRecommendations: nullableString,
   internalObservation: nullableString,
   active: Yup.boolean()
+});
+
+const pestSchema = Yup.object().shape({
+  commonName: Yup.string().trim().required().min(2),
+  scientificName: Yup.string().trim().required().min(2)
 });
 
 const orderItemSchema = Yup.object().shape({
@@ -679,6 +682,45 @@ export const adjustInventoryItem = async (
     );
     throw error;
   }
+};
+
+export const listPests = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(await ServiceOrder.listPests(req.user.tenantId, req.query));
+
+export const createPest = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res
+    .status(201)
+    .json(
+      await ServiceOrder.createPest(
+        req.user.tenantId,
+        await validate<ServiceOrder.PestData>(pestSchema, req.body)
+      )
+    );
+
+export const updatePest = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await ServiceOrder.updatePest(
+      req.user.tenantId,
+      req.params.pestId,
+      await validate<ServiceOrder.PestData>(pestSchema, req.body)
+    )
+  );
+
+export const deletePest = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  await ServiceOrder.deletePest(req.user.tenantId, req.params.pestId);
+  return res.status(204).send();
 };
 
 export const listServiceTypes = async (

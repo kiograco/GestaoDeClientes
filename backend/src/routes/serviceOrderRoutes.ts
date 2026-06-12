@@ -85,6 +85,26 @@ serviceOrderRoutes.post(
   ServiceOrderController.adjustInventoryItem
 );
 serviceOrderRoutes.get(
+  "/service/pests",
+  isAuth,
+  ServiceOrderController.listPests
+);
+serviceOrderRoutes.post(
+  "/service/pests",
+  isAuth,
+  ServiceOrderController.createPest
+);
+serviceOrderRoutes.put(
+  "/service/pests/:pestId",
+  isAuth,
+  ServiceOrderController.updatePest
+);
+serviceOrderRoutes.delete(
+  "/service/pests/:pestId",
+  isAuth,
+  ServiceOrderController.deletePest
+);
+serviceOrderRoutes.get(
   "/service/types",
   isAuth,
   ServiceOrderController.listServiceTypes

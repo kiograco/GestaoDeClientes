@@ -7,14 +7,15 @@ import {
   PrimaryKey,
   AutoIncrement,
   ForeignKey,
-  BelongsTo
+  BelongsTo,
+  HasMany
 } from "sequelize-typescript";
-import Pest from "./Pest";
-import ServiceType from "./ServiceType";
+import ProductPest from "./ProductPest";
+import ServicePest from "./ServicePest";
 import Tenant from "./Tenant";
 
 @Table
-class ServicePest extends Model<ServicePest> {
+class Pest extends Model<Pest> {
   @PrimaryKey
   @AutoIncrement
   @Column
@@ -27,19 +28,17 @@ class ServicePest extends Model<ServicePest> {
   @BelongsTo(() => Tenant)
   tenant: Tenant;
 
-  @ForeignKey(() => ServiceType)
   @Column
-  serviceTypeId: number;
+  commonName: string;
 
-  @BelongsTo(() => ServiceType)
-  serviceType: ServiceType;
-
-  @ForeignKey(() => Pest)
   @Column
-  pestId: number;
+  scientificName: string;
 
-  @BelongsTo(() => Pest)
-  pest: Pest;
+  @HasMany(() => ProductPest)
+  productPests: ProductPest[];
+
+  @HasMany(() => ServicePest)
+  servicePests: ServicePest[];
 
   @CreatedAt
   createdAt: Date;
@@ -48,4 +47,4 @@ class ServicePest extends Model<ServicePest> {
   updatedAt: Date;
 }
 
-export default ServicePest;
+export default Pest;
