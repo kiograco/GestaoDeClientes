@@ -284,11 +284,22 @@
           padding
           :key="userProfile"
         >
-          <EssentialLink
-            v-for="item in menuData"
-            :key="item.title"
-            v-bind="item"
-          />
+          <template v-for="group in menuData">
+            <div :key="group.title">
+              <q-item-label
+                v-show="!miniState"
+                header
+                class="app-nav-group"
+              >
+                {{ group.title }}
+              </q-item-label>
+              <EssentialLink
+                v-for="item in group.items"
+                :key="item.title"
+                v-bind="item"
+              />
+            </div>
+          </template>
           <div v-if="userProfile === 'admin'">
             <q-separator spaced />
             <template v-for="group in menuDataAdmin">
@@ -495,6 +506,24 @@ const objMenu = [
   }
 ]
 
+const objMenuGroups = [
+  {
+    title: 'Conta',
+    routes: ['minha-assinatura']
+  },
+  {
+    title: 'CRM',
+    routes: ['home-dashboard', 'clientes', 'contatos', 'pipeline-vendas']
+  },
+  {
+    title: 'Atendimento',
+    routes: ['atendimento', 'ordens-servico']
+  }
+].map(group => ({
+  title: group.title,
+  items: group.routes.map(routeName => objMenu.find(item => item.routeName === routeName)).filter(Boolean)
+}))
+
 const objMenuAdmin = [
   {
     title: 'Canais',
@@ -593,24 +622,28 @@ const objMenuAdmin = [
 
 const objMenuAdminGroups = [
   {
-    title: 'Operação',
-    routes: ['painel-atendimentos', 'delivery-pedidos', 'relatorios', 'horarioAtendimento']
+    title: 'Atendimento',
+    routes: ['sessoes', 'painel-atendimentos', 'filas', 'horarioAtendimento']
   },
   {
-    title: 'Automação',
+    title: 'Marketing',
     routes: ['mensagens-rapidas', 'chat-flow', 'campanhas']
   },
   {
-    title: 'Cadastros',
-    routes: ['usuarios', 'filas', 'etiquetas', 'delivery-catalogo', 'delivery-zonas', 'configuracoes']
+    title: 'Delivery',
+    routes: ['delivery-catalogo', 'delivery-pedidos', 'delivery-zonas']
   },
   {
-    title: 'Integrações',
-    routes: ['sessoes', 'api-service']
+    title: 'Relatórios',
+    routes: ['relatorios']
+  },
+  {
+    title: 'Configurações',
+    routes: ['usuarios', 'etiquetas', 'configuracoes', 'api-service']
   }
 ].map(group => ({
   title: group.title,
-  items: group.routes.map(routeName => objMenuAdmin.find(item => item.routeName === routeName))
+  items: group.routes.map(routeName => objMenuAdmin.find(item => item.routeName === routeName)).filter(Boolean)
 }))
 
 export default {
@@ -633,7 +666,7 @@ export default {
       usuario: {},
       alertSound,
       leftDrawerOpen: false,
-      menuData: objMenu,
+      menuData: objMenuGroups,
       menuDataAdmin: objMenuAdminGroups,
       countTickets: 0,
       ticketsList: []

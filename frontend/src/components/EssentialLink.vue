@@ -7,6 +7,7 @@
     @click=" () => !(routeName == cRouterName) ? $router.push({ name: routeName }) : ''"
     class="app-menu-link"
     :class="{'text-negative text-bolder': color === 'negative'}"
+    :aria-label="title"
   >
     <q-item-section
       v-if="icon"
@@ -24,6 +25,10 @@
         {{ caption }}
       </q-item-label>
     </q-item-section>
+    <q-tooltip anchor="center right" self="center left">
+      <div class="text-weight-medium">{{ title }}</div>
+      <div v-if="caption" class="text-caption">{{ caption }}</div>
+    </q-tooltip>
   </q-item>
 </template>
 

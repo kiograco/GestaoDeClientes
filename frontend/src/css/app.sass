@@ -6,27 +6,27 @@
   font-family: 'Inter', 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif
 
 :root
-  --color-primary-50: #eff6ff
-  --color-primary-100: #dbeafe
-  --color-primary-200: #bfdbfe
-  --color-primary-300: #93c5fd
-  --color-primary-400: #60a5fa
-  --color-primary-500: #2563eb
-  --color-primary-600: #1d4ed8
-  --color-primary-700: #1e40af
-  --color-primary-800: #1e3a8a
-  --color-primary-900: #172554
-  --color-secondary-50: #ecfeff
-  --color-secondary-500: #06b6d4
-  --color-secondary-700: #0e7490
-  --color-success-50: #ecfdf5
-  --color-success-600: #059669
-  --color-success-700: #047857
+  --color-primary-50: #f0fdf4
+  --color-primary-100: #dcfce7
+  --color-primary-200: #bbf7d0
+  --color-primary-300: #86efac
+  --color-primary-400: #4ade80
+  --color-primary-500: #22c55e
+  --color-primary-600: #16a34a
+  --color-primary-700: #15803d
+  --color-primary-800: #166534
+  --color-primary-900: #14532d
+  --color-secondary-50: #f0f9ff
+  --color-secondary-500: #0ea5e9
+  --color-secondary-700: #0369a1
+  --color-success-50: #f0fdf4
+  --color-success-600: #22c55e
+  --color-success-700: #15803d
   --color-warning-50: #fffbeb
   --color-warning-600: #d97706
   --color-warning-700: #b45309
   --color-error-50: #fef2f2
-  --color-error-600: #dc2626
+  --color-error-600: #ef4444
   --color-error-700: #b91c1c
   --color-neutral-50: #f8fafc
   --color-neutral-100: #f1f5f9
@@ -43,14 +43,25 @@
   --surface-muted: #f1f5f9
   --border: #e2e8f0
   --text-primary: #0f172a
-  --text-secondary: #475569
+  --text-secondary: #64748b
   --text-muted: #64748b
-  --radius-sm: 6px
-  --radius-md: 8px
-  --radius-lg: 12px
-  --shadow-xs: 0 1px 2px rgba(15, 23, 42, .05)
-  --shadow-sm: 0 4px 12px rgba(15, 23, 42, .08)
-  --shadow-md: 0 12px 24px rgba(15, 23, 42, .12)
+  --radius-xs: 6px
+  --radius-sm: 8px
+  --radius-md: 12px
+  --radius-lg: 16px
+  --radius-xl: 20px
+  --space-1: 8px
+  --space-2: 16px
+  --space-3: 24px
+  --space-4: 32px
+  --space-5: 48px
+  --space-6: 64px
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, .04)
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, .06)
+  --shadow-md: 0 10px 30px rgba(15, 23, 42, .12)
+  --shadow-focus: 0 0 0 3px rgba(22, 163, 74, .18)
+  --transition-fast: 150ms ease
+  --transition-base: 220ms ease
 
 body
   color: var(--text-secondary)
@@ -61,6 +72,7 @@ body
   -webkit-tap-highlight-color: rgba(0,0,0,0)
   box-sizing: border-box
   -webkit-text-size-adjust: 100%
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11"
 
 h1, h2, h3, h4, h5, h6,
 .h1, .h2, .h3, .h4, .h5, .h6
@@ -68,6 +80,31 @@ h1, h2, h3, h4, h5, h6,
   font-weight: $headings-font-weight
   line-height: $headings-line-height
   color: var(--text-primary)
+  letter-spacing: 0
+
+h1, .text-h1
+  font-size: 32px
+  line-height: 40px
+
+h2, .text-h2
+  font-size: 28px
+  line-height: 36px
+
+h3, .text-h3
+  font-size: 24px
+  line-height: 32px
+
+h4, .text-h4
+  font-size: 20px
+  line-height: 28px
+
+.text-body1
+  font-size: 15px
+  line-height: 24px
+
+.text-caption
+  font-size: 12px
+  line-height: 18px
 
 .body--dark
   --app-bg: #020617
@@ -86,6 +123,7 @@ h1, h2, h3, h4, h5, h6,
   color: var(--text-primary) !important
   border-bottom: 1px solid var(--border) !important
   backdrop-filter: blur(14px)
+  box-shadow: 0 1px 0 rgba(15, 23, 42, .04)
 
 .body--dark .app-shell-header
   background: rgba(15, 23, 42, .92) !important
@@ -94,9 +132,10 @@ h1, h2, h3, h4, h5, h6,
   background: var(--surface) !important
   color: var(--text-secondary) !important
   border-right: 1px solid var(--border) !important
+  box-shadow: 8px 0 24px rgba(15, 23, 42, .04)
 
 .app-page
-  padding: 24px
+  padding: var(--space-3)
   max-width: 100%
 
 .app-page-header
@@ -109,8 +148,8 @@ h1, h2, h3, h4, h5, h6,
 .app-page-title
   margin: 0
   color: var(--text-primary)
-  font-size: 28px
-  line-height: 36px
+  font-size: 30px
+  line-height: 38px
   font-weight: 750
   letter-spacing: 0
 
@@ -123,8 +162,12 @@ h1, h2, h3, h4, h5, h6,
 .app-card
   background: var(--surface) !important
   border: 1px solid var(--border) !important
-  border-radius: var(--radius-md) !important
-  box-shadow: var(--shadow-xs) !important
+  border-radius: var(--radius-lg) !important
+  box-shadow: var(--shadow-sm) !important
+  transition: border-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base)
+
+.app-card:hover
+  border-color: rgba(22, 163, 74, .22) !important
 
 .app-card-section
   padding: 20px !important
@@ -141,6 +184,15 @@ h1, h2, h3, h4, h5, h6,
   flex-direction: column
   justify-content: space-between
   overflow: hidden
+  position: relative
+
+.app-kpi-card::after
+  content: ''
+  position: absolute
+  inset: auto 18px 0 18px
+  height: 3px
+  border-radius: 999px 999px 0 0
+  background: linear-gradient(90deg, var(--color-primary-600), var(--color-secondary-500))
 
 .app-kpi-label
   color: var(--text-muted)
@@ -190,11 +242,12 @@ h1, h2, h3, h4, h5, h6,
 .app-icon-btn
   width: 36px
   height: 36px
-  border-radius: var(--radius-sm) !important
+  border-radius: var(--radius-md) !important
   color: var(--text-secondary) !important
 
 .app-icon-btn:hover
   background: var(--surface-muted) !important
+  transform: translateY(-1px)
 
 .app-user-button
   border: 1px solid var(--border)
@@ -220,7 +273,7 @@ h1, h2, h3, h4, h5, h6,
   background: var(--surface-muted)
 
 .app-nav-group
-  margin: 12px 8px 4px
+  margin: 16px 8px 6px
   padding: 0 10px
   color: var(--text-muted)
   font-size: 11px
@@ -231,14 +284,16 @@ h1, h2, h3, h4, h5, h6,
 
 .app-menu-link
   margin: 2px 8px
-  min-height: 42px
+  min-height: 44px
   border-radius: var(--radius-md) !important
   color: var(--text-secondary)
   font-weight: 600
+  transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast)
 
 .app-menu-link:hover
   background: var(--surface-muted)
   color: var(--text-primary)
+  transform: translateX(2px)
 
 .app-menu-link .q-item__section--avatar
   min-width: 38px
@@ -246,10 +301,10 @@ h1, h2, h3, h4, h5, h6,
 .app-menu-link-active
   background: var(--color-primary-50) !important
   color: var(--color-primary-700) !important
-  box-shadow: inset 3px 0 0 var(--color-primary-600)
+  box-shadow: inset 3px 0 0 var(--color-primary-600), 0 1px 2px rgba(22, 163, 74, .08)
 
 .body--dark .app-menu-link-active
-  background: rgba(37, 99, 235, .16) !important
+  background: rgba(22, 163, 74, .16) !important
   color: var(--color-primary-300) !important
 
 .app-chart-title
@@ -258,6 +313,167 @@ h1, h2, h3, h4, h5, h6,
   font-weight: 700
   line-height: 24px
   margin-bottom: 4px
+
+// Design system global para componentes Quasar.
+.q-btn
+  border-radius: var(--radius-md)
+  font-weight: 700
+  letter-spacing: 0
+  min-height: 36px
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast)
+
+.q-btn:not(.q-btn--flat):not(.q-btn--outline):not(.q-btn--round):not(.q-btn--push):hover
+  box-shadow: 0 8px 18px rgba(22, 163, 74, .18)
+  transform: translateY(-1px)
+
+.q-btn--outline
+  border-color: var(--border)
+
+.q-btn--flat:hover
+  background: var(--color-primary-50)
+
+.q-btn:focus-visible,
+.q-item:focus-visible,
+.q-field:focus-within .q-field__control
+  box-shadow: var(--shadow-focus) !important
+  outline: none
+
+.q-field--outlined .q-field__control
+  border-radius: var(--radius-sm)
+  background: var(--surface)
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast)
+
+.q-field--outlined .q-field__control::before
+  border-color: var(--border)
+
+.q-field--outlined.q-field--focused .q-field__control::after
+  border-color: var(--color-primary-600)
+  border-width: 1px
+
+.q-field__label
+  color: var(--text-muted)
+  font-weight: 600
+
+.q-field__native,
+.q-field__input,
+.q-field__prefix,
+.q-field__suffix
+  color: var(--text-primary)
+
+.q-card
+  border-radius: var(--radius-lg)
+  box-shadow: var(--shadow-sm)
+
+.q-dialog__backdrop
+  backdrop-filter: blur(6px)
+  background: rgba(15, 23, 42, .36)
+
+.q-dialog .q-card
+  border-radius: var(--radius-xl)
+  border: 1px solid var(--border)
+  box-shadow: var(--shadow-md)
+
+.q-menu
+  border: 1px solid var(--border)
+  border-radius: var(--radius-lg)
+  box-shadow: var(--shadow-md)
+  overflow: hidden
+
+.q-menu .q-item
+  border-radius: var(--radius-sm)
+  margin: 2px 6px
+
+.q-table__container
+  border-radius: var(--radius-lg)
+  border: 1px solid var(--border)
+  box-shadow: var(--shadow-sm)
+  overflow: hidden
+
+.q-table__top,
+.q-table__bottom
+  background: var(--surface)
+  color: var(--text-secondary)
+
+table.q-table thead tr th
+  position: sticky
+  top: 0
+  z-index: 1
+  background: var(--surface-muted)
+  color: var(--text-secondary)
+  font-size: 12px
+  font-weight: 750
+  letter-spacing: .04em
+  text-transform: uppercase
+  border-bottom: 1px solid var(--border)
+
+table.q-table tbody td
+  color: var(--text-primary)
+  border-bottom: 1px solid rgba(226, 232, 240, .72)
+
+table.q-table tbody tr
+  transition: background-color var(--transition-fast)
+
+table.q-table tbody tr:hover
+  background: var(--color-primary-50)
+
+.q-chip
+  border-radius: 999px
+  font-weight: 700
+
+.q-badge
+  border-radius: 999px
+  font-weight: 700
+
+.q-notification
+  border-radius: var(--radius-lg)
+  box-shadow: var(--shadow-md)
+  font-weight: 600
+
+.q-tab
+  border-radius: var(--radius-md)
+  min-height: 40px
+  font-weight: 700
+  transition: background-color var(--transition-fast), color var(--transition-fast)
+
+.q-tab--active
+  background: var(--color-primary-50)
+
+.q-tabs__content
+  gap: 4px
+
+.q-linear-progress
+  border-radius: 999px
+
+.q-skeleton
+  border-radius: var(--radius-md)
+
+.body--dark .q-table__container,
+.body--dark .q-dialog .q-card,
+.body--dark .q-menu
+  background: var(--surface)
+  border-color: var(--border)
+
+.body--dark table.q-table thead tr th
+  background: var(--surface-muted)
+  color: var(--text-secondary)
+
+.body--dark table.q-table tbody tr:hover
+  background: rgba(22, 163, 74, .12)
+
+@media (max-width: 768px)
+  .app-page
+    padding: var(--space-2)
+
+  .app-page-header
+    flex-direction: column
+    align-items: stretch
+
+  .app-page-title
+    font-size: 24px
+    line-height: 32px
+
+  .app-kpi-grid
+    grid-template-columns: 1fr
 
 .app-chart-subtitle
   color: var(--text-muted)

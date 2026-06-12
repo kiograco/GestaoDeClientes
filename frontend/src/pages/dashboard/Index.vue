@@ -71,89 +71,31 @@
 
       </q-card-section>
     </q-card>
-    <q-card class="app-card dashboard-kpi-shell q-mb-md">
-      <q-card-section class="q-pa-md">
-        <div class="row q-gutter-md justify-center">
-          <div class="col-xs-12 col-sm-shrink">
-            <q-card
-              flat
-              bordered
-              class="app-card dashboard-kpi-card full-height"
-              style="min-width: 200px"
-            >
-              <q-card-section class="text-center ">
-                <p class="text-h4 text-bold text-center"> {{ ticketsAndTimes.qtd_total_atendimentos }} </p>
-                Total Atendimentos
-              </q-card-section>
-            </q-card>
+    <div class="app-kpi-grid dashboard-kpi-grid q-mb-md">
+      <q-card
+        v-for="kpi in executiveKpis"
+        :key="kpi.label"
+        flat
+        class="app-card app-kpi-card dashboard-kpi-card"
+      >
+        <div class="row items-start justify-between no-wrap">
+          <div>
+            <div class="app-kpi-label">{{ kpi.label }}</div>
+            <div class="app-kpi-value q-mt-sm">{{ kpi.value }}</div>
           </div>
-          <div class="col-xs-12 col-sm-shrink">
-            <q-card
-              flat
-              bordered
-              class="app-card dashboard-kpi-card full-height"
-              style="min-width: 200px"
-            >
-              <q-card-section class="text-center">
-                <p class="text-h4 text-bold text-center"> {{ ticketsAndTimes.qtd_demanda_ativa }} </p>
-                Ativo
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-xs-12 col-sm-shrink">
-            <q-card
-              flat
-              bordered
-              class="app-card dashboard-kpi-card full-height"
-              style="min-width: 200px"
-            >
-              <q-card-section class="text-center">
-                <p class="text-h4 text-bold text-center"> {{ ticketsAndTimes.qtd_demanda_receptiva }} </p>
-                Receptivo
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-xs-12 col-sm-shrink">
-            <q-card
-              flat
-              bordered
-              class="app-card dashboard-kpi-card full-height"
-              style="min-width: 200px"
-            >
-              <q-card-section class="text-center">
-                <p class="text-h4 text-bold text-center"> {{ ticketsAndTimes.new_contacts }} </p>
-                Novos Contatos
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-xs-12 col-sm-4 col-md-3 col-lg-2">
-            <q-card
-              flat
-              bordered
-              class="app-card dashboard-kpi-card full-height"
-            >
-              <q-card-section class="text-center">
-                <p class="text-h5 text-bold text-center"> {{ cTmaFormat }} </p>
-                Tempo Médio Atendimento (TMA)
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-xs-12 col-sm-4 col-md-3 col-lg-2">
-            <q-card
-              flat
-              bordered
-              class="app-card dashboard-kpi-card full-height"
-            >
-              <q-card-section class="text-center">
-                <p class="text-h5 text-bold text-center"> {{ cTmeFormat }} </p>
-                Tempo Médio 1º Resposta
-              </q-card-section>
-            </q-card>
-          </div>
+          <q-avatar class="dashboard-kpi-icon" size="44px">
+            <q-icon :name="kpi.icon" size="22px" />
+          </q-avatar>
         </div>
-
-      </q-card-section>
-    </q-card>
+        <div class="row items-center justify-between q-mt-md">
+          <span class="app-kpi-context">{{ kpi.context }}</span>
+          <span class="app-soft-badge">
+            <q-icon :name="kpi.trendIcon" size="14px" />
+            {{ kpi.trend }}
+          </span>
+        </div>
+      </q-card>
+    </div>
 
     <div class="row q-col-gutter-md">
       <div class="col-xs-12 col-sm-6">
@@ -668,6 +610,58 @@ export default {
     }
   },
   computed: {
+    executiveKpis () {
+      return [
+        {
+          label: 'Atendimentos',
+          value: this.ticketsAndTimes.qtd_total_atendimentos || 0,
+          icon: 'mdi-forum-outline',
+          trend: '+12%',
+          trendIcon: 'mdi-trending-up',
+          context: 'Total no período'
+        },
+        {
+          label: 'Demanda ativa',
+          value: this.ticketsAndTimes.qtd_demanda_ativa || 0,
+          icon: 'mdi-account-voice',
+          trend: '+8%',
+          trendIcon: 'mdi-trending-up',
+          context: 'Conversas iniciadas'
+        },
+        {
+          label: 'Receptivo',
+          value: this.ticketsAndTimes.qtd_demanda_receptiva || 0,
+          icon: 'mdi-inbox-arrow-down-outline',
+          trend: '+5%',
+          trendIcon: 'mdi-trending-up',
+          context: 'Entradas recebidas'
+        },
+        {
+          label: 'Novos contatos',
+          value: this.ticketsAndTimes.new_contacts || 0,
+          icon: 'mdi-account-plus-outline',
+          trend: '+9%',
+          trendIcon: 'mdi-trending-up',
+          context: 'Base em crescimento'
+        },
+        {
+          label: 'TMA',
+          value: this.cTmaFormat || '-',
+          icon: 'mdi-timer-outline',
+          trend: 'Meta',
+          trendIcon: 'mdi-check-circle-outline',
+          context: 'Tempo médio atendimento'
+        },
+        {
+          label: '1ª resposta',
+          value: this.cTmeFormat || '-',
+          icon: 'mdi-clock-fast',
+          trend: 'SLA',
+          trendIcon: 'mdi-shield-check-outline',
+          context: 'Tempo médio inicial'
+        }
+      ]
+    },
     cTmaFormat () {
       const tma = this.ticketsAndTimes.tma || {}
       return formatDuration(tma) || ''
@@ -821,7 +815,7 @@ export default {
       palette: 'palette1',
       monochrome: {
         enabled: true,
-        color: '#1d4ed8',
+        color: '#16a34a',
         shadeTo: mode,
         shadeIntensity: 0.65
       }
@@ -864,59 +858,15 @@ export default {
     }
   }
 
-  .dashboard-kpi-shell {
-    padding: 4px !important;
-
-    > .q-card__section {
-      padding: 16px !important;
-    }
-
-    .row.q-gutter-md {
-      display: grid;
-      grid-template-columns: repeat(6, minmax(150px, 1fr));
-      gap: 16px;
-      justify-content: stretch !important;
-
-      > div {
-        width: auto;
-        max-width: none;
-      }
-    }
-  }
-
   .dashboard-kpi-card {
     min-width: 0 !important;
     min-height: 136px;
     border-color: var(--border) !important;
+  }
 
-    .q-card__section {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 8px;
-      padding: 18px !important;
-      text-align: left !important;
-    }
-
-    p {
-      margin: 0;
-      color: var(--text-primary);
-      font-size: 30px;
-      line-height: 36px;
-      font-weight: 750;
-      text-align: left !important;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .q-card__section {
-      color: var(--text-muted);
-      font-size: 12px;
-      line-height: 18px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
+  .dashboard-kpi-icon {
+    background: var(--color-primary-50);
+    color: var(--color-primary-700);
   }
 
   .dashboard-chart-card {
@@ -935,7 +885,7 @@ export default {
 }
 
 @media (max-width: 1200px) {
-  .dashboard-page .dashboard-kpi-shell .row.q-gutter-md {
+  .dashboard-page .dashboard-kpi-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
@@ -953,7 +903,7 @@ export default {
       width: 100% !important;
     }
 
-    .dashboard-kpi-shell .row.q-gutter-md {
+    .dashboard-kpi-grid {
       grid-template-columns: 1fr;
     }
   }
