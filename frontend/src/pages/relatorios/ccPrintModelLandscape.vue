@@ -159,7 +159,6 @@ const cssText = `
   
   .p {
     margin-top: 5px;
-    margin-top: 5px;
     line-height: 50px;
   }
   
@@ -182,15 +181,9 @@ const cssText = `
   }
   @media print {
     .customWrap {
-      word-wrap: normal !important;
       white-space: normal !important;
       overflow-wrap: break-word;
-      overflow-wrap: break-word;
       word-wrap: break-word;
-      -ms-word-break: break-all;
-      /* This is the dangerous one in WebKit, as it breaks things wherever */
-      word-break: break-all;
-      /* Instead use this non-standard one: */
       word-break: break-word;
     }
 

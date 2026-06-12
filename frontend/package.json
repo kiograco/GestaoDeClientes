@@ -61,15 +61,17 @@
     "@playwright/test": "^1.44.1"
   },
   "browserslist": [
-    "last 10 Chrome versions",
-    "last 10 Firefox versions",
-    "last 4 Edge versions",
-    "last 7 Safari versions",
-    "last 8 Android versions",
-    "last 8 ChromeAndroid versions",
-    "last 8 FirefoxAndroid versions",
-    "last 10 iOS versions",
-    "last 5 Opera versions"
+    "last 2 Chrome versions",
+    "last 2 Firefox versions",
+    "last 2 Edge versions",
+    "last 2 Safari versions",
+    "last 2 iOS versions",
+    "last 2 ChromeAndroid versions",
+    "last 2 FirefoxAndroid versions",
+    "Firefox ESR",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
   ],
   "engines": {
     "node": ">= 10.18.1",

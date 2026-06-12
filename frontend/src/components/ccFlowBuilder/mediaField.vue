@@ -48,7 +48,6 @@
             style="
               max-height: 150px;
               overflow-y: hidden;
-              -ms-overflow-y: hidden;
             "
             class="no-scroll hide-scrollbar"
             :src="cMediaUrl"
