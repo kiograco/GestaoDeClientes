@@ -1,4 +1,10 @@
-import { col, Op, Transaction, where as sequelizeWhere } from "sequelize";
+import {
+  col,
+  Includeable,
+  Op,
+  Transaction,
+  where as sequelizeWhere
+} from "sequelize";
 import PDFDocument from "pdfkit";
 import { Resend } from "resend";
 import sequelize from "../../database";
@@ -1565,23 +1571,7 @@ export const listServiceTypes = async (
   tenantId: string | number,
   filters: LegacyAny = {}
 ): Promise<ServiceType[]> => {
-  const include = [
-    {
-      model: ServicePest,
-      ...(filters.pest
-        ? { where: { name: { [Op.iLike]: `%${filters.pest}%` } } }
-        : {})
-    },
-    {
-      model: ServiceEnvironment,
-      ...(filters.environment
-        ? { where: { environment: filters.environment } }
-        : {})
-    },
-    {
-      model: ServiceMethod,
-      ...(filters.method ? { where: { method: filters.method } } : {})
-    },
+  const include: Includeable[] = [
     {
       model: ServiceProduct,
       include: [
@@ -1599,6 +1589,27 @@ export const listServiceTypes = async (
     },
     { model: ServiceWarranty }
   ];
+  include.unshift(
+    filters.method
+      ? { model: ServiceMethod, where: { method: filters.method } }
+      : { model: ServiceMethod }
+  );
+  include.unshift(
+    filters.environment
+      ? {
+          model: ServiceEnvironment,
+          where: { environment: filters.environment }
+        }
+      : { model: ServiceEnvironment }
+  );
+  include.unshift(
+    filters.pest
+      ? {
+          model: ServicePest,
+          where: { name: { [Op.iLike]: `%${filters.pest}%` } }
+        }
+      : { model: ServicePest }
+  );
 
   return ServiceType.findAll({
     where: {
