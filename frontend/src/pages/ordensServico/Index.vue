@@ -354,17 +354,53 @@
           </template>
         </q-table>
       </q-card>
+      <q-card flat bordered class="q-mt-md">
+        <q-card-section class="row items-center">
+          <div>
+            <div class="text-subtitle1 text-weight-medium">Auditoria de serviços</div>
+            <div class="text-caption text-grey-7">Criação, alteração, duplicação e inativação de serviços cadastrados</div>
+          </div>
+          <q-space />
+          <q-btn flat color="primary" icon="mdi-refresh" label="Atualizar" @click="carregarAuditoriaServicos" />
+        </q-card-section>
+        <q-table
+          flat
+          :data="auditoriaServicos"
+          :columns="colunasAuditoriaFinanceira"
+          row-key="id"
+          :pagination="{ rowsPerPage: 15 }"
+        >
+          <template v-slot:body-cell-action="props">
+            <q-td :props="props">
+              <q-badge color="primary" outline :label="formatarAcaoAuditoriaServico(props.row.action)" />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-metadata="props">
+            <q-td :props="props">
+              <div class="audit-metadata">{{ descreverAuditoriaServico(props.row) }}</div>
+            </q-td>
+          </template>
+        </q-table>
+      </q-card>
     </div>
 
     <div v-else-if="aba === 'tipos'" class="q-mb-md">
       <q-card flat bordered>
         <q-card-section class="row items-center">
           <div>
-            <div class="text-subtitle1 text-weight-medium">Tipos de serviço</div>
-            <div class="text-caption text-grey-7">Opções usadas no cadastro das ordens</div>
+            <div class="text-subtitle1 text-weight-medium">Cadastro de serviços</div>
+            <div class="text-caption text-grey-7">Serviços padronizados para OS, garantias e relatórios técnicos</div>
           </div>
           <q-space />
-          <q-btn unelevated color="primary" icon="mdi-plus" label="Novo tipo" @click="abrirTipoServico()" />
+          <q-btn unelevated color="primary" icon="mdi-plus" label="Novo serviço" @click="abrirTipoServico()" />
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="row q-col-gutter-sm">
+          <q-input dense outlined clearable class="col-12 col-md-3" label="Pesquisar por nome" v-model="filtrosTiposServico.search" @keyup.enter="carregarTiposServico" />
+          <q-select dense outlined clearable emit-value map-options class="col-12 col-md-3" label="Categoria" v-model="filtrosTiposServico.category" :options="serviceCategoryOptions" @input="carregarTiposServico" />
+          <q-select dense outlined clearable use-input new-value-mode="add-unique" class="col-12 col-md-3" label="Praga" v-model="filtrosTiposServico.pest" :options="pestOptions" @input="carregarTiposServico" />
+          <q-select dense outlined clearable emit-value map-options class="col-12 col-md-2" label="Ambiente" v-model="filtrosTiposServico.environment" :options="environmentOptions" @input="carregarTiposServico" />
+          <q-btn flat color="primary" icon="mdi-magnify" class="col-12 col-md-auto" label="Filtrar" @click="carregarTiposServico" />
         </q-card-section>
         <q-table
           flat
@@ -378,13 +414,26 @@
               <q-badge :color="props.row.active ? 'positive' : 'grey'" :label="props.row.active ? 'Ativo' : 'Inativo'" />
             </q-td>
           </template>
+          <template v-slot:body-cell-categories="props">
+            <q-td :props="props">
+              <q-badge v-for="category in props.row.categories || []" :key="category" outline color="primary" class="q-mr-xs q-mb-xs" :label="rotuloOpcao(serviceCategoryOptions, category)" />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-pests="props">
+            <q-td :props="props">
+              <span>{{ (props.row.pests || []).map(item => item.name).join(', ') || '-' }}</span>
+            </q-td>
+          </template>
           <template v-slot:body-cell-actions="props">
             <q-td :props="props" auto-width>
               <q-btn flat round dense icon="mdi-pencil" color="primary" @click="abrirTipoServico(props.row)">
-                <q-tooltip>Editar tipo</q-tooltip>
+                <q-tooltip>Editar serviço</q-tooltip>
+              </q-btn>
+              <q-btn flat round dense icon="mdi-content-copy" color="primary" @click="duplicarTipoServico(props.row)">
+                <q-tooltip>Duplicar serviço</q-tooltip>
               </q-btn>
               <q-btn flat round dense icon="mdi-delete" color="negative" @click="confirmarExcluirTipoServico(props.row)">
-                <q-tooltip>Excluir tipo</q-tooltip>
+                <q-tooltip>Inativar serviço</q-tooltip>
               </q-btn>
             </q-td>
           </template>
@@ -972,15 +1021,71 @@
     </q-dialog>
 
     <q-dialog v-model="modalTipoServico">
-      <q-card style="width: 560px; max-width: 95vw">
+      <q-card style="width: 1100px; max-width: 95vw">
         <q-card-section>
-          <div class="text-h6">{{ tipoServico.id ? 'Editar tipo' : 'Novo tipo' }}</div>
+          <div class="text-h6">{{ tipoServico.id ? 'Editar serviço' : 'Novo serviço' }}</div>
+          <div v-if="tipoServico.code" class="text-caption text-grey-7">Código {{ tipoServico.code }}</div>
         </q-card-section>
         <q-card-section class="row q-col-gutter-sm">
-          <q-input dense outlined class="col-12 col-md-8" label="Nome" v-model="tipoServico.name" />
+          <q-input dense outlined class="col-12 col-md-6" label="Nome do serviço" v-model="tipoServico.name" />
+          <q-input dense outlined readonly class="col-12 col-md-2" label="Código" v-model="tipoServico.code" placeholder="Automático" />
           <q-input dense outlined class="col-12 col-md-4" inputmode="decimal" label="Preço padrão" v-model="tipoServico.defaultPrice" prefix="R$" @blur="normalizarMoedaTipoServico" />
-          <q-input dense outlined class="col-12" type="textarea" label="Descrição" v-model="tipoServico.description" />
+          <q-input dense outlined class="col-12" type="textarea" label="Descrição resumida" v-model="tipoServico.description" />
+          <q-input dense outlined class="col-12" type="textarea" label="Descrição técnica completa" v-model="tipoServico.technicalDescription" />
           <q-toggle class="col-12" label="Ativo" v-model="tipoServico.active" />
+
+          <div class="col-12 q-mt-sm text-subtitle2">Classificação do serviço</div>
+          <q-option-group class="col-12 service-option-grid" type="checkbox" v-model="tipoServico.categories" :options="serviceCategoryOptions" />
+
+          <div class="col-12 q-mt-sm row items-center">
+            <div class="text-subtitle2">Pragas atendidas</div>
+            <q-space />
+            <q-btn flat dense color="primary" icon="mdi-plus" label="Adicionar praga" @click="adicionarPragaServico" />
+          </div>
+          <div v-for="(pest, index) in tipoServico.pests" :key="`service-pest-${index}`" class="col-12 row q-col-gutter-sm items-center">
+            <q-select dense outlined use-input new-value-mode="add-unique" class="col-12 col-md-3" label="Nome da praga" v-model="pest.name" :options="pestOptions" />
+            <q-input dense outlined class="col-12 col-md-3" label="Nome científico" v-model="pest.scientificName" />
+            <q-select dense outlined emit-value map-options class="col-12 col-md-3" label="Categoria" v-model="pest.category" :options="serviceCategoryOptions" />
+            <q-toggle class="col-6 col-md-2" label="Ativa" v-model="pest.active" />
+            <q-btn flat round color="negative" icon="mdi-delete" class="col-auto" @click="removerPragaServico(index)" />
+          </div>
+
+          <div class="col-12 q-mt-sm text-subtitle2">Garantia</div>
+          <q-toggle class="col-12 col-md-3" label="Possui garantia?" v-model="tipoServico.warranty.hasWarranty" />
+          <q-input v-if="tipoServico.warranty.hasWarranty" dense outlined type="number" min="0" class="col-6 col-md-2" label="Quantidade" v-model.number="tipoServico.warranty.quantity" />
+          <q-select v-if="tipoServico.warranty.hasWarranty" dense outlined emit-value map-options class="col-6 col-md-2" label="Unidade" v-model="tipoServico.warranty.unit" :options="warrantyUnitOptions" />
+          <q-input v-if="tipoServico.warranty.hasWarranty" dense outlined class="col-12 col-md-5" label="Observação da garantia" v-model="tipoServico.warranty.observation" />
+          <q-input v-if="tipoServico.warranty.hasWarranty" dense outlined type="textarea" class="col-12" label="Regras da garantia" v-model="tipoServico.warranty.rules" />
+
+          <div class="col-12 q-mt-sm text-subtitle2">Tipo de ambiente</div>
+          <q-option-group class="col-12 service-option-grid" type="checkbox" v-model="tipoServico.environments" :options="environmentOptions" />
+
+          <div class="col-12 q-mt-sm text-subtitle2">Método de aplicação</div>
+          <q-option-group class="col-12 service-option-grid" type="checkbox" v-model="tipoServico.methods" :options="serviceMethodOptions" />
+
+          <div class="col-12 q-mt-sm row items-center">
+            <div class="text-subtitle2">Produtos utilizados</div>
+            <q-space />
+            <q-btn flat dense color="primary" icon="mdi-plus" label="Adicionar produto" @click="adicionarProdutoServico" />
+          </div>
+          <div v-for="(product, index) in tipoServico.products" :key="`service-product-${index}`" class="col-12 row q-col-gutter-sm items-center">
+            <q-select dense outlined emit-value map-options class="col-12 col-md-5" label="Produto" v-model="product.inventoryItemId" :options="opcoesProdutosServico" />
+            <div class="col-12 col-md-2 text-caption">{{ detalheProdutoServico(product.inventoryItemId, 'activeIngredient') || 'Sem princípio ativo' }}</div>
+            <div class="col-12 col-md-2 text-caption">{{ detalheProdutoServico(product.inventoryItemId, 'chemicalGroup') || 'Sem grupo químico' }}</div>
+            <q-input dense outlined type="number" min="0" step="0.001" class="col-8 col-md-2" label="Consumo médio" v-model.number="product.averageConsumption" />
+            <q-btn flat round color="negative" icon="mdi-delete" class="col-auto" @click="removerProdutoServico(index)" />
+          </div>
+
+          <div class="col-12 q-mt-sm text-subtitle2">Informações operacionais</div>
+          <q-input dense outlined class="col-12 col-md-3" label="Tempo médio de execução" v-model="tipoServico.averageExecutionTime" />
+          <q-input dense outlined type="number" min="1" class="col-12 col-md-3" label="Técnicos recomendados" v-model.number="tipoServico.recommendedTechnicians" />
+          <q-toggle class="col-12 col-md-2" label="Necessita retorno?" v-model="tipoServico.needsReturn" />
+          <q-input dense outlined type="number" min="0" class="col-6 col-md-2" label="Qtd. retornos" v-model.number="tipoServico.returnQuantity" />
+          <q-input dense outlined class="col-6 col-md-2" label="Intervalo" v-model="tipoServico.returnInterval" />
+
+          <q-input dense outlined type="textarea" class="col-12" label="Texto padrão da Ordem de Serviço" v-model="tipoServico.orderDefaultText" />
+          <q-input dense outlined type="textarea" class="col-12" label="Recomendações ao cliente" v-model="tipoServico.customerRecommendations" />
+          <q-input dense outlined type="textarea" class="col-12" label="Observações internas" v-model="tipoServico.internalObservation" />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
@@ -1062,6 +1167,7 @@ import {
   RelatorioCustosEstoqueServico,
   ListarAuditoriaEstoqueServico,
   ListarAuditoriaFinanceiraServico,
+  ListarAuditoriaTiposServico,
   CriarItemEstoqueServico,
   AlterarItemEstoqueServico,
   ExcluirItemEstoqueServico,
@@ -1069,6 +1175,7 @@ import {
   ListarTiposServico,
   CriarTipoServico,
   AlterarTipoServico,
+  DuplicarTipoServico,
   ExcluirTipoServico,
   ListarOrdensServico,
   DashboardOrdensServico,
@@ -1154,6 +1261,35 @@ const emptyInventoryItem = () => ({
   }
 })
 
+const emptyServiceType = () => ({
+  active: true,
+  defaultPrice: '0,00',
+  code: '',
+  name: '',
+  description: '',
+  technicalDescription: '',
+  categories: [],
+  pests: [],
+  environments: [],
+  methods: [],
+  products: [],
+  warranty: {
+    hasWarranty: false,
+    quantity: 30,
+    unit: 'dias',
+    observation: '',
+    rules: ''
+  },
+  averageExecutionTime: '',
+  recommendedTechnicians: 1,
+  needsReturn: false,
+  returnQuantity: 0,
+  returnInterval: '',
+  orderDefaultText: '',
+  customerRecommendations: '',
+  internalObservation: ''
+})
+
 export default {
   name: 'OrdensServico',
   components: { ClienteModal },
@@ -1176,7 +1312,13 @@ export default {
       atendente: { active: true },
       itemEstoque: emptyInventoryItem(),
       ajusteEstoque: { item: null, movementType: 'entry', quantity: 0, observation: '' },
-      tipoServico: { active: true },
+      tipoServico: emptyServiceType(),
+      filtrosTiposServico: {
+        search: '',
+        category: null,
+        pest: '',
+        environment: null
+      },
       servicoOrdemSelecionado: null,
       produtoOrdemSelecionado: null,
       notificacao: { channels: ['internal'], message: '' },
@@ -1195,6 +1337,7 @@ export default {
       relatorioCustosEstoque: {},
       auditoriaEstoque: [],
       auditoriaFinanceira: [],
+      auditoriaServicos: [],
       tiposServico: [],
       clientes: [],
       ordemSelecionada: null,
@@ -1273,6 +1416,54 @@ export default {
         { label: 'Espuma', value: 'espuma' },
         { label: 'Outro', value: 'outro' }
       ],
+      serviceMethodOptions: [
+        { label: 'Pulverização', value: 'pulverizacao' },
+        { label: 'Termonebulização', value: 'termonebulizacao' },
+        { label: 'Atomização', value: 'atomizacao' },
+        { label: 'Polvilhamento', value: 'polvilhamento' },
+        { label: 'Iscagem', value: 'iscagem' },
+        { label: 'Gel', value: 'gel' },
+        { label: 'Armadilhas', value: 'armadilhas' },
+        { label: 'Barreiras Químicas', value: 'barreiras_quimicas' },
+        { label: 'Aplicação Manual', value: 'aplicacao_manual' },
+        { label: 'Outros', value: 'outros' }
+      ],
+      serviceCategoryOptions: [
+        { label: 'Controle de Insetos', value: 'controle_insetos' },
+        { label: 'Controle de Roedores', value: 'controle_roedores' },
+        { label: 'Controle de Pombos', value: 'controle_pombos' },
+        { label: 'Controle de Cupins', value: 'controle_cupins' },
+        { label: 'Controle de Escorpiões', value: 'controle_escorpioes' },
+        { label: 'Controle de Aranhas', value: 'controle_aranhas' },
+        { label: 'Controle de Baratas', value: 'controle_baratas' },
+        { label: 'Controle de Formigas', value: 'controle_formigas' },
+        { label: 'Controle de Mosquitos', value: 'controle_mosquitos' },
+        { label: 'Controle de Pulgas', value: 'controle_pulgas' },
+        { label: 'Controle de Carrapatos', value: 'controle_carrapatos' },
+        { label: 'Outros', value: 'outros' }
+      ],
+      environmentOptions: [
+        { label: 'Residencial', value: 'residencial' },
+        { label: 'Apartamento', value: 'apartamento' },
+        { label: 'Condomínio', value: 'condominio' },
+        { label: 'Comercial', value: 'comercial' },
+        { label: 'Industrial', value: 'industrial' },
+        { label: 'Hospitalar', value: 'hospitalar' },
+        { label: 'Escolar', value: 'escolar' },
+        { label: 'Alimentício', value: 'alimenticio' },
+        { label: 'Restaurante', value: 'restaurante' },
+        { label: 'Hotel', value: 'hotel' },
+        { label: 'Escritório', value: 'escritorio' },
+        { label: 'Depósito', value: 'deposito' },
+        { label: 'Área Externa', value: 'area_externa' },
+        { label: 'Área Rural', value: 'area_rural' },
+        { label: 'Outros', value: 'outros' }
+      ],
+      warrantyUnitOptions: [
+        { label: 'Dias', value: 'dias' },
+        { label: 'Meses', value: 'meses' },
+        { label: 'Anos', value: 'anos' }
+      ],
       pestOptions: ['Baratas', 'Formigas', 'Cupins', 'Ratos', 'Camundongos', 'Mosquitos', 'Escorpioes', 'Pulgas', 'Carrapatos', 'Pombos', 'Aranhas', 'Outros'],
       movementOptions: [
         { label: 'Entrada', value: 'entry' },
@@ -1328,7 +1519,10 @@ export default {
         { name: 'actions', label: '', field: 'actions', align: 'right' }
       ],
       colunasTiposServico: [
-        { name: 'name', label: 'Tipo', field: 'name', align: 'left', sortable: true },
+        { name: 'code', label: 'Código', field: row => row.code || '-', align: 'left', sortable: true },
+        { name: 'name', label: 'Serviço', field: 'name', align: 'left', sortable: true },
+        { name: 'categories', label: 'Categorias', field: 'categories', align: 'left' },
+        { name: 'pests', label: 'Pragas', field: 'pests', align: 'left' },
         { name: 'defaultPrice', label: 'Preço padrão', field: row => this.formatarMoeda(row.defaultPrice), align: 'right', sortable: true },
         { name: 'active', label: 'Status', field: 'active', align: 'center' },
         { name: 'actions', label: '', field: 'actions', align: 'right' }
@@ -1357,6 +1551,11 @@ export default {
         .filter(item => item.active)
         .filter(item => !this.form.pestTarget || this.produtoRecomendadoParaPraga(item, this.form.pestTarget))
         .map(item => ({ label: `${item.name} - ${this.formatarMoeda(item.salePrice)}`, value: item.id }))
+    },
+    opcoesProdutosServico () {
+      return this.estoque
+        .filter(item => item.active)
+        .map(item => ({ label: item.name, value: item.id }))
     },
     opcoesFabricantesEstoque () {
       return [...new Set(this.estoque.map(item => item.manufacturer).filter(Boolean))]
@@ -1501,6 +1700,7 @@ export default {
         this.carregarRelatoriosEstoque(),
         this.carregarAuditoriaEstoque(),
         this.carregarAuditoriaFinanceira(),
+        this.carregarAuditoriaServicos(),
         this.carregarTiposServico(),
         this.carregarOrdens(),
         this.carregarDashboard(),
@@ -1549,8 +1749,16 @@ export default {
       const { data } = await ListarAuditoriaFinanceiraServico()
       this.auditoriaFinanceira = data
     },
+    async carregarAuditoriaServicos () {
+      if (!this.podeGerenciarEstoque) {
+        this.auditoriaServicos = []
+        return
+      }
+      const { data } = await ListarAuditoriaTiposServico()
+      this.auditoriaServicos = data
+    },
     async carregarTiposServico () {
-      const { data } = await ListarTiposServico()
+      const { data } = await ListarTiposServico(this.filtrosTiposServico)
       this.tiposServico = data
     },
     async carregarOrdens () {
@@ -1758,9 +1966,31 @@ export default {
     },
     abrirTipoServico (tipo) {
       this.tipoServico = tipo
-        ? { ...tipo, defaultPrice: this.formatarMoedaCampo(tipo.defaultPrice) }
-        : { active: true, defaultPrice: '0,00' }
+        ? this.normalizarTipoServicoFormulario(tipo)
+        : emptyServiceType()
       this.modalTipoServico = true
+    },
+    normalizarTipoServicoFormulario (tipo) {
+      const warranty = (tipo.warranties || [])[0]
+      return {
+        ...emptyServiceType(),
+        ...tipo,
+        defaultPrice: this.formatarMoedaCampo(tipo.defaultPrice),
+        categories: tipo.categories || [],
+        pests: tipo.pests || [],
+        environments: (tipo.environments || []).map(item => item.environment),
+        methods: (tipo.methods || []).map(item => item.method),
+        products: (tipo.products || []).map(item => ({
+          id: item.id,
+          inventoryItemId: item.inventoryItemId,
+          averageConsumption: item.averageConsumption
+        })),
+        warranty: {
+          ...emptyServiceType().warranty,
+          hasWarranty: Boolean(warranty),
+          ...(warranty || {})
+        }
+      }
     },
     async salvarTipoServico () {
       this.salvando = true
@@ -1768,19 +1998,20 @@ export default {
         const payload = this.normalizarPayloadTipoServico(this.tipoServico)
         if (payload.id) await AlterarTipoServico(payload)
         else await CriarTipoServico(payload)
-        this.$q.notify({ type: 'positive', message: 'Tipo de serviço salvo.' })
+        this.$q.notify({ type: 'positive', message: 'Serviço salvo.' })
         this.modalTipoServico = false
         await this.carregarTiposServico()
+        await this.carregarAuditoriaServicos()
       } catch (error) {
-        this.$notificarErro('Não foi possível salvar o tipo de serviço', error)
+        this.$notificarErro('Não foi possível salvar o serviço', error)
       } finally {
         this.salvando = false
       }
     },
     confirmarExcluirTipoServico (tipo) {
       this.$q.dialog({
-        title: 'Excluir tipo de serviço',
-        message: `Confirma excluir ${tipo.name}?`,
+        title: 'Inativar serviço',
+        message: `Confirma inativar ${tipo.name}?`,
         cancel: true,
         persistent: true
       }).onOk(() => this.excluirTipoServico(tipo))
@@ -1788,11 +2019,38 @@ export default {
     async excluirTipoServico (tipo) {
       try {
         await ExcluirTipoServico(tipo.id)
-        this.$q.notify({ type: 'positive', message: 'Tipo de serviço excluído.' })
+        this.$q.notify({ type: 'positive', message: 'Serviço inativado.' })
         await this.carregarTiposServico()
+        await this.carregarAuditoriaServicos()
       } catch (error) {
-        this.$notificarErro('Não foi possível excluir o tipo de serviço', error)
+        this.$notificarErro('Não foi possível inativar o serviço', error)
       }
+    },
+    async duplicarTipoServico (tipo) {
+      try {
+        await DuplicarTipoServico(tipo.id)
+        this.$q.notify({ type: 'positive', message: 'Serviço duplicado.' })
+        await this.carregarTiposServico()
+        await this.carregarAuditoriaServicos()
+      } catch (error) {
+        this.$notificarErro('Não foi possível duplicar o serviço', error)
+      }
+    },
+    adicionarPragaServico () {
+      this.tipoServico.pests.push({ name: '', scientificName: '', category: '', active: true })
+    },
+    removerPragaServico (index) {
+      this.tipoServico.pests.splice(index, 1)
+    },
+    adicionarProdutoServico () {
+      this.tipoServico.products.push({ inventoryItemId: null, averageConsumption: 0 })
+    },
+    removerProdutoServico (index) {
+      this.tipoServico.products.splice(index, 1)
+    },
+    detalheProdutoServico (inventoryItemId, field) {
+      const product = this.estoque.find(item => item.id === inventoryItemId)
+      return product ? product[field] : ''
     },
     criarValorTipoServico (value, done) {
       this.form.serviceType = value
@@ -2027,8 +2285,31 @@ export default {
     normalizarPayloadTipoServico (tipo) {
       return {
         ...tipo,
-        defaultPrice: this.parseMoeda(tipo.defaultPrice)
+        defaultPrice: this.parseMoeda(tipo.defaultPrice),
+        categories: tipo.categories || [],
+        pests: (tipo.pests || []).filter(pest => pest.name),
+        environments: tipo.environments || [],
+        methods: tipo.methods || [],
+        products: (tipo.products || [])
+          .filter(product => product.inventoryItemId)
+          .map(product => ({
+            inventoryItemId: product.inventoryItemId,
+            averageConsumption: this.parseMoeda(product.averageConsumption)
+          })),
+        warranty: tipo.warranty || emptyServiceType().warranty,
+        recommendedTechnicians: this.parseInteiro(tipo.recommendedTechnicians) || 1,
+        returnQuantity: this.parseInteiro(tipo.returnQuantity) || 0
       }
+    },
+    rotuloOpcao (options, value) {
+      const option = options.find(item => item.value === value)
+      return option ? option.label : value
+    },
+    textoGarantiaServico (serviceType) {
+      const warranty = (serviceType.warranties || [])[0]
+      if (!warranty) return ''
+      const unit = this.rotuloOpcao(this.warrantyUnitOptions, warranty.unit || 'dias').toLowerCase()
+      return `Garantia: ${warranty.quantity || 0} ${unit}${warranty.rules ? `. ${warranty.rules}` : ''}`
     },
     criarItemOrdemBase (overrides) {
       return {
@@ -2050,12 +2331,38 @@ export default {
     adicionarServicoNaOrdem () {
       const serviceType = this.tiposServico.find(item => item.id === this.servicoOrdemSelecionado)
       if (!serviceType) return
+      if (!this.form.serviceType) this.form.serviceType = serviceType.name
+      if (!this.form.description && serviceType.orderDefaultText) this.form.description = serviceType.orderDefaultText
+      if (!this.form.publicObservation && serviceType.customerRecommendations) this.form.publicObservation = serviceType.customerRecommendations
+      const warrantyText = this.textoGarantiaServico(serviceType)
+      if (warrantyText && !String(this.form.publicObservation || '').includes(warrantyText)) {
+        this.form.publicObservation = [this.form.publicObservation, warrantyText].filter(Boolean).join('\n\n')
+      }
+      const activePests = (serviceType.pests || []).filter(pest => pest.active !== false)
+      if (!this.form.pestTarget && activePests.length) this.form.pestTarget = activePests[0].name
       this.form.items.push(this.criarItemOrdemBase({
         itemType: 'service',
         serviceTypeId: serviceType.id,
-        description: serviceType.name,
+        pestTarget: this.form.pestTarget || '',
+        applicationMethod: (serviceType.methods || [])[0]?.method || '',
+        technicalObservation: serviceType.technicalDescription || '',
+        description: serviceType.orderDefaultText || serviceType.description || serviceType.name,
         unitPrice: this.formatarMoedaCampo(serviceType.defaultPrice)
       }))
+      ;(serviceType.products || []).forEach(serviceProduct => {
+        const product = this.estoque.find(item => item.id === serviceProduct.inventoryItemId)
+        if (!product) return
+        this.form.items.push(this.criarItemOrdemBase({
+          itemType: 'product',
+          inventoryItemId: product.id,
+          inventoryBatchId: product.lotControlEnabled && product.batches?.length ? product.batches[0].id : null,
+          pestTarget: this.form.pestTarget || '',
+          applicationMethod: product.applicationMethods?.[0] || (serviceType.methods || [])[0]?.method || '',
+          description: product.name,
+          quantity: this.parseInteiro(serviceProduct.averageConsumption) || 1,
+          unitPrice: this.formatarMoedaCampo(product.salePrice)
+        }))
+      })
       this.servicoOrdemSelecionado = null
     },
     produtoRecomendadoParaPraga (product, pest) {
@@ -2475,6 +2782,21 @@ export default {
       }
       return labels[action] || action
     },
+    formatarAcaoAuditoriaServico (action) {
+      const labels = {
+        service_type_created: 'Serviço criado',
+        service_type_updated: 'Serviço alterado',
+        service_type_deleted: 'Serviço inativado',
+        service_type_duplicated: 'Serviço duplicado'
+      }
+      return labels[action] || action
+    },
+    descreverAuditoriaServico (log) {
+      const metadata = log.metadata || {}
+      if (metadata.sourceId) return `Origem #${metadata.sourceId} - ${metadata.name || '-'}`
+      if (metadata.code || metadata.name) return [metadata.code, metadata.name].filter(Boolean).join(' - ')
+      return '-'
+    },
     descreverAuditoriaFinanceira (log) {
       const metadata = log.metadata || {}
       const changedFields = metadata.changedFields || []
@@ -2653,6 +2975,11 @@ export default {
   color: #64748b;
   font-size: 11px;
   font-weight: 400;
+}
+.service-option-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 4px 12px;
 }
 .metric-row-profit span {
   min-width: 0;

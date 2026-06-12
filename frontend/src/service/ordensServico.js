@@ -12,14 +12,16 @@ export const RelatorioLotesEstoqueServico = () => request({ url: '/service/inven
 export const RelatorioCustosEstoqueServico = params => request({ url: '/service/inventory-reports/costs', method: 'get', params })
 export const ListarAuditoriaEstoqueServico = () => request({ url: '/service/inventory-audit', method: 'get' })
 export const ListarAuditoriaFinanceiraServico = () => request({ url: '/service/financial-audit', method: 'get' })
+export const ListarAuditoriaTiposServico = () => request({ url: '/service/types-audit', method: 'get' })
 export const CriarItemEstoqueServico = data => request({ url: '/service/inventory', method: 'post', data })
 export const AlterarItemEstoqueServico = data => request({ url: `/service/inventory/${data.id}`, method: 'put', data })
 export const ExcluirItemEstoqueServico = id => request({ url: `/service/inventory/${id}`, method: 'delete' })
 export const AjustarItemEstoqueServico = (id, data) => request({ url: `/service/inventory/${id}/adjust`, method: 'post', data })
 
-export const ListarTiposServico = () => request({ url: '/service/types', method: 'get' })
+export const ListarTiposServico = params => request({ url: '/service/types', method: 'get', params })
 export const CriarTipoServico = data => request({ url: '/service/types', method: 'post', data })
 export const AlterarTipoServico = data => request({ url: `/service/types/${data.id}`, method: 'put', data })
+export const DuplicarTipoServico = id => request({ url: `/service/types/${id}/duplicate`, method: 'post' })
 export const ExcluirTipoServico = id => request({ url: `/service/types/${id}`, method: 'delete' })
 
 export const ListarOrdensServico = params => request({ url: '/service/orders', method: 'get', params })

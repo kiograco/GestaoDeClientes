@@ -108,8 +108,44 @@ const inventoryAdjustmentSchema = Yup.object().shape({
 
 const serviceTypeSchema = Yup.object().shape({
   name: Yup.string().trim().required().min(2),
+  code: nullableString,
   description: nullableString,
+  technicalDescription: nullableString,
   defaultPrice: Yup.number().min(0).nullable(),
+  categories: Yup.array().of(Yup.string().trim()),
+  pests: Yup.array().of(
+    Yup.object().shape({
+      name: Yup.string().trim().required(),
+      scientificName: nullableString,
+      category: nullableString,
+      active: Yup.boolean()
+    })
+  ),
+  environments: Yup.array().of(Yup.string().trim()),
+  methods: Yup.array().of(Yup.string().trim()),
+  products: Yup.array().of(
+    Yup.object().shape({
+      inventoryItemId: Yup.number().integer().positive().required(),
+      averageConsumption: Yup.number().min(0).nullable()
+    })
+  ),
+  warranty: Yup.object()
+    .shape({
+      hasWarranty: Yup.boolean(),
+      quantity: Yup.number().integer().min(0).nullable(),
+      unit: nullableString,
+      observation: nullableString,
+      rules: nullableString
+    })
+    .nullable(),
+  averageExecutionTime: nullableString,
+  recommendedTechnicians: Yup.number().integer().min(1).nullable(),
+  needsReturn: Yup.boolean(),
+  returnQuantity: Yup.number().integer().min(0).nullable(),
+  returnInterval: nullableString,
+  orderDefaultText: nullableString,
+  customerRecommendations: nullableString,
+  internalObservation: nullableString,
   active: Yup.boolean()
 });
 
@@ -215,6 +251,23 @@ const auditStockAction = async (
     userId: req.user.id,
     action,
     resource: "service_inventory",
+    resourceId,
+    ip: req.ip,
+    userAgent: req.get("user-agent"),
+    metadata
+  });
+
+const auditServiceTypeAction = async (
+  req: Request,
+  action: string,
+  resourceId?: string | number | null,
+  metadata?: Record<string, unknown>
+): Promise<void> =>
+  createAuditLog({
+    tenantId: req.user.tenantId,
+    userId: req.user.id,
+    action,
+    resource: "service_type",
     resourceId,
     ip: req.ip,
     userAgent: req.get("user-agent"),
@@ -501,6 +554,20 @@ export const listFinancialAuditLogs = async (
   );
 };
 
+export const listServiceTypeAuditLogs = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  ensureCanManageStock(req.user.profile);
+  return res.json(
+    await listAuditLogs({
+      tenantId: req.user.tenantId,
+      resource: "service_type",
+      limit: Number(req.query.limit) || 100
+    })
+  );
+};
+
 export const createInventoryItem = async (
   req: Request,
   res: Response
@@ -618,35 +685,46 @@ export const listServiceTypes = async (
   req: Request,
   res: Response
 ): Promise<Response> =>
-  res.json(await ServiceOrder.listServiceTypes(req.user.tenantId));
+  res.json(await ServiceOrder.listServiceTypes(req.user.tenantId, req.query));
 
 export const createServiceType = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res
-    .status(201)
-    .json(
-      await ServiceOrder.createServiceType(
-        req.user.tenantId,
-        await validate<ServiceOrder.ServiceTypeData>(
-          serviceTypeSchema,
-          req.body
-        )
-      )
-    );
+): Promise<Response> => {
+  const data = await validate<ServiceOrder.ServiceTypeData>(
+    serviceTypeSchema,
+    req.body
+  );
+  const serviceType = await ServiceOrder.createServiceType(
+    req.user.tenantId,
+    data
+  );
+  await auditServiceTypeAction(req, "service_type_created", serviceType.id, {
+    name: serviceType.name,
+    code: serviceType.code
+  });
+  return res.status(201).json(serviceType);
+};
 
 export const updateServiceType = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res.json(
-    await ServiceOrder.updateServiceType(
-      req.user.tenantId,
-      req.params.serviceTypeId,
-      await validate<ServiceOrder.ServiceTypeData>(serviceTypeSchema, req.body)
-    )
+): Promise<Response> => {
+  const data = await validate<ServiceOrder.ServiceTypeData>(
+    serviceTypeSchema,
+    req.body
   );
+  const serviceType = await ServiceOrder.updateServiceType(
+    req.user.tenantId,
+    req.params.serviceTypeId,
+    data
+  );
+  await auditServiceTypeAction(req, "service_type_updated", serviceType.id, {
+    name: serviceType.name,
+    code: serviceType.code
+  });
+  return res.json(serviceType);
+};
 
 export const deleteServiceType = async (
   req: Request,
@@ -656,7 +734,28 @@ export const deleteServiceType = async (
     req.user.tenantId,
     req.params.serviceTypeId
   );
+  await auditServiceTypeAction(
+    req,
+    "service_type_deleted",
+    req.params.serviceTypeId
+  );
   return res.status(204).send();
+};
+
+export const duplicateServiceType = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const serviceType = await ServiceOrder.duplicateServiceType(
+    req.user.tenantId,
+    req.params.serviceTypeId
+  );
+  await auditServiceTypeAction(req, "service_type_duplicated", serviceType.id, {
+    sourceId: req.params.serviceTypeId,
+    name: serviceType.name,
+    code: serviceType.code
+  });
+  return res.status(201).json(serviceType);
 };
 
 export const listOrders = async (

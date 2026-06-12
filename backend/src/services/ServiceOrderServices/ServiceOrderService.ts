@@ -10,10 +10,15 @@ import ServiceInventoryBatch from "../../models/ServiceInventoryBatch";
 import ServiceInventoryMovement from "../../models/ServiceInventoryMovement";
 import ServiceInventoryItem from "../../models/ServiceInventoryItem";
 import ServiceInventoryPestRecommendation from "../../models/ServiceInventoryPestRecommendation";
+import ServiceEnvironment from "../../models/ServiceEnvironment";
+import ServiceMethod from "../../models/ServiceMethod";
 import ServiceOrder from "../../models/ServiceOrder";
 import ServiceOrderItem from "../../models/ServiceOrderItem";
 import ServiceOrderLog from "../../models/ServiceOrderLog";
+import ServicePest from "../../models/ServicePest";
+import ServiceProduct from "../../models/ServiceProduct";
 import ServiceType from "../../models/ServiceType";
+import ServiceWarranty from "../../models/ServiceWarranty";
 import User from "../../models/User";
 import Tenant from "../../models/Tenant";
 import { getIO } from "../../libs/socket";
@@ -175,9 +180,42 @@ export interface ServiceInventoryAdjustmentData {
 }
 
 export interface ServiceTypeData {
+  id?: number;
   name: string;
+  code?: string | null;
   description?: string | null;
+  technicalDescription?: string | null;
   defaultPrice?: number | null;
+  categories?: string[];
+  pests?: {
+    id?: number;
+    name: string;
+    scientificName?: string | null;
+    category?: string | null;
+    active?: boolean;
+  }[];
+  environments?: string[];
+  methods?: string[];
+  products?: {
+    id?: number;
+    inventoryItemId: number;
+    averageConsumption?: number | null;
+  }[];
+  warranty?: {
+    hasWarranty?: boolean;
+    quantity?: number | null;
+    unit?: string | null;
+    observation?: string | null;
+    rules?: string | null;
+  };
+  averageExecutionTime?: string | null;
+  recommendedTechnicians?: number | null;
+  needsReturn?: boolean;
+  returnQuantity?: number | null;
+  returnInterval?: string | null;
+  orderDefaultText?: string | null;
+  customerRecommendations?: string | null;
+  internalObservation?: string | null;
   active?: boolean;
 }
 
@@ -1388,28 +1426,212 @@ export const adjustInventoryItem = async (
 
 const buildServiceTypePayload = (
   tenantId: string | number,
-  data: ServiceTypeData
+  data: ServiceTypeData,
+  code?: string
 ): Record<string, unknown> => ({
   tenantId,
   name: cleanText(data.name),
+  code: code || cleanText(data.code),
   description: cleanText(data.description),
+  technicalDescription: cleanText(data.technicalDescription),
   defaultPrice: normalizeNumber(data.defaultPrice),
+  categories: data.categories || [],
+  averageExecutionTime: cleanText(data.averageExecutionTime),
+  recommendedTechnicians: Math.max(
+    1,
+    normalizeInteger(data.recommendedTechnicians || 1)
+  ),
+  needsReturn: data.needsReturn === true,
+  returnQuantity: Math.max(0, normalizeInteger(data.returnQuantity || 0)),
+  returnInterval: cleanText(data.returnInterval),
+  orderDefaultText: cleanText(data.orderDefaultText),
+  customerRecommendations: cleanText(data.customerRecommendations),
+  internalObservation: cleanText(data.internalObservation),
   active: data.active !== false
 });
 
+const serviceTypeInclude = [
+  { model: ServicePest },
+  { model: ServiceEnvironment },
+  { model: ServiceMethod },
+  {
+    model: ServiceProduct,
+    include: [
+      {
+        model: ServiceInventoryItem,
+        attributes: ["id", "name", "activeIngredient", "chemicalGroup", "unit"]
+      }
+    ]
+  },
+  { model: ServiceWarranty }
+];
+
+const serviceCodeFromId = (id: number): string =>
+  `SRV-${String(id).padStart(5, "0")}`;
+
+const replaceServiceTypeChildren = async (
+  tenantId: string | number,
+  serviceTypeId: number,
+  data: ServiceTypeData,
+  transaction: Transaction
+): Promise<void> => {
+  await Promise.all([
+    ServicePest.destroy({ where: { tenantId, serviceTypeId }, transaction }),
+    ServiceEnvironment.destroy({
+      where: { tenantId, serviceTypeId },
+      transaction
+    }),
+    ServiceMethod.destroy({ where: { tenantId, serviceTypeId }, transaction }),
+    ServiceProduct.destroy({ where: { tenantId, serviceTypeId }, transaction }),
+    ServiceWarranty.destroy({ where: { tenantId, serviceTypeId }, transaction })
+  ]);
+
+  const pests = (data.pests || []).filter(item => Boolean(cleanText(item.name)));
+  if (pests.length) {
+    await ServicePest.bulkCreate(
+      pests.map(item => ({
+        tenantId,
+        serviceTypeId,
+        name: cleanText(item.name),
+        scientificName: cleanText(item.scientificName),
+        category: cleanText(item.category),
+        active: item.active !== false
+      })),
+      { transaction }
+    );
+  }
+
+  const environments = [...new Set((data.environments || []).filter(Boolean))];
+  if (environments.length) {
+    await ServiceEnvironment.bulkCreate(
+      environments.map(environment => ({
+        tenantId,
+        serviceTypeId,
+        environment
+      })),
+      { transaction }
+    );
+  }
+
+  const methods = [...new Set((data.methods || []).filter(Boolean))];
+  if (methods.length) {
+    await ServiceMethod.bulkCreate(
+      methods.map(method => ({ tenantId, serviceTypeId, method })),
+      { transaction }
+    );
+  }
+
+  const products = (data.products || []).filter(item =>
+    Boolean(item.inventoryItemId)
+  );
+  if (products.length) {
+    const inventoryItemIds = products.map(item => Number(item.inventoryItemId));
+    const foundItems = await ServiceInventoryItem.count({
+      where: { tenantId, id: { [Op.in]: inventoryItemIds } },
+      transaction
+    });
+    if (foundItems !== new Set(inventoryItemIds).size) {
+      throw new AppError("ERR_SERVICE_INVENTORY_ITEM_NOT_FOUND", 404);
+    }
+    await ServiceProduct.bulkCreate(
+      products.map(item => ({
+        tenantId,
+        serviceTypeId,
+        inventoryItemId: Number(item.inventoryItemId),
+        averageConsumption: normalizeNumber(item.averageConsumption)
+      })),
+      { transaction }
+    );
+  }
+
+  if (data.warranty?.hasWarranty) {
+    await ServiceWarranty.create(
+      {
+        tenantId,
+        serviceTypeId,
+        quantity: Math.max(0, normalizeInteger(data.warranty.quantity || 0)),
+        unit: cleanText(data.warranty.unit) || "dias",
+        observation: cleanText(data.warranty.observation),
+        rules: cleanText(data.warranty.rules)
+      },
+      { transaction }
+    );
+  }
+};
+
 export const listServiceTypes = async (
-  tenantId: string | number
-): Promise<ServiceType[]> =>
-  ServiceType.findAll({
-    where: { tenantId },
+  tenantId: string | number,
+  filters: LegacyAny = {}
+): Promise<ServiceType[]> => {
+  const include = [
+    {
+      model: ServicePest,
+      ...(filters.pest
+        ? { where: { name: { [Op.iLike]: `%${filters.pest}%` } } }
+        : {})
+    },
+    {
+      model: ServiceEnvironment,
+      ...(filters.environment
+        ? { where: { environment: filters.environment } }
+        : {})
+    },
+    {
+      model: ServiceMethod,
+      ...(filters.method ? { where: { method: filters.method } } : {})
+    },
+    {
+      model: ServiceProduct,
+      include: [
+        {
+          model: ServiceInventoryItem,
+          attributes: ["id", "name", "activeIngredient", "chemicalGroup", "unit"]
+        }
+      ]
+    },
+    { model: ServiceWarranty }
+  ];
+
+  return ServiceType.findAll({
+    where: {
+      tenantId,
+      ...(filters.search
+        ? { name: { [Op.iLike]: `%${String(filters.search).trim()}%` } }
+        : {}),
+      ...(filters.category
+        ? { categories: { [Op.contains]: [filters.category] } }
+        : {})
+    },
+    include,
     order: [["name", "ASC"]]
   });
+};
 
 export const createServiceType = async (
   tenantId: string | number,
   data: ServiceTypeData
 ): Promise<ServiceType> =>
-  ServiceType.create(buildServiceTypePayload(tenantId, data));
+  sequelize.transaction(async transaction => {
+    const serviceType = await ServiceType.create(
+      buildServiceTypePayload(tenantId, data),
+      { transaction }
+    );
+    const code = cleanText(data.code) || serviceCodeFromId(serviceType.id);
+    await serviceType.update({ code }, { transaction });
+    await replaceServiceTypeChildren(
+      tenantId,
+      serviceType.id,
+      data,
+      transaction
+    );
+    const loaded = await ServiceType.findOne({
+      where: { id: serviceType.id, tenantId },
+      include: serviceTypeInclude,
+      transaction
+    });
+    if (!loaded) throw new AppError("ERR_SERVICE_TYPE_NOT_FOUND", 404);
+    return loaded;
+  });
 
 export const updateServiceType = async (
   tenantId: string | number,
@@ -1420,8 +1642,24 @@ export const updateServiceType = async (
     where: { id: serviceTypeId, tenantId }
   });
   if (!serviceType) throw new AppError("ERR_SERVICE_TYPE_NOT_FOUND", 404);
-  await serviceType.update(buildServiceTypePayload(tenantId, data));
-  return serviceType;
+  await sequelize.transaction(async transaction => {
+    await serviceType.update(
+      buildServiceTypePayload(tenantId, data, serviceType.code),
+      { transaction }
+    );
+    await replaceServiceTypeChildren(
+      tenantId,
+      serviceType.id,
+      data,
+      transaction
+    );
+  });
+  const loaded = await ServiceType.findOne({
+    where: { id: serviceTypeId, tenantId },
+    include: serviceTypeInclude
+  });
+  if (!loaded) throw new AppError("ERR_SERVICE_TYPE_NOT_FOUND", 404);
+  return loaded;
 };
 
 export const deleteServiceType = async (
@@ -1432,7 +1670,38 @@ export const deleteServiceType = async (
     where: { id: serviceTypeId, tenantId }
   });
   if (!serviceType) throw new AppError("ERR_SERVICE_TYPE_NOT_FOUND", 404);
-  await serviceType.destroy();
+  await serviceType.update({ active: false });
+};
+
+export const duplicateServiceType = async (
+  tenantId: string | number,
+  serviceTypeId: string
+): Promise<ServiceType> => {
+  const serviceType = await ServiceType.findOne({
+    where: { id: serviceTypeId, tenantId },
+    include: serviceTypeInclude
+  });
+  if (!serviceType) throw new AppError("ERR_SERVICE_TYPE_NOT_FOUND", 404);
+
+  const source = serviceType.toJSON() as LegacyAny;
+  return createServiceType(tenantId, {
+    ...source,
+    id: undefined,
+    name: `${source.name} (copia)`,
+    code: null,
+    products: (source.products || []).map((item: LegacyAny) => ({
+      inventoryItemId: item.inventoryItemId,
+      averageConsumption: item.averageConsumption
+    })),
+    environments: (source.environments || []).map(
+      (item: LegacyAny) => item.environment
+    ),
+    methods: (source.methods || []).map((item: LegacyAny) => item.method),
+    warranty: {
+      hasWarranty: Boolean(source.warranties?.length),
+      ...(source.warranties?.[0] || {})
+    }
+  });
 };
 
 export const listOrders = async (

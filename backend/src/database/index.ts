@@ -50,7 +50,12 @@ import ServiceInventoryPestRecommendation from "../models/ServiceInventoryPestRe
 import ServiceOrder from "../models/ServiceOrder";
 import ServiceOrderItem from "../models/ServiceOrderItem";
 import ServiceOrderLog from "../models/ServiceOrderLog";
+import ServiceEnvironment from "../models/ServiceEnvironment";
+import ServiceMethod from "../models/ServiceMethod";
+import ServicePest from "../models/ServicePest";
+import ServiceProduct from "../models/ServiceProduct";
 import ServiceType from "../models/ServiceType";
+import ServiceWarranty from "../models/ServiceWarranty";
 import SalesOpportunity from "../models/SalesOpportunity";
 import SalesOpportunityLog from "../models/SalesOpportunityLog";
 import SalesProposal from "../models/SalesProposal";
@@ -121,7 +126,12 @@ const models = [
   ServiceOrder,
   ServiceOrderItem,
   ServiceOrderLog,
+  ServiceEnvironment,
+  ServiceMethod,
+  ServicePest,
+  ServiceProduct,
   ServiceType,
+  ServiceWarranty,
   SalesOpportunity,
   SalesOpportunityLog,
   SalesProposal,

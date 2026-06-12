@@ -59,6 +59,11 @@ serviceOrderRoutes.get(
   isAuth,
   ServiceOrderController.listFinancialAuditLogs
 );
+serviceOrderRoutes.get(
+  "/service/types-audit",
+  isAuth,
+  ServiceOrderController.listServiceTypeAuditLogs
+);
 serviceOrderRoutes.post(
   "/service/inventory",
   isAuth,
@@ -93,6 +98,11 @@ serviceOrderRoutes.put(
   "/service/types/:serviceTypeId",
   isAuth,
   ServiceOrderController.updateServiceType
+);
+serviceOrderRoutes.post(
+  "/service/types/:serviceTypeId/duplicate",
+  isAuth,
+  ServiceOrderController.duplicateServiceType
 );
 serviceOrderRoutes.delete(
   "/service/types/:serviceTypeId",
