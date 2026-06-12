@@ -66,6 +66,73 @@ const countPdfPages = (pdf: Buffer): number =>
   (pdf.toString("latin1").match(/\/Type\s*\/Page\b/g) || []).length;
 
 describe("service orders inventory API", () => {
+  it("lista produtos com estoque baixo com lotes sem vazar dados de outro tenant", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const otherUser = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    const lowStockItem = await ServiceInventoryItem.create({
+      tenantId: user.tenantId,
+      name: "Inseticida baixo estoque",
+      unit: "ml",
+      quantity: 1,
+      minQuantity: 2,
+      costPrice: 5,
+      salePrice: 20,
+      active: true
+    });
+    const normalStockItem = await ServiceInventoryItem.create({
+      tenantId: user.tenantId,
+      name: "Inseticida estoque normal",
+      unit: "ml",
+      quantity: 10,
+      minQuantity: 2,
+      costPrice: 5,
+      salePrice: 20,
+      active: true
+    });
+    const otherTenantItem = await ServiceInventoryItem.create({
+      tenantId: otherUser.tenantId,
+      name: "Produto de outro tenant",
+      unit: "ml",
+      quantity: 0,
+      minQuantity: 5,
+      costPrice: 5,
+      salePrice: 20,
+      active: true
+    });
+
+    await ServiceInventoryBatch.create({
+      tenantId: user.tenantId,
+      inventoryItemId: lowStockItem.id,
+      batchNumber: "BAIXO-001",
+      quantity: 1
+    });
+
+    const { body } = await request(app)
+      .get("/service/inventory-low-stock")
+      .set("Authorization", authorization)
+      .expect(200);
+
+    expect(body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: lowStockItem.id,
+          name: lowStockItem.name,
+          batches: expect.arrayContaining([
+            expect.objectContaining({ batchNumber: "BAIXO-001" })
+          ])
+        })
+      ])
+    );
+    expect(body).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: normalStockItem.id }),
+        expect.objectContaining({ id: otherTenantItem.id })
+      ])
+    );
+  });
+
   it("exige lote e consome o lote selecionado quando controle de lote esta habilitado", async () => {
     const app = await makeTestApp();
     const user = await createAdminUser();

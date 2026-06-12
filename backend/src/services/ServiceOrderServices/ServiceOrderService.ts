@@ -1077,7 +1077,13 @@ export const listLowStockInventoryItems = async (
     where: {
       tenantId,
       active: true,
-      [Op.and]: [sequelizeWhere(col("quantity"), "<=", col("minQuantity"))]
+      [Op.and]: [
+        sequelizeWhere(
+          col("ServiceInventoryItem.quantity"),
+          "<=",
+          col("ServiceInventoryItem.minQuantity")
+        )
+      ]
     },
     include: inventoryInclude,
     order: [["name", "ASC"]]
