@@ -1,5 +1,6 @@
 import request from "supertest";
 import AuditLog from "../../src/models/AuditLog";
+import ServiceInventoryBatch from "../../src/models/ServiceInventoryBatch";
 import ServiceInventoryItem from "../../src/models/ServiceInventoryItem";
 import ServiceInventoryMovement from "../../src/models/ServiceInventoryMovement";
 import ServiceOrder from "../../src/models/ServiceOrder";
@@ -37,10 +38,98 @@ const orderPayload = (
   ]
 });
 
+const orderPayloadWithBatch = (
+  contactId: number,
+  inventoryItemId: number,
+  inventoryBatchId: number | null,
+  quantity: number,
+  status = "rascunho"
+) => ({
+  ...orderPayload(contactId, inventoryItemId, quantity, status),
+  items: [
+    {
+      itemType: "product",
+      inventoryItemId,
+      inventoryBatchId,
+      pestTarget: "Baratas",
+      applicationMethod: "pulverizacao",
+      dilutionUsed: "10 ml para 1 litro de agua",
+      technicalObservation: "Aplicar em pontos de abrigo",
+      description: "Inseticida tecnico",
+      quantity,
+      unitPrice: 80
+    }
+  ]
+});
+
 const countPdfPages = (pdf: Buffer): number =>
   (pdf.toString("latin1").match(/\/Type\s*\/Page\b/g) || []).length;
 
 describe("service orders inventory API", () => {
+  it("exige lote e consome o lote selecionado quando controle de lote esta habilitado", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    const contact = await createContact({ tenantId: user.tenantId });
+    const inventoryItem = await ServiceInventoryItem.create({
+      tenantId: user.tenantId,
+      name: "Inseticida tecnico",
+      activeIngredient: "Cipermetrina",
+      productCategory: "inseticida",
+      unit: "ml",
+      quantity: 10,
+      minQuantity: 1,
+      costPrice: 5,
+      salePrice: 80,
+      lotControlEnabled: true,
+      applicationMethods: ["pulverizacao"],
+      active: true
+    });
+    const batch = await ServiceInventoryBatch.create({
+      tenantId: user.tenantId,
+      inventoryItemId: inventoryItem.id,
+      batchNumber: "L-2026-001",
+      expirationDate: "2026-12-31",
+      quantity: 6
+    });
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send(orderPayloadWithBatch(contact.id, inventoryItem.id, null, 2, "concluida"))
+      .expect(400);
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send(
+        orderPayloadWithBatch(
+          contact.id,
+          inventoryItem.id,
+          batch.id,
+          3,
+          "concluida"
+        )
+      )
+      .expect(201);
+
+    await inventoryItem.reload();
+    await batch.reload();
+    const movement = await ServiceInventoryMovement.findOne({
+      where: { inventoryItemId: inventoryItem.id }
+    });
+
+    expect(inventoryItem.quantity).toBe(7);
+    expect(batch.quantity).toBe(3);
+    expect(movement).toMatchObject({
+      inventoryBatchId: batch.id,
+      quantity: -3,
+      unitCost: "5.00",
+      totalCost: "15.00",
+      pestTarget: "Baratas"
+    });
+  });
+
   it("baixa estoque uma unica vez ao concluir ordem de servico", async () => {
     const app = await makeTestApp();
     const user = await createAdminUser();

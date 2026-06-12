@@ -45,6 +45,8 @@ import AuditLog from "../models/AuditLog";
 import ServiceAttendant from "../models/ServiceAttendant";
 import ServiceInventoryMovement from "../models/ServiceInventoryMovement";
 import ServiceInventoryItem from "../models/ServiceInventoryItem";
+import ServiceInventoryBatch from "../models/ServiceInventoryBatch";
+import ServiceInventoryPestRecommendation from "../models/ServiceInventoryPestRecommendation";
 import ServiceOrder from "../models/ServiceOrder";
 import ServiceOrderItem from "../models/ServiceOrderItem";
 import ServiceOrderLog from "../models/ServiceOrderLog";
@@ -114,6 +116,8 @@ const models = [
   ServiceAttendant,
   ServiceInventoryMovement,
   ServiceInventoryItem,
+  ServiceInventoryBatch,
+  ServiceInventoryPestRecommendation,
   ServiceOrder,
   ServiceOrderItem,
   ServiceOrderLog,

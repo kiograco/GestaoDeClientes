@@ -11,6 +11,7 @@ import {
   DataType
 } from "sequelize-typescript";
 import ServiceInventoryItem from "./ServiceInventoryItem";
+import ServiceInventoryBatch from "./ServiceInventoryBatch";
 import ServiceOrder from "./ServiceOrder";
 import ServiceType from "./ServiceType";
 import Tenant from "./Tenant";
@@ -53,8 +54,27 @@ class ServiceOrderItem extends Model<ServiceOrderItem> {
   @BelongsTo(() => ServiceInventoryItem)
   inventoryItem: ServiceInventoryItem;
 
+  @ForeignKey(() => ServiceInventoryBatch)
+  @Column
+  inventoryBatchId: number;
+
+  @BelongsTo(() => ServiceInventoryBatch)
+  inventoryBatch: ServiceInventoryBatch;
+
   @Column
   description: string;
+
+  @Column
+  pestTarget: string;
+
+  @Column
+  applicationMethod: string;
+
+  @Column
+  dilutionUsed: string;
+
+  @Column(DataType.TEXT)
+  technicalObservation: string;
 
   @Column(DataType.INTEGER)
   quantity: number;

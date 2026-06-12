@@ -25,12 +25,78 @@ const attendantSchema = Yup.object().shape({
 const inventoryItemSchema = Yup.object().shape({
   name: Yup.string().trim().required().min(2),
   sku: nullableString,
+  activeIngredient: nullableString,
+  chemicalGroup: nullableString,
+  healthRegistration: nullableString,
+  manufacturer: nullableString,
+  productCategory: Yup.string()
+    .oneOf([
+      "inseticida",
+      "raticida",
+      "cupinicida",
+      "desinfetante",
+      "repelente",
+      "larvicida",
+      "outro"
+    ])
+    .default("outro"),
   description: nullableString,
-  unit: Yup.string().trim().oneOf(["unidade", "litros"]).default("unidade"),
+  unit: Yup.string()
+    .trim()
+    .oneOf(["ml", "litro", "grama", "kg", "unidade", "litros"])
+    .default("unidade"),
   quantity: Yup.number().integer().min(0).default(0),
   minQuantity: Yup.number().integer().min(0).default(0),
   costPrice: Yup.number().min(0).nullable(),
   salePrice: Yup.number().min(0).nullable(),
+  internalCode: nullableString,
+  barcode: nullableString,
+  lotControlEnabled: Yup.boolean(),
+  showLotOnOrder: Yup.boolean(),
+  showLotExpirationOnOrder: Yup.boolean(),
+  diluentTypes: Yup.array().of(
+    Yup.string().oneOf([
+      "agua",
+      "oleo_mineral",
+      "iso_parafina",
+      "pronto_uso",
+      "outro"
+    ])
+  ),
+  applicationMethods: Yup.array().of(
+    Yup.string().oneOf([
+      "pulverizacao",
+      "termonebulizacao",
+      "atomizacao",
+      "iscagem",
+      "polvilhamento",
+      "gel",
+      "espuma",
+      "outro"
+    ])
+  ),
+  showApplicationMethodOnOrder: Yup.boolean(),
+  printSettings: Yup.object().nullable(),
+  batches: Yup.array().of(
+    Yup.object().shape({
+      batchNumber: Yup.string().trim().required(),
+      manufacturingDate: Yup.date().nullable(),
+      expirationDate: Yup.date().nullable(),
+      quantity: Yup.number().integer().min(0).default(0),
+      supplier: nullableString,
+      observation: nullableString
+    })
+  ),
+  pestRecommendations: Yup.array().of(
+    Yup.object().shape({
+      pest: Yup.string().trim().required(),
+      productQuantity: Yup.number().min(0).nullable(),
+      diluentQuantity: Yup.number().min(0).nullable(),
+      unit: nullableString,
+      actionTime: nullableString,
+      technicalObservation: nullableString
+    })
+  ),
   active: Yup.boolean()
 });
 
@@ -51,9 +117,14 @@ const orderItemSchema = Yup.object().shape({
   itemType: Yup.string().oneOf(["service", "product"]).required(),
   serviceTypeId: Yup.number().integer().positive().nullable(),
   inventoryItemId: Yup.number().integer().positive().nullable(),
+  inventoryBatchId: Yup.number().integer().positive().nullable(),
   description: Yup.string().trim().required().min(2),
   quantity: Yup.number().integer().min(1).required(),
-  unitPrice: Yup.number().min(0).required()
+  unitPrice: Yup.number().min(0).required(),
+  pestTarget: nullableString,
+  applicationMethod: nullableString,
+  dilutionUsed: nullableString,
+  technicalObservation: nullableString
 });
 
 const orderSchema = Yup.object().shape({
@@ -149,6 +220,43 @@ const auditStockAction = async (
     userAgent: req.get("user-agent"),
     metadata
   });
+
+const technicalInventoryFields = [
+  "name",
+  "sku",
+  "activeIngredient",
+  "chemicalGroup",
+  "healthRegistration",
+  "manufacturer",
+  "productCategory",
+  "unit",
+  "costPrice",
+  "salePrice",
+  "internalCode",
+  "barcode",
+  "lotControlEnabled",
+  "showLotOnOrder",
+  "showLotExpirationOnOrder",
+  "diluentTypes",
+  "applicationMethods",
+  "showApplicationMethodOnOrder",
+  "printSettings"
+];
+
+const inventoryChanges = (
+  before: Record<string, unknown> | null,
+  after: Record<string, unknown>,
+  payload: Record<string, unknown>
+): Record<string, { before: unknown; after: unknown }> =>
+  technicalInventoryFields.reduce((acc, field) => {
+    if (!(field in payload)) return acc;
+    const oldValue = before?.[field] ?? null;
+    const newValue = after[field] ?? null;
+    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+      acc[field] = { before: oldValue, after: newValue };
+    }
+    return acc;
+  }, {} as Record<string, { before: unknown; after: unknown }>);
 
 const auditFinancialAction = async (
   req: Request,
@@ -340,6 +448,31 @@ export const listInventoryMovements = async (
 ): Promise<Response> =>
   res.json(await ServiceOrder.listInventoryMovements(req.user.tenantId));
 
+export const inventoryConsumptionReport = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await ServiceOrder.getInventoryConsumptionReport(
+      req.user.tenantId,
+      req.query
+    )
+  );
+
+export const inventoryBatchReport = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(await ServiceOrder.getInventoryBatchReport(req.user.tenantId));
+
+export const inventoryCostReport = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await ServiceOrder.getInventoryCostReport(req.user.tenantId, req.query)
+  );
+
 export const listInventoryAuditLogs = async (
   req: Request,
   res: Response
@@ -397,10 +530,19 @@ export const updateInventoryItem = async (
     inventoryItemSchema,
     req.body
   );
+  const before = await ServiceOrder.getInventoryItem(
+    req.user.tenantId,
+    req.params.itemId
+  );
   const item = await ServiceOrder.updateInventoryItem(
     req.user.tenantId,
     req.params.itemId,
     data
+  );
+  const changes = inventoryChanges(
+    before ? (before.toJSON() as Record<string, unknown>) : null,
+    item.toJSON() as Record<string, unknown>,
+    data as unknown as Record<string, unknown>
   );
   await auditStockAction(req, "service_inventory_updated", item.id, {
     name: item.name,
@@ -409,7 +551,17 @@ export const updateInventoryItem = async (
     minQuantity: item.minQuantity,
     active: item.active,
     changedCostPrice: data.costPrice !== undefined,
-    changedSalePrice: data.salePrice !== undefined
+    changedSalePrice: data.salePrice !== undefined,
+    changedFields: Object.keys(changes),
+    changes,
+    batches: {
+      before: before?.batches?.length || 0,
+      after: item.batches?.length || 0
+    },
+    pestRecommendations: {
+      before: before?.pestRecommendations?.length || 0,
+      after: item.pestRecommendations?.length || 0
+    }
   });
   return res.json(item);
 };

@@ -6,8 +6,10 @@ import AppError from "../../errors/AppError";
 import Contact from "../../models/Contact";
 import CustomerAddress from "../../models/CustomerAddress";
 import ServiceAttendant from "../../models/ServiceAttendant";
+import ServiceInventoryBatch from "../../models/ServiceInventoryBatch";
 import ServiceInventoryMovement from "../../models/ServiceInventoryMovement";
 import ServiceInventoryItem from "../../models/ServiceInventoryItem";
+import ServiceInventoryPestRecommendation from "../../models/ServiceInventoryPestRecommendation";
 import ServiceOrder from "../../models/ServiceOrder";
 import ServiceOrderItem from "../../models/ServiceOrderItem";
 import ServiceOrderLog from "../../models/ServiceOrderLog";
@@ -64,9 +66,14 @@ export interface ServiceOrderItemData {
   itemType: "service" | "product";
   serviceTypeId?: number | null;
   inventoryItemId?: number | null;
+  inventoryBatchId?: number | null;
   description: string;
   quantity: number;
   unitPrice: number;
+  pestTarget?: string | null;
+  applicationMethod?: string | null;
+  dilutionUsed?: string | null;
+  technicalObservation?: string | null;
 }
 
 export interface ServiceOrderData {
@@ -113,15 +120,51 @@ export interface ServiceOrderBillingReminderData
   force?: boolean;
 }
 
+export interface ServiceInventoryBatchData {
+  id?: number;
+  batchNumber: string;
+  manufacturingDate?: string | Date | null;
+  expirationDate?: string | Date | null;
+  quantity?: number;
+  supplier?: string | null;
+  observation?: string | null;
+}
+
+export interface ServiceInventoryPestRecommendationData {
+  id?: number;
+  pest: string;
+  productQuantity?: number | null;
+  diluentQuantity?: number | null;
+  unit?: string | null;
+  actionTime?: string | null;
+  technicalObservation?: string | null;
+}
+
 export interface ServiceInventoryItemData {
   name: string;
   sku?: string | null;
+  activeIngredient?: string | null;
+  chemicalGroup?: string | null;
+  healthRegistration?: string | null;
+  manufacturer?: string | null;
+  productCategory?: string | null;
   description?: string | null;
   unit?: string | null;
   quantity?: number;
   minQuantity?: number;
   costPrice?: number | null;
   salePrice?: number | null;
+  internalCode?: string | null;
+  barcode?: string | null;
+  lotControlEnabled?: boolean;
+  showLotOnOrder?: boolean;
+  showLotExpirationOnOrder?: boolean;
+  diluentTypes?: string[];
+  applicationMethods?: string[];
+  showApplicationMethodOnOrder?: boolean;
+  printSettings?: Record<string, boolean>;
+  batches?: ServiceInventoryBatchData[];
+  pestRecommendations?: ServiceInventoryPestRecommendationData[];
   active?: boolean;
 }
 
@@ -230,7 +273,17 @@ const includeOrder = [
   {
     model: ServiceOrderItem,
     as: "items",
-    include: [{ model: ServiceType }, { model: ServiceInventoryItem }]
+    include: [
+      { model: ServiceType },
+      {
+        model: ServiceInventoryItem,
+        include: [
+          { model: ServiceInventoryBatch },
+          { model: ServiceInventoryPestRecommendation }
+        ]
+      },
+      { model: ServiceInventoryBatch }
+    ]
   },
   {
     model: ServiceOrderLog,
@@ -494,15 +547,39 @@ const ensureInventoryItem = async (
   tenantId: string | number,
   inventoryItemId?: number | null,
   transaction?: Transaction
-): Promise<void> => {
-  if (!inventoryItemId) return;
+): Promise<ServiceInventoryItem | null> => {
+  if (!inventoryItemId) return null;
   const inventoryItem = await ServiceInventoryItem.findOne({
     where: { id: inventoryItemId, tenantId },
+    include: [
+      { model: ServiceInventoryBatch },
+      { model: ServiceInventoryPestRecommendation }
+    ],
     transaction
   });
   if (!inventoryItem) {
     throw new AppError("ERR_SERVICE_INVENTORY_ITEM_NOT_FOUND", 404);
   }
+  return inventoryItem;
+};
+
+const ensureInventoryBatch = async (
+  tenantId: string | number,
+  inventoryItemId?: number | null,
+  inventoryBatchId?: number | null,
+  transaction?: Transaction
+): Promise<ServiceInventoryBatch | null> => {
+  if (!inventoryBatchId) return null;
+  const batch = await ServiceInventoryBatch.findOne({
+    where: {
+      id: inventoryBatchId,
+      inventoryItemId: inventoryItemId || null,
+      tenantId
+    },
+    transaction
+  });
+  if (!batch) throw new AppError("ERR_SERVICE_INVENTORY_BATCH_NOT_FOUND", 404);
+  return batch;
 };
 
 export const validateServiceOrderSchedule = (data: ServiceOrderData): void => {
@@ -698,6 +775,60 @@ const buildBillingReminderMessage = (
   return parts.filter(Boolean).join("\n");
 };
 
+const defaultPrintSettings = {
+  commercialName: true,
+  activeIngredient: true,
+  chemicalGroup: true,
+  healthRegistration: true,
+  lotNumber: true,
+  lotExpiration: true,
+  applicationMethod: true,
+  dilution: true,
+  technicalObservation: true
+};
+
+const productTechnicalDetails = (item: ServiceOrderItem): string => {
+  if (item.itemType !== "product" || !item.inventoryItem) return "";
+  const product = item.inventoryItem;
+  const settings = {
+    ...defaultPrintSettings,
+    ...(product.printSettings || {})
+  };
+  const parts = [
+    settings.commercialName ? product.name : null,
+    settings.activeIngredient && product.activeIngredient
+      ? `Principio ativo: ${product.activeIngredient}`
+      : null,
+    settings.chemicalGroup && product.chemicalGroup
+      ? `Grupo quimico: ${product.chemicalGroup}`
+      : null,
+    settings.healthRegistration && product.healthRegistration
+      ? `Registro MS/ANVISA: ${product.healthRegistration}`
+      : null,
+    settings.lotNumber && product.showLotOnOrder && item.inventoryBatch
+      ? `Lote: ${item.inventoryBatch.batchNumber}`
+      : null,
+    settings.lotExpiration &&
+    product.showLotExpirationOnOrder &&
+    item.inventoryBatch?.expirationDate
+      ? `Vencimento: ${item.inventoryBatch.expirationDate}`
+      : null,
+    settings.applicationMethod &&
+    product.showApplicationMethodOnOrder &&
+    item.applicationMethod
+      ? `Metodo: ${item.applicationMethod}`
+      : null,
+    settings.dilution && item.dilutionUsed
+      ? `Diluicao: ${item.dilutionUsed}`
+      : null,
+    item.pestTarget ? `Praga: ${item.pestTarget}` : null,
+    settings.technicalObservation && item.technicalObservation
+      ? `Obs. tecnica: ${item.technicalObservation}`
+      : null
+  ];
+  return parts.filter(Boolean).join(" | ");
+};
+
 const sendServiceOrderMessage = async (
   tenantId: string | number,
   userId: string | number,
@@ -819,6 +950,11 @@ const normalizeMoney = (value?: number | null): number => {
   return normalized === null ? 0 : Number(normalized.toFixed(2));
 };
 
+const normalizeStringArray = (value?: string[]): string[] =>
+  Array.isArray(value)
+    ? (value.map(item => cleanText(item)).filter(Boolean) as string[])
+    : [];
+
 const buildInventoryPayload = (
   tenantId: string | number,
   data: ServiceInventoryItemData
@@ -826,20 +962,111 @@ const buildInventoryPayload = (
   tenantId,
   name: cleanText(data.name),
   sku: cleanText(data.sku),
+  activeIngredient: cleanText(data.activeIngredient),
+  chemicalGroup: cleanText(data.chemicalGroup),
+  healthRegistration: cleanText(data.healthRegistration),
+  manufacturer: cleanText(data.manufacturer),
+  productCategory: cleanText(data.productCategory) || "outro",
   description: cleanText(data.description),
   unit: cleanText(data.unit) || "unidade",
   quantity: normalizeInteger(data.quantity),
   minQuantity: normalizeInteger(data.minQuantity),
   costPrice: normalizeNumber(data.costPrice),
   salePrice: normalizeNumber(data.salePrice),
+  internalCode: cleanText(data.internalCode),
+  barcode: cleanText(data.barcode),
+  lotControlEnabled: data.lotControlEnabled === true,
+  showLotOnOrder: data.showLotOnOrder !== false,
+  showLotExpirationOnOrder: data.showLotExpirationOnOrder !== false,
+  diluentTypes: normalizeStringArray(data.diluentTypes),
+  applicationMethods: normalizeStringArray(data.applicationMethods),
+  showApplicationMethodOnOrder: data.showApplicationMethodOnOrder !== false,
+  printSettings: {
+    ...defaultPrintSettings,
+    ...(data.printSettings || {})
+  },
   active: data.active !== false
 });
+
+const buildBatchPayload = (
+  tenantId: string | number,
+  inventoryItemId: number,
+  data: ServiceInventoryBatchData
+): Record<string, unknown> => ({
+  tenantId,
+  inventoryItemId,
+  batchNumber: cleanText(data.batchNumber),
+  manufacturingDate: data.manufacturingDate || null,
+  expirationDate: data.expirationDate || null,
+  quantity: normalizeInteger(data.quantity),
+  supplier: cleanText(data.supplier),
+  observation: cleanText(data.observation)
+});
+
+const buildPestRecommendationPayload = (
+  tenantId: string | number,
+  inventoryItemId: number,
+  data: ServiceInventoryPestRecommendationData
+): Record<string, unknown> => ({
+  tenantId,
+  inventoryItemId,
+  pest: cleanText(data.pest),
+  productQuantity: normalizeNumber(data.productQuantity),
+  diluentQuantity: normalizeNumber(data.diluentQuantity),
+  unit: cleanText(data.unit),
+  actionTime: cleanText(data.actionTime),
+  technicalObservation: cleanText(data.technicalObservation)
+});
+
+const replaceInventoryChildren = async (
+  tenantId: string | number,
+  inventoryItemId: number,
+  data: ServiceInventoryItemData,
+  transaction: Transaction
+): Promise<void> => {
+  await ServiceInventoryBatch.destroy({
+    where: { tenantId, inventoryItemId },
+    transaction
+  });
+  await ServiceInventoryPestRecommendation.destroy({
+    where: { tenantId, inventoryItemId },
+    transaction
+  });
+
+  const batches = (data.batches || []).filter(batch =>
+    Boolean(cleanText(batch.batchNumber))
+  );
+  if (batches.length) {
+    await ServiceInventoryBatch.bulkCreate(
+      batches.map(batch => buildBatchPayload(tenantId, inventoryItemId, batch)),
+      { transaction }
+    );
+  }
+
+  const recommendations = (data.pestRecommendations || []).filter(item =>
+    Boolean(cleanText(item.pest))
+  );
+  if (recommendations.length) {
+    await ServiceInventoryPestRecommendation.bulkCreate(
+      recommendations.map(item =>
+        buildPestRecommendationPayload(tenantId, inventoryItemId, item)
+      ),
+      { transaction }
+    );
+  }
+};
+
+const inventoryInclude = [
+  { model: ServiceInventoryBatch },
+  { model: ServiceInventoryPestRecommendation }
+];
 
 export const listInventoryItems = async (
   tenantId: string | number
 ): Promise<ServiceInventoryItem[]> =>
   ServiceInventoryItem.findAll({
     where: { tenantId },
+    include: inventoryInclude,
     order: [["name", "ASC"]]
   });
 
@@ -852,7 +1079,17 @@ export const listLowStockInventoryItems = async (
       active: true,
       [Op.and]: [sequelizeWhere(col("quantity"), "<=", col("minQuantity"))]
     },
+    include: inventoryInclude,
     order: [["name", "ASC"]]
+  });
+
+export const getInventoryItem = async (
+  tenantId: string | number,
+  itemId: string
+): Promise<ServiceInventoryItem | null> =>
+  ServiceInventoryItem.findOne({
+    where: { id: itemId, tenantId },
+    include: inventoryInclude
   });
 
 export const listInventoryMovements = async (
@@ -862,6 +1099,10 @@ export const listInventoryMovements = async (
     where: { tenantId },
     include: [
       { model: ServiceInventoryItem, attributes: ["id", "name", "unit"] },
+      {
+        model: ServiceInventoryBatch,
+        attributes: ["id", "batchNumber", "expirationDate"]
+      },
       { model: ServiceOrder, attributes: ["id", "title", "status"] },
       { model: User, attributes: ["id", "name", "email"] }
     ],
@@ -869,11 +1110,189 @@ export const listInventoryMovements = async (
     limit: 100
   });
 
+const parseReportDate = (value: unknown): Date | undefined => {
+  if (!value) return undefined;
+  const date = new Date(String(value));
+  return Number.isNaN(date.getTime()) ? undefined : date;
+};
+
+const buildMovementWhere = (
+  tenantId: string | number,
+  filters: LegacyAny = {}
+): LegacyAny => {
+  const where: LegacyAny = {
+    tenantId,
+    movementType: "service_order_deduction"
+  };
+  const start = parseReportDate(filters.startDate);
+  const end = parseReportDate(filters.endDate);
+  if (start || end) {
+    where.createdAt = {
+      ...(start ? { [Op.gte]: start } : {}),
+      ...(end ? { [Op.lte]: end } : {})
+    };
+  }
+  return where;
+};
+
+export const getInventoryConsumptionReport = async (
+  tenantId: string | number,
+  filters: LegacyAny = {}
+): Promise<Record<string, unknown>> => {
+  const movements = await ServiceInventoryMovement.findAll({
+    where: buildMovementWhere(tenantId, filters) as LegacyAny,
+    include: [
+      { model: ServiceInventoryItem },
+      {
+        model: ServiceOrder,
+        attributes: ["id", "title", "attendantId", "contactId"],
+        include: [
+          { model: Contact, attributes: ["id", "name"] },
+          { model: ServiceAttendant, attributes: ["id", "name"] }
+        ]
+      }
+    ],
+    order: [["createdAt", "DESC"]]
+  });
+
+  const add = (
+    acc: Record<string, number>,
+    key: string | number | null | undefined,
+    value: number
+  ) => {
+    const label = key ? String(key) : "Nao informado";
+    acc[label] = Number(((acc[label] || 0) + value).toFixed(3));
+  };
+
+  const byProduct: Record<string, number> = {};
+  const byClient: Record<string, number> = {};
+  const byAttendant: Record<string, number> = {};
+
+  movements.forEach(movement => {
+    const quantity = Math.abs(Number(movement.quantity || 0));
+    add(byProduct, movement.inventoryItem?.name, quantity);
+    add(byClient, movement.serviceOrder?.contact?.name, quantity);
+    add(byAttendant, movement.serviceOrder?.attendant?.name, quantity);
+  });
+
+  return {
+    rows: movements,
+    byProduct,
+    byClient,
+    byAttendant,
+    mostUsedProduct:
+      Object.entries(byProduct).sort((a, b) => b[1] - a[1])[0]?.[0] || null
+  };
+};
+
+export const getInventoryBatchReport = async (
+  tenantId: string | number
+): Promise<Record<string, unknown>> => {
+  const today = new Date();
+  const soon = new Date();
+  soon.setDate(soon.getDate() + 30);
+  const batches = await ServiceInventoryBatch.findAll({
+    where: { tenantId },
+    include: [
+      { model: ServiceInventoryItem, attributes: ["id", "name", "unit"] }
+    ],
+    order: [["expirationDate", "ASC"]]
+  });
+  const movements = await ServiceInventoryMovement.findAll({
+    where: { tenantId, inventoryBatchId: { [Op.ne]: null } } as LegacyAny,
+    include: [
+      { model: ServiceInventoryItem, attributes: ["id", "name", "unit"] },
+      { model: ServiceInventoryBatch, attributes: ["id", "batchNumber"] },
+      { model: ServiceOrder, attributes: ["id", "title"] },
+      { model: User, attributes: ["id", "name"] }
+    ],
+    order: [["createdAt", "DESC"]],
+    limit: 200
+  });
+
+  return {
+    expiringSoon: batches.filter(batch => {
+      if (!batch.expirationDate) return false;
+      const expiration = new Date(batch.expirationDate);
+      return expiration >= today && expiration <= soon;
+    }),
+    expired: batches.filter(batch => {
+      if (!batch.expirationDate) return false;
+      return new Date(batch.expirationDate) < today;
+    }),
+    depleted: batches.filter(batch => Number(batch.quantity || 0) <= 0),
+    history: movements
+  };
+};
+
+const addCost = (
+  acc: Record<string, number>,
+  key: string | number | null | undefined,
+  value: number
+) => {
+  const label = key ? String(key) : "Nao informado";
+  acc[label] = Number(((acc[label] || 0) + value).toFixed(2));
+};
+
+export const getInventoryCostReport = async (
+  tenantId: string | number,
+  filters: LegacyAny = {}
+): Promise<Record<string, unknown>> => {
+  const movements = await ServiceInventoryMovement.findAll({
+    where: buildMovementWhere(tenantId, filters) as LegacyAny,
+    include: [
+      { model: ServiceInventoryItem, attributes: ["id", "name", "unit"] },
+      {
+        model: ServiceOrder,
+        attributes: ["id", "title", "contactId", "chargedAmount"],
+        include: [{ model: Contact, attributes: ["id", "name"] }]
+      }
+    ],
+    order: [["createdAt", "DESC"]]
+  });
+
+  const byOrder: Record<string, number> = {};
+  const byClient: Record<string, number> = {};
+  const byPest: Record<string, number> = {};
+  movements.forEach(movement => {
+    const cost = normalizeMoney(Number(movement.totalCost || 0));
+    addCost(byOrder, movement.serviceOrderId, cost);
+    addCost(byClient, movement.serviceOrder?.contact?.name, cost);
+    addCost(byPest, movement.pestTarget, cost);
+  });
+
+  return {
+    rows: movements,
+    byOrder,
+    byClient,
+    byPest,
+    totalCost: Number(
+      movements
+        .reduce((sum, movement) => sum + Number(movement.totalCost || 0), 0)
+        .toFixed(2)
+    )
+  };
+};
+
 export const createInventoryItem = async (
   tenantId: string | number,
   data: ServiceInventoryItemData
-): Promise<ServiceInventoryItem> =>
-  ServiceInventoryItem.create(buildInventoryPayload(tenantId, data));
+): Promise<ServiceInventoryItem> => {
+  const created = await sequelize.transaction(async transaction => {
+    const item = await ServiceInventoryItem.create(
+      buildInventoryPayload(tenantId, data),
+      { transaction }
+    );
+    await replaceInventoryChildren(tenantId, item.id, data, transaction);
+    return item;
+  });
+  const loaded = await ServiceInventoryItem.findOne({
+    where: { id: created.id, tenantId },
+    include: inventoryInclude
+  });
+  if (!loaded) throw new AppError("ERR_SERVICE_INVENTORY_ITEM_NOT_FOUND", 404);
+  return loaded;
+};
 
 export const updateInventoryItem = async (
   tenantId: string | number,
@@ -881,11 +1300,20 @@ export const updateInventoryItem = async (
   data: ServiceInventoryItemData
 ): Promise<ServiceInventoryItem> => {
   const item = await ServiceInventoryItem.findOne({
-    where: { id: itemId, tenantId }
+    where: { id: itemId, tenantId },
+    include: inventoryInclude
   });
   if (!item) throw new AppError("ERR_SERVICE_INVENTORY_ITEM_NOT_FOUND", 404);
-  await item.update(buildInventoryPayload(tenantId, data));
-  return item;
+  await sequelize.transaction(async transaction => {
+    await item.update(buildInventoryPayload(tenantId, data), { transaction });
+    await replaceInventoryChildren(tenantId, item.id, data, transaction);
+  });
+  const loaded = await ServiceInventoryItem.findOne({
+    where: { id: itemId, tenantId },
+    include: inventoryInclude
+  });
+  if (!loaded) throw new AppError("ERR_SERVICE_INVENTORY_ITEM_NOT_FOUND", 404);
+  return loaded;
 };
 
 export const deleteInventoryItem = async (
@@ -1625,7 +2053,16 @@ const buildOrderItemPayload = (
       item.itemType === "service" ? item.serviceTypeId || null : null,
     inventoryItemId:
       item.itemType === "product" ? item.inventoryItemId || null : null,
+    inventoryBatchId:
+      item.itemType === "product" ? item.inventoryBatchId || null : null,
     description: cleanText(item.description),
+    pestTarget: item.itemType === "product" ? cleanText(item.pestTarget) : null,
+    applicationMethod:
+      item.itemType === "product" ? cleanText(item.applicationMethod) : null,
+    dilutionUsed:
+      item.itemType === "product" ? cleanText(item.dilutionUsed) : null,
+    technicalObservation:
+      item.itemType === "product" ? cleanText(item.technicalObservation) : null,
     quantity,
     unitPrice,
     totalPrice: Number((quantity * unitPrice).toFixed(2))
@@ -1651,7 +2088,20 @@ const replaceOrderItems = async (
         await ensureServiceType(tenantId, item.serviceTypeId, transaction);
       }
       if (item.itemType === "product") {
-        await ensureInventoryItem(tenantId, item.inventoryItemId, transaction);
+        const inventoryItem = await ensureInventoryItem(
+          tenantId,
+          item.inventoryItemId,
+          transaction
+        );
+        if (inventoryItem?.lotControlEnabled && !item.inventoryBatchId) {
+          throw new AppError("Informe o lote utilizado para este produto");
+        }
+        await ensureInventoryBatch(
+          tenantId,
+          item.inventoryItemId,
+          item.inventoryBatchId,
+          transaction
+        );
       }
     })
   );
@@ -1702,6 +2152,20 @@ const deductInventoryForServiceOrder = async (
   const inventoryById = new Map(
     inventoryItems.map(item => [item.id, item] as const)
   );
+  const batchIds = productItems
+    .map(item => item.inventoryBatchId)
+    .filter(Boolean) as number[];
+  const batches = batchIds.length
+    ? await ServiceInventoryBatch.findAll({
+        where: {
+          tenantId,
+          id: { [Op.in]: batchIds }
+        },
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      })
+    : [];
+  const batchById = new Map(batches.map(batch => [batch.id, batch] as const));
 
   const missingInventoryItemId = inventoryItemIds.find(
     inventoryItemId => !inventoryById.has(inventoryItemId)
@@ -1729,9 +2193,63 @@ const deductInventoryForServiceOrder = async (
     );
   }
 
+  const missingRequiredBatch = productItems.find(item => {
+    const inventoryItem = inventoryById.get(item.inventoryItemId);
+    return inventoryItem?.lotControlEnabled && !item.inventoryBatchId;
+  });
+  if (missingRequiredBatch) {
+    throw new AppError(
+      "Informe o lote utilizado para produtos com controle de lote"
+    );
+  }
+
+  const invalidBatchItem = productItems.find(item => {
+    if (!item.inventoryBatchId) return false;
+    const batch = batchById.get(item.inventoryBatchId);
+    return (
+      !batch || Number(batch.inventoryItemId) !== Number(item.inventoryItemId)
+    );
+  });
+  if (invalidBatchItem) {
+    throw new AppError("ERR_SERVICE_INVENTORY_BATCH_NOT_FOUND", 404);
+  }
+
+  const totalsByBatchId = productItems.reduce<Record<number, number>>(
+    (acc, item) => {
+      if (!item.inventoryBatchId) return acc;
+      return {
+        ...acc,
+        [item.inventoryBatchId]:
+          (acc[item.inventoryBatchId] || 0) + Number(item.quantity || 0)
+      };
+    },
+    {}
+  );
+  const insufficientBatchId = Object.keys(totalsByBatchId)
+    .map(Number)
+    .find(batchId => {
+      const batch = batchById.get(batchId);
+      return Number(batch?.quantity || 0) < totalsByBatchId[batchId];
+    });
+  if (insufficientBatchId) {
+    const batch = batchById.get(insufficientBatchId);
+    throw new AppError(
+      `Lote insuficiente para consumo. Lote: ${
+        batch?.batchNumber || insufficientBatchId
+      }. Saldo atual: ${Number(batch?.quantity || 0)}, necessario: ${
+        totalsByBatchId[insufficientBatchId]
+      }.`,
+      409
+    );
+  }
+
   const runningQuantities: Record<number, number> = {};
+  const runningBatchQuantities: Record<number, number> = {};
   const movements = productItems.map(item => {
     const inventoryItem = inventoryById.get(item.inventoryItemId);
+    const batch = item.inventoryBatchId
+      ? batchById.get(item.inventoryBatchId)
+      : null;
     const quantityToDeduct = Number(item.quantity || 0);
     const previousQuantity =
       runningQuantities[item.inventoryItemId] ??
@@ -1739,9 +2257,19 @@ const deductInventoryForServiceOrder = async (
     const newQuantity = previousQuantity - quantityToDeduct;
     runningQuantities[item.inventoryItemId] = newQuantity;
 
+    if (batch) {
+      const previousBatchQuantity =
+        runningBatchQuantities[batch.id] ?? Number(batch.quantity || 0);
+      runningBatchQuantities[batch.id] =
+        previousBatchQuantity - quantityToDeduct;
+    }
+
+    const unitCost = normalizeMoney(Number(inventoryItem?.costPrice || 0));
+
     return {
       tenantId,
       inventoryItemId: item.inventoryItemId,
+      inventoryBatchId: item.inventoryBatchId || null,
       serviceOrderId,
       serviceOrderItemId: item.id,
       userId: Number(userId),
@@ -1749,7 +2277,10 @@ const deductInventoryForServiceOrder = async (
       quantity: -quantityToDeduct,
       previousQuantity,
       newQuantity,
-      observation: `Baixa automatica pela OS #${serviceOrderId}`
+      observation: `Baixa automatica pela OS #${serviceOrderId}`,
+      unitCost,
+      totalCost: Number((unitCost * quantityToDeduct).toFixed(2)),
+      pestTarget: item.pestTarget || null
     };
   });
 
@@ -1758,6 +2289,11 @@ const deductInventoryForServiceOrder = async (
       inventoryById
         .get(Number(inventoryItemId))
         ?.update({ quantity }, { transaction })
+    )
+  );
+  await Promise.all(
+    Object.entries(runningBatchQuantities).map(([batchId, quantity]) =>
+      batchById.get(Number(batchId))?.update({ quantity }, { transaction })
     )
   );
   await ServiceInventoryMovement.bulkCreate(movements, { transaction });
@@ -1953,7 +2489,13 @@ export const buildPublicServiceOrderDocumentHTML = ({
             item.quantity
           )} x ${escapePublicText(
             formatCurrency(item.unitPrice)
-          )} = ${escapePublicText(formatCurrency(item.totalPrice))}</li>`
+          )} = ${escapePublicText(formatCurrency(item.totalPrice))}${
+            productTechnicalDetails(item)
+              ? `<br><small>${escapePublicText(
+                  productTechnicalDetails(item)
+                )}</small>`
+              : ""
+          }</li>`
       )
       .join("")}
   </ul>
@@ -2200,7 +2742,10 @@ function buildServiceOrderPdf({
         52,
         8
       );
-      writeText(item.description || "-", margin + 62, y + 5, 230, 8);
+      const description = [item.description, productTechnicalDetails(item)]
+        .filter(Boolean)
+        .join(" - ");
+      writeText(description || "-", margin + 62, y + 5, 230, 8);
       writeText(String(item.quantity || 0), margin + 305, y + 5, 34, 8, {
         align: "right"
       });

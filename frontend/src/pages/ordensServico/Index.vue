@@ -218,6 +218,12 @@
           <q-toggle v-model="filtrarEstoqueBaixo" label="Somente baixo estoque" class="q-mr-sm" />
           <q-btn v-if="podeGerenciarEstoque" unelevated color="primary" icon="mdi-plus" label="Novo produto" @click="abrirEstoque()" />
         </q-card-section>
+        <q-card-section class="row q-col-gutter-sm">
+          <q-input dense outlined clearable class="col-12 col-md-3" label="Buscar por nome ou principio ativo" v-model="filtroEstoqueTexto" />
+          <q-select dense outlined clearable emit-value map-options class="col-12 col-md-3" label="Categoria" v-model="filtroEstoqueCategoria" :options="productCategoryOptions" />
+          <q-select dense outlined clearable class="col-12 col-md-3" label="Praga" v-model="filtroEstoquePraga" :options="opcoesPragasEstoque" />
+          <q-select dense outlined clearable class="col-12 col-md-3" label="Fabricante" v-model="filtroEstoqueFabricante" :options="opcoesFabricantesEstoque" />
+        </q-card-section>
         <q-banner v-if="baixoEstoque.length" dense class="bg-orange-1 text-orange-10 q-mx-md q-mb-md">
           <template v-slot:avatar>
             <q-icon name="mdi-alert-outline" color="orange-10" />
@@ -236,6 +242,12 @@
               <q-badge :color="Number(props.row.quantity) <= Number(props.row.minQuantity) ? 'negative' : 'positive'">
                 {{ props.row.quantity }} {{ props.row.unit }}
               </q-badge>
+            </q-td>
+          </template>
+          <template v-slot:body-cell-batchStatus="props">
+            <q-td :props="props">
+              <q-badge v-if="props.row.lotControlEnabled" :color="corStatusLoteProduto(props.row)" :label="rotuloStatusLoteProduto(props.row)" />
+              <span v-else>-</span>
             </q-td>
           </template>
           <template v-slot:body-cell-active="props">
@@ -799,6 +811,13 @@
               />
               <q-btn flat color="primary" icon="mdi-plus" label="Serviço" :disable="!servicoOrdemSelecionado" @click="adicionarServicoNaOrdem" />
               <q-select
+                dense outlined clearable use-input new-value-mode="add-unique"
+                class="col-12 col-md-2"
+                label="Praga"
+                v-model="form.pestTarget"
+                :options="pestOptions"
+              />
+              <q-select
                 dense outlined emit-value map-options clearable
                 class="col-12 col-md-3"
                 label="Produto"
@@ -823,6 +842,13 @@
                   <td>{{ item.itemType === 'service' ? 'Serviço' : 'Produto' }}</td>
                   <td>
                     <q-input dense borderless v-model="item.description" />
+                    <div v-if="item.itemType === 'product'" class="row q-col-gutter-xs">
+                      <q-select dense outlined clearable class="col-12 col-md-3" label="Lote" v-model="item.inventoryBatchId" emit-value map-options :options="opcoesLotesProdutoOrdem(item.inventoryItemId)" />
+                      <q-select dense outlined clearable use-input new-value-mode="add-unique" class="col-12 col-md-3" label="Praga tratada" v-model="item.pestTarget" :options="pestOptions" @input="aplicarRecomendacaoProduto(item)" />
+                      <q-select dense outlined clearable emit-value map-options class="col-12 col-md-3" label="Metodo" v-model="item.applicationMethod" :options="opcoesMetodosProdutoOrdem(item.inventoryItemId)" />
+                      <q-input dense outlined class="col-12 col-md-3" label="Diluicao" v-model="item.dilutionUsed" />
+                      <q-input dense outlined type="textarea" class="col-12" label="Observacoes tecnicas" v-model="item.technicalObservation" />
+                    </div>
                   </td>
                   <td class="quantity-cell">
                     <q-input dense borderless type="number" min="1" step="1" v-model.number="item.quantity" @blur="normalizarQuantidadeItemOrdem(item)" />
@@ -875,7 +901,7 @@
     </q-dialog>
 
     <q-dialog v-model="modalEstoque">
-      <q-card style="width: 620px; max-width: 95vw">
+      <q-card style="width: 1040px; max-width: 95vw">
         <q-card-section>
           <div class="text-h6">{{ itemEstoque.id ? 'Editar produto' : 'Novo produto' }}</div>
         </q-card-section>
@@ -889,6 +915,54 @@
           <q-input dense outlined class="col-6 col-md-3" inputmode="decimal" label="Preço venda" v-model="itemEstoque.salePrice" prefix="R$" @blur="normalizarMoedaEstoque('salePrice')" />
           <q-input dense outlined class="col-6 col-md-3" inputmode="decimal" label="Custo" v-model="itemEstoque.costPrice" prefix="R$" @blur="normalizarMoedaEstoque('costPrice')" />
           <q-toggle class="col-12" label="Ativo" v-model="itemEstoque.active" />
+        </q-card-section>
+        <q-card-section class="row q-col-gutter-sm">
+          <div class="col-12 q-mt-sm text-subtitle2">Informacoes tecnicas</div>
+          <q-select dense outlined emit-value map-options class="col-12 col-md-3" label="Categoria" v-model="itemEstoque.productCategory" :options="productCategoryOptions" />
+          <q-input dense outlined class="col-12 col-md-3" label="Principio ativo" v-model="itemEstoque.activeIngredient" />
+          <q-input dense outlined class="col-12 col-md-3" label="Grupo quimico" v-model="itemEstoque.chemicalGroup" />
+          <q-input dense outlined class="col-12 col-md-3" label="Registro MS / ANVISA" v-model="itemEstoque.healthRegistration" />
+          <q-input dense outlined class="col-12 col-md-3" label="Fabricante" v-model="itemEstoque.manufacturer" />
+          <q-input dense outlined class="col-12 col-md-3" label="Codigo interno" v-model="itemEstoque.internalCode" />
+          <q-input dense outlined class="col-12 col-md-3" label="Codigo de barras" v-model="itemEstoque.barcode" />
+          <q-toggle class="col-12 col-md-3" label="Controle de lote" v-model="itemEstoque.lotControlEnabled" />
+          <q-toggle class="col-12 col-md-3" label="Exibir lote na OS" v-model="itemEstoque.showLotOnOrder" />
+          <q-toggle class="col-12 col-md-3" label="Exibir vencimento na OS" v-model="itemEstoque.showLotExpirationOnOrder" />
+          <q-select dense outlined multiple emit-value map-options class="col-12 col-md-3" label="Diluentes" v-model="itemEstoque.diluentTypes" :options="diluentOptions" />
+          <q-select dense outlined multiple emit-value map-options class="col-12 col-md-3" label="Metodos de aplicacao" v-model="itemEstoque.applicationMethods" :options="applicationMethodOptions" />
+          <q-toggle class="col-12 col-md-3" label="Exibir metodo na OS" v-model="itemEstoque.showApplicationMethodOnOrder" />
+          <div class="col-12 q-mt-sm row items-center">
+            <div class="text-subtitle2">Lotes</div>
+            <q-space />
+            <q-btn flat dense color="primary" icon="mdi-plus" label="Adicionar lote" @click="adicionarLoteEstoque" />
+          </div>
+          <q-card v-for="(lote, index) in itemEstoque.batches" :key="`lote-${index}`" flat bordered class="col-12">
+            <q-card-section class="row q-col-gutter-sm">
+              <q-input dense outlined class="col-12 col-md-3" label="Numero do lote" v-model="lote.batchNumber" />
+              <q-input dense outlined type="date" class="col-6 col-md-2" label="Fabricacao" v-model="lote.manufacturingDate" />
+              <q-input dense outlined type="date" class="col-6 col-md-2" label="Vencimento" v-model="lote.expirationDate" />
+              <q-input dense outlined type="number" min="0" step="1" class="col-6 col-md-2" label="Qtd. disponivel" v-model.number="lote.quantity" />
+              <q-input dense outlined class="col-12 col-md-2" label="Fornecedor" v-model="lote.supplier" />
+              <q-btn flat round color="negative" icon="mdi-delete" class="col-auto" @click="removerLoteEstoque(index)" />
+              <q-input dense outlined type="textarea" class="col-12" label="Observacoes" v-model="lote.observation" />
+            </q-card-section>
+          </q-card>
+          <div class="col-12 q-mt-sm row items-center">
+            <div class="text-subtitle2">Recomendacoes por praga</div>
+            <q-space />
+            <q-btn flat dense color="primary" icon="mdi-plus" label="Adicionar recomendacao" @click="adicionarRecomendacaoEstoque" />
+          </div>
+          <q-card v-for="(rec, index) in itemEstoque.pestRecommendations" :key="`rec-${index}`" flat bordered class="col-12">
+            <q-card-section class="row q-col-gutter-sm">
+              <q-select dense outlined use-input new-value-mode="add-unique" class="col-12 col-md-3" label="Praga" v-model="rec.pest" :options="pestOptions" />
+              <q-input dense outlined type="number" min="0" step="0.001" class="col-6 col-md-2" label="Qtd. produto" v-model.number="rec.productQuantity" />
+              <q-input dense outlined type="number" min="0" step="0.001" class="col-6 col-md-2" label="Qtd. diluente" v-model.number="rec.diluentQuantity" />
+              <q-input dense outlined class="col-6 col-md-2" label="Unidade" v-model="rec.unit" />
+              <q-input dense outlined class="col-6 col-md-2" label="Tempo de acao" v-model="rec.actionTime" />
+              <q-btn flat round color="negative" icon="mdi-delete" class="col-auto" @click="removerRecomendacaoEstoque(index)" />
+              <q-input dense outlined type="textarea" class="col-12" label="Observacoes tecnicas" v-model="rec.technicalObservation" />
+            </q-card-section>
+          </q-card>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
@@ -983,6 +1057,9 @@ import {
   ListarEstoqueServico,
   ListarEstoqueBaixoServico,
   ListarMovimentacoesEstoqueServico,
+  RelatorioConsumoEstoqueServico,
+  RelatorioLotesEstoqueServico,
+  RelatorioCustosEstoqueServico,
   ListarAuditoriaEstoqueServico,
   ListarAuditoriaFinanceiraServico,
   CriarItemEstoqueServico,
@@ -1020,6 +1097,7 @@ const emptyForm = () => ({
   title: '',
   description: '',
   serviceType: '',
+  pestTarget: '',
   priority: 'baixa',
   status: 'rascunho',
   financialStatus: 'nao_cobrado',
@@ -1047,6 +1125,35 @@ const emptyForm = () => ({
   items: []
 })
 
+const emptyInventoryItem = () => ({
+  active: true,
+  unit: 'unidade',
+  productCategory: 'outro',
+  quantity: 0,
+  minQuantity: 0,
+  salePrice: '0,00',
+  costPrice: '0,00',
+  lotControlEnabled: false,
+  showLotOnOrder: true,
+  showLotExpirationOnOrder: true,
+  diluentTypes: [],
+  applicationMethods: [],
+  showApplicationMethodOnOrder: true,
+  batches: [],
+  pestRecommendations: [],
+  printSettings: {
+    commercialName: true,
+    activeIngredient: true,
+    chemicalGroup: true,
+    healthRegistration: true,
+    lotNumber: true,
+    lotExpiration: true,
+    applicationMethod: true,
+    dilution: true,
+    technicalObservation: true
+  }
+})
+
 export default {
   name: 'OrdensServico',
   components: { ClienteModal },
@@ -1067,7 +1174,7 @@ export default {
       selectedContactId: null,
       form: emptyForm(),
       atendente: { active: true },
-      itemEstoque: { active: true, unit: 'unidade', quantity: 0, minQuantity: 0 },
+      itemEstoque: emptyInventoryItem(),
       ajusteEstoque: { item: null, movementType: 'entry', quantity: 0, observation: '' },
       tipoServico: { active: true },
       servicoOrdemSelecionado: null,
@@ -1078,7 +1185,14 @@ export default {
       estoque: [],
       baixoEstoque: [],
       filtrarEstoqueBaixo: false,
+      filtroEstoqueTexto: '',
+      filtroEstoqueCategoria: null,
+      filtroEstoquePraga: null,
+      filtroEstoqueFabricante: null,
       movimentacoesEstoque: [],
+      relatorioConsumoEstoque: {},
+      relatorioLotesEstoque: {},
+      relatorioCustosEstoque: {},
       auditoriaEstoque: [],
       auditoriaFinanceira: [],
       tiposServico: [],
@@ -1126,9 +1240,40 @@ export default {
         { label: 'WhatsApp', value: 'whatsapp' }
       ],
       unitOptions: [
+        { label: 'ml', value: 'ml' },
+        { label: 'Litro', value: 'litro' },
+        { label: 'Grama', value: 'grama' },
+        { label: 'kg', value: 'kg' },
         { label: 'Unidade', value: 'unidade' },
         { label: 'Litros', value: 'litros' }
       ],
+      productCategoryOptions: [
+        { label: 'Inseticida', value: 'inseticida' },
+        { label: 'Raticida', value: 'raticida' },
+        { label: 'Cupinicida', value: 'cupinicida' },
+        { label: 'Desinfetante', value: 'desinfetante' },
+        { label: 'Repelente', value: 'repelente' },
+        { label: 'Larvicida', value: 'larvicida' },
+        { label: 'Outro', value: 'outro' }
+      ],
+      diluentOptions: [
+        { label: 'Agua', value: 'agua' },
+        { label: 'Oleo Mineral', value: 'oleo_mineral' },
+        { label: 'Iso Parafina', value: 'iso_parafina' },
+        { label: 'Pronto Uso', value: 'pronto_uso' },
+        { label: 'Outro', value: 'outro' }
+      ],
+      applicationMethodOptions: [
+        { label: 'Pulverizacao', value: 'pulverizacao' },
+        { label: 'Termonebulizacao', value: 'termonebulizacao' },
+        { label: 'Atomizacao', value: 'atomizacao' },
+        { label: 'Iscagem', value: 'iscagem' },
+        { label: 'Polvilhamento', value: 'polvilhamento' },
+        { label: 'Gel', value: 'gel' },
+        { label: 'Espuma', value: 'espuma' },
+        { label: 'Outro', value: 'outro' }
+      ],
+      pestOptions: ['Baratas', 'Formigas', 'Cupins', 'Ratos', 'Camundongos', 'Mosquitos', 'Escorpioes', 'Pulgas', 'Carrapatos', 'Pombos', 'Aranhas', 'Outros'],
       movementOptions: [
         { label: 'Entrada', value: 'entry' },
         { label: 'Saída', value: 'exit' },
@@ -1136,8 +1281,12 @@ export default {
       ],
       colunasEstoque: [
         { name: 'name', label: 'Produto', field: 'name', align: 'left', sortable: true },
+        { name: 'productCategory', label: 'Categoria', field: 'productCategory', align: 'left', sortable: true },
+        { name: 'activeIngredient', label: 'Principio ativo', field: 'activeIngredient', align: 'left', sortable: true },
+        { name: 'manufacturer', label: 'Fabricante', field: 'manufacturer', align: 'left', sortable: true },
         { name: 'sku', label: 'SKU', field: 'sku', align: 'left', sortable: true },
         { name: 'quantity', label: 'Saldo', field: 'quantity', align: 'left', sortable: true },
+        { name: 'batchStatus', label: 'Lotes', field: 'batchStatus', align: 'left' },
         { name: 'salePrice', label: 'Preço venda', field: row => this.formatarMoeda(row.salePrice), align: 'right', sortable: true },
         { name: 'active', label: 'Status', field: 'active', align: 'center' },
         { name: 'actions', label: '', field: 'actions', align: 'right' }
@@ -1206,12 +1355,31 @@ export default {
     opcoesProdutosOrdem () {
       return this.estoque
         .filter(item => item.active)
+        .filter(item => !this.form.pestTarget || this.produtoRecomendadoParaPraga(item, this.form.pestTarget))
         .map(item => ({ label: `${item.name} - ${this.formatarMoeda(item.salePrice)}`, value: item.id }))
     },
+    opcoesFabricantesEstoque () {
+      return [...new Set(this.estoque.map(item => item.manufacturer).filter(Boolean))]
+    },
+    opcoesPragasEstoque () {
+      const pragas = this.estoque.flatMap(item => (item.pestRecommendations || []).map(rec => rec.pest))
+      return [...new Set(pragas.filter(Boolean))]
+    },
     estoqueFiltrado () {
-      if (!this.filtrarEstoqueBaixo) return this.estoque
+      let rows = this.estoque
+      const texto = String(this.filtroEstoqueTexto || '').toLowerCase().trim()
+      if (texto) {
+        rows = rows.filter(item =>
+          [item.name, item.activeIngredient, item.internalCode, item.sku]
+            .some(value => String(value || '').toLowerCase().includes(texto))
+        )
+      }
+      if (this.filtroEstoqueCategoria) rows = rows.filter(item => item.productCategory === this.filtroEstoqueCategoria)
+      if (this.filtroEstoqueFabricante) rows = rows.filter(item => item.manufacturer === this.filtroEstoqueFabricante)
+      if (this.filtroEstoquePraga) rows = rows.filter(item => this.produtoRecomendadoParaPraga(item, this.filtroEstoquePraga))
+      if (!this.filtrarEstoqueBaixo) return rows
       const baixoEstoqueIds = new Set(this.baixoEstoque.map(item => item.id))
-      return this.estoque.filter(item => baixoEstoqueIds.has(item.id))
+      return rows.filter(item => baixoEstoqueIds.has(item.id))
     },
     ordensFinanceiras () {
       return [...this.ordens].sort((a, b) => {
@@ -1330,6 +1498,7 @@ export default {
         this.carregarEstoque(),
         this.carregarEstoqueBaixo(),
         this.carregarMovimentacoesEstoque(),
+        this.carregarRelatoriosEstoque(),
         this.carregarAuditoriaEstoque(),
         this.carregarAuditoriaFinanceira(),
         this.carregarTiposServico(),
@@ -1353,6 +1522,16 @@ export default {
     async carregarMovimentacoesEstoque () {
       const { data } = await ListarMovimentacoesEstoqueServico()
       this.movimentacoesEstoque = data
+    },
+    async carregarRelatoriosEstoque () {
+      const [consumo, lotes, custos] = await Promise.all([
+        RelatorioConsumoEstoqueServico(),
+        RelatorioLotesEstoqueServico(),
+        RelatorioCustosEstoqueServico()
+      ])
+      this.relatorioConsumoEstoque = consumo.data
+      this.relatorioLotesEstoque = lotes.data
+      this.relatorioCustosEstoque = custos.data
     },
     async carregarAuditoriaEstoque () {
       if (!this.podeGerenciarEstoque) {
@@ -1443,6 +1622,29 @@ export default {
       this.atendente = atendente ? { ...atendente } : { active: true }
       this.modalAtendente = true
     },
+    criarItemEstoqueVazio () {
+      return emptyInventoryItem()
+    },
+    normalizarItemEstoqueFormulario (item) {
+      return {
+        ...this.criarItemEstoqueVazio(),
+        ...item,
+        unit: item.unit || 'unidade',
+        productCategory: item.productCategory || 'outro',
+        quantity: this.parseInteiro(item.quantity),
+        minQuantity: this.parseInteiro(item.minQuantity),
+        salePrice: this.formatarMoedaCampo(item.salePrice),
+        costPrice: this.formatarMoedaCampo(item.costPrice),
+        diluentTypes: item.diluentTypes || [],
+        applicationMethods: item.applicationMethods || [],
+        batches: item.batches || [],
+        pestRecommendations: item.pestRecommendations || [],
+        printSettings: {
+          ...this.criarItemEstoqueVazio().printSettings,
+          ...(item.printSettings || {})
+        }
+      }
+    },
     async salvarAtendente () {
       this.salvando = true
       try {
@@ -1459,16 +1661,35 @@ export default {
     },
     abrirEstoque (item) {
       this.itemEstoque = item
-        ? {
-          ...item,
-          unit: item.unit || 'unidade',
-          quantity: this.parseInteiro(item.quantity),
-          minQuantity: this.parseInteiro(item.minQuantity),
-          salePrice: this.formatarMoedaCampo(item.salePrice),
-          costPrice: this.formatarMoedaCampo(item.costPrice)
-        }
-        : { active: true, unit: 'unidade', quantity: 0, minQuantity: 0, salePrice: '0,00', costPrice: '0,00' }
+        ? this.normalizarItemEstoqueFormulario(item)
+        : this.criarItemEstoqueVazio()
       this.modalEstoque = true
+    },
+    adicionarLoteEstoque () {
+      this.itemEstoque.batches.push({
+        batchNumber: '',
+        manufacturingDate: '',
+        expirationDate: '',
+        quantity: 0,
+        supplier: '',
+        observation: ''
+      })
+    },
+    removerLoteEstoque (index) {
+      this.itemEstoque.batches.splice(index, 1)
+    },
+    adicionarRecomendacaoEstoque () {
+      this.itemEstoque.pestRecommendations.push({
+        pest: '',
+        productQuantity: 0,
+        diluentQuantity: 0,
+        unit: this.itemEstoque.unit || 'ml',
+        actionTime: '',
+        technicalObservation: ''
+      })
+    },
+    removerRecomendacaoEstoque (index) {
+      this.itemEstoque.pestRecommendations.splice(index, 1)
     },
     async salvarEstoque () {
       this.salvando = true
@@ -1621,6 +1842,40 @@ export default {
       if (!value) return '-'
       return new Date(value).toLocaleDateString('pt-BR')
     },
+    loteMaisCriticoProduto (item) {
+      const batches = item.batches || []
+      if (!batches.length) return null
+      return batches
+        .filter(batch => batch.expirationDate)
+        .sort((a, b) => new Date(a.expirationDate) - new Date(b.expirationDate))[0] || null
+    },
+    corStatusLoteProduto (item) {
+      const batches = item.batches || []
+      if (batches.some(batch => Number(batch.quantity || 0) <= 0)) return 'grey'
+      const critical = this.loteMaisCriticoProduto(item)
+      if (!critical) return 'positive'
+      const expiration = new Date(critical.expirationDate)
+      const today = new Date()
+      const soon = new Date()
+      soon.setDate(soon.getDate() + 30)
+      if (expiration < today) return 'negative'
+      if (expiration <= soon) return 'warning'
+      return 'positive'
+    },
+    rotuloStatusLoteProduto (item) {
+      const batches = item.batches || []
+      if (!batches.length) return 'Sem lotes'
+      if (batches.every(batch => Number(batch.quantity || 0) <= 0)) return 'Esgotado'
+      const critical = this.loteMaisCriticoProduto(item)
+      if (!critical) return `${batches.length} lote(s)`
+      const expiration = new Date(critical.expirationDate)
+      const today = new Date()
+      const soon = new Date()
+      soon.setDate(soon.getDate() + 30)
+      if (expiration < today) return 'Vencido'
+      if (expiration <= soon) return 'Proximo vencimento'
+      return `${batches.length} lote(s)`
+    },
     async atualizarFinanceiroOrdem (ordem, changes) {
       await this.salvarStatus({
         ...ordem,
@@ -1750,7 +2005,23 @@ export default {
         quantity: this.parseInteiro(item.quantity),
         minQuantity: this.parseInteiro(item.minQuantity),
         costPrice: this.parseMoeda(item.costPrice),
-        salePrice: this.parseMoeda(item.salePrice)
+        salePrice: this.parseMoeda(item.salePrice),
+        diluentTypes: item.diluentTypes || [],
+        applicationMethods: item.applicationMethods || [],
+        batches: (item.batches || [])
+          .filter(lote => lote.batchNumber)
+          .map(lote => ({
+            ...lote,
+            quantity: this.parseInteiro(lote.quantity)
+          })),
+        pestRecommendations: (item.pestRecommendations || [])
+          .filter(rec => rec.pest)
+          .map(rec => ({
+            ...rec,
+            productQuantity: this.parseMoeda(rec.productQuantity),
+            diluentQuantity: this.parseMoeda(rec.diluentQuantity)
+          })),
+        printSettings: item.printSettings || this.criarItemEstoqueVazio().printSettings
       }
     },
     normalizarPayloadTipoServico (tipo) {
@@ -1765,6 +2036,11 @@ export default {
         itemType: 'service',
         serviceTypeId: null,
         inventoryItemId: null,
+        inventoryBatchId: null,
+        pestTarget: '',
+        applicationMethod: '',
+        dilutionUsed: '',
+        technicalObservation: '',
         description: '',
         quantity: 1,
         unitPrice: '0,00',
@@ -1782,12 +2058,51 @@ export default {
       }))
       this.servicoOrdemSelecionado = null
     },
+    produtoRecomendadoParaPraga (product, pest) {
+      if (!pest) return true
+      return (product.pestRecommendations || []).some(rec => String(rec.pest || '').toLowerCase() === String(pest).toLowerCase())
+    },
+    recomendacaoProdutoPorPraga (product, pest) {
+      return (product?.pestRecommendations || []).find(rec => String(rec.pest || '').toLowerCase() === String(pest || '').toLowerCase())
+    },
+    opcoesLotesProdutoOrdem (inventoryItemId) {
+      const product = this.estoque.find(item => item.id === inventoryItemId)
+      return (product?.batches || [])
+        .filter(lote => Number(lote.quantity || 0) > 0)
+        .map(lote => ({
+          label: `${lote.batchNumber}${lote.expirationDate ? ` - vence ${this.formatarDataCurta(lote.expirationDate)}` : ''}`,
+          value: lote.id
+        }))
+    },
+    opcoesMetodosProdutoOrdem (inventoryItemId) {
+      const product = this.estoque.find(item => item.id === inventoryItemId)
+      const methods = product?.applicationMethods?.length ? product.applicationMethods : this.applicationMethodOptions.map(item => item.value)
+      return methods.map(value => {
+        const option = this.applicationMethodOptions.find(item => item.value === value)
+        return { label: option ? option.label : value, value }
+      })
+    },
+    aplicarRecomendacaoProduto (item) {
+      const product = this.estoque.find(produto => produto.id === item.inventoryItemId)
+      const recommendation = this.recomendacaoProdutoPorPraga(product, item.pestTarget)
+      if (!recommendation) return
+      const productQty = recommendation.productQuantity || 0
+      const diluentQty = recommendation.diluentQuantity || 0
+      item.dilutionUsed = `${productQty} ${recommendation.unit || product?.unit || ''} para ${diluentQty} de diluente`.trim()
+      item.technicalObservation = recommendation.technicalObservation || item.technicalObservation
+    },
     adicionarProdutoNaOrdem () {
       const product = this.estoque.find(item => item.id === this.produtoOrdemSelecionado)
       if (!product) return
+      const recommendation = this.recomendacaoProdutoPorPraga(product, this.form.pestTarget)
       this.form.items.push(this.criarItemOrdemBase({
         itemType: 'product',
         inventoryItemId: product.id,
+        inventoryBatchId: product.lotControlEnabled && product.batches?.length ? product.batches[0].id : null,
+        pestTarget: this.form.pestTarget || '',
+        applicationMethod: product.applicationMethods?.[0] || '',
+        dilutionUsed: recommendation ? `${recommendation.productQuantity || 0} ${recommendation.unit || product.unit || ''} para ${recommendation.diluentQuantity || 0} de diluente` : '',
+        technicalObservation: recommendation?.technicalObservation || '',
         description: product.name,
         unitPrice: this.formatarMoedaCampo(product.salePrice)
       }))
@@ -1821,6 +2136,11 @@ export default {
           itemType: item.itemType,
           serviceTypeId: item.itemType === 'service' ? item.serviceTypeId : null,
           inventoryItemId: item.itemType === 'product' ? item.inventoryItemId : null,
+          inventoryBatchId: item.itemType === 'product' ? item.inventoryBatchId : null,
+          pestTarget: item.itemType === 'product' ? item.pestTarget : null,
+          applicationMethod: item.itemType === 'product' ? item.applicationMethod : null,
+          dilutionUsed: item.itemType === 'product' ? item.dilutionUsed : null,
+          technicalObservation: item.itemType === 'product' ? item.technicalObservation : null,
           description: item.description,
           quantity: Math.max(1, this.parseInteiro(item.quantity)),
           unitPrice: this.parseMoeda(item.unitPrice) || 0

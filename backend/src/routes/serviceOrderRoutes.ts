@@ -35,6 +35,21 @@ serviceOrderRoutes.get(
   ServiceOrderController.listInventoryMovements
 );
 serviceOrderRoutes.get(
+  "/service/inventory-reports/consumption",
+  isAuth,
+  ServiceOrderController.inventoryConsumptionReport
+);
+serviceOrderRoutes.get(
+  "/service/inventory-reports/batches",
+  isAuth,
+  ServiceOrderController.inventoryBatchReport
+);
+serviceOrderRoutes.get(
+  "/service/inventory-reports/costs",
+  isAuth,
+  ServiceOrderController.inventoryCostReport
+);
+serviceOrderRoutes.get(
   "/service/inventory-audit",
   isAuth,
   ServiceOrderController.listInventoryAuditLogs

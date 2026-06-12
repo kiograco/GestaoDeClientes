@@ -9,8 +9,11 @@ import {
   Default,
   ForeignKey,
   BelongsTo,
+  HasMany,
   DataType
 } from "sequelize-typescript";
+import ServiceInventoryBatch from "./ServiceInventoryBatch";
+import ServiceInventoryPestRecommendation from "./ServiceInventoryPestRecommendation";
 import Tenant from "./Tenant";
 
 @Table
@@ -33,6 +36,22 @@ class ServiceInventoryItem extends Model<ServiceInventoryItem> {
   @Column
   sku: string;
 
+  @Column
+  activeIngredient: string;
+
+  @Column
+  chemicalGroup: string;
+
+  @Column
+  healthRegistration: string;
+
+  @Column
+  manufacturer: string;
+
+  @Default("outro")
+  @Column
+  productCategory: string;
+
   @Column(DataType.TEXT)
   description: string;
 
@@ -53,9 +72,49 @@ class ServiceInventoryItem extends Model<ServiceInventoryItem> {
   @Column(DataType.DECIMAL(12, 2))
   salePrice: number;
 
+  @Column
+  internalCode: string;
+
+  @Column
+  barcode: string;
+
+  @Default(false)
+  @Column
+  lotControlEnabled: boolean;
+
+  @Default(true)
+  @Column
+  showLotOnOrder: boolean;
+
+  @Default(true)
+  @Column
+  showLotExpirationOnOrder: boolean;
+
+  @Default([])
+  @Column(DataType.JSONB)
+  diluentTypes: string[];
+
+  @Default([])
+  @Column(DataType.JSONB)
+  applicationMethods: string[];
+
+  @Default(true)
+  @Column
+  showApplicationMethodOnOrder: boolean;
+
+  @Default({})
+  @Column(DataType.JSONB)
+  printSettings: Record<string, boolean>;
+
   @Default(true)
   @Column
   active: boolean;
+
+  @HasMany(() => ServiceInventoryBatch)
+  batches: ServiceInventoryBatch[];
+
+  @HasMany(() => ServiceInventoryPestRecommendation)
+  pestRecommendations: ServiceInventoryPestRecommendation[];
 
   @CreatedAt
   createdAt: Date;
