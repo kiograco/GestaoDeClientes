@@ -1486,7 +1486,9 @@ const replaceServiceTypeChildren = async (
     ServiceWarranty.destroy({ where: { tenantId, serviceTypeId }, transaction })
   ]);
 
-  const pests = (data.pests || []).filter(item => Boolean(cleanText(item.name)));
+  const pests = (data.pests || []).filter(item =>
+    Boolean(cleanText(item.name))
+  );
   if (pests.length) {
     await ServicePest.bulkCreate(
       pests.map(item => ({
@@ -1585,7 +1587,13 @@ export const listServiceTypes = async (
       include: [
         {
           model: ServiceInventoryItem,
-          attributes: ["id", "name", "activeIngredient", "chemicalGroup", "unit"]
+          attributes: [
+            "id",
+            "name",
+            "activeIngredient",
+            "chemicalGroup",
+            "unit"
+          ]
         }
       ]
     },

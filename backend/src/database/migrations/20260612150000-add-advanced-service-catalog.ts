@@ -206,7 +206,10 @@ module.exports = {
       unique: true
     });
     await queryInterface.addIndex("ServicePests", ["tenantId", "name"]);
-    await queryInterface.addIndex("ServicePests", ["tenantId", "serviceTypeId"]);
+    await queryInterface.addIndex("ServicePests", [
+      "tenantId",
+      "serviceTypeId"
+    ]);
     await queryInterface.addIndex("ServiceEnvironments", [
       "tenantId",
       "environment"
@@ -229,7 +232,10 @@ module.exports = {
     await queryInterface.dropTable("ServiceEnvironments");
     await queryInterface.dropTable("ServicePests");
     await queryInterface.removeColumn("ServiceTypes", "internalObservation");
-    await queryInterface.removeColumn("ServiceTypes", "customerRecommendations");
+    await queryInterface.removeColumn(
+      "ServiceTypes",
+      "customerRecommendations"
+    );
     await queryInterface.removeColumn("ServiceTypes", "orderDefaultText");
     await queryInterface.removeColumn("ServiceTypes", "returnInterval");
     await queryInterface.removeColumn("ServiceTypes", "returnQuantity");
