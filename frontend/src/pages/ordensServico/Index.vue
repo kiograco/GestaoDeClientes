@@ -2047,12 +2047,25 @@ export default {
       }).onOk(() => this.excluirEstoque(item))
     },
     async excluirEstoque (item) {
+      const itemId = Number(item?.id)
+      if (!Number.isInteger(itemId) || itemId <= 0) {
+        this.$q.notify({ type: 'warning', message: 'Produto inválido para exclusão.' })
+        await this.carregarEstoque()
+        return
+      }
       try {
-        await ExcluirItemEstoqueServico(item.id)
-        this.$q.notify({ type: 'positive', message: 'Produto excluído.' })
+        await ExcluirItemEstoqueServico(itemId)
+        this.$q.notify({ type: 'positive', message: 'Produto inativado.' })
         await this.carregarEstoque()
         await this.carregarEstoqueBaixo()
       } catch (error) {
+        const errorCode = error?.data?.error || error?.response?.data?.error
+        if (error?.response?.status === 404 || errorCode === 'ERR_SERVICE_INVENTORY_ITEM_NOT_FOUND') {
+          this.$q.notify({ type: 'warning', message: 'Produto não encontrado. A lista foi atualizada.' })
+          await this.carregarEstoque()
+          await this.carregarEstoqueBaixo()
+          return
+        }
         this.$notificarErro('Não foi possível excluir o produto', error)
       }
     },
