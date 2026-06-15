@@ -19,7 +19,9 @@
     <q-card flat bordered class="app-card">
       <q-tabs v-model="tab" dense align="left" active-color="primary" indicator-color="primary">
         <q-tab name="tipos" icon="mdi-toy-brick-marker-outline" label="Tipos de Armadilhas" />
+        <q-tab name="catalogos" icon="mdi-checkbox-marked-outline" label="Situações e Ações" />
         <q-tab name="pontos" icon="mdi-map-marker-radius-outline" label="Pontos" />
+        <q-tab name="inspecao" icon="mdi-clipboard-check-outline" label="Inspeção Rápida" />
         <q-tab name="mapa" icon="mdi-floor-plan" label="Mapa" />
       </q-tabs>
       <q-separator />
@@ -34,6 +36,11 @@
                 </q-badge>
               </q-td>
             </template>
+            <template v-slot:body-cell-pests="props">
+              <q-td :props="props">
+                {{ pragasTipo(props.row) }}
+              </q-td>
+            </template>
             <template v-slot:body-cell-actions="props">
               <q-td :props="props">
                 <q-btn flat round dense icon="mdi-pencil" @click="abrirTipo(props.row)" />
@@ -41,6 +48,56 @@
               </q-td>
             </template>
           </q-table>
+        </q-tab-panel>
+
+        <q-tab-panel name="catalogos">
+          <div class="catalog-grid">
+            <q-card flat bordered>
+              <q-card-section class="row items-center">
+                <div>
+                  <div class="text-subtitle1 text-weight-medium">Situações da armadilha</div>
+                  <div class="text-caption text-grey-7">Opções usadas nas inspeções de campo.</div>
+                </div>
+                <q-space />
+                <q-btn outline color="primary" icon="mdi-plus" label="Situação" @click="abrirCatalogo('condition')" />
+              </q-card-section>
+              <q-table flat :data="condicoes" :columns="colunasCatalogo" row-key="id">
+                <template v-slot:body-cell-active="props">
+                  <q-td :props="props">
+                    <q-badge :color="props.value ? 'positive' : 'grey'">{{ props.value ? 'Ativo' : 'Inativo' }}</q-badge>
+                  </q-td>
+                </template>
+                <template v-slot:body-cell-actions="props">
+                  <q-td :props="props">
+                    <q-btn flat round dense icon="mdi-pencil" @click="abrirCatalogo('condition', props.row)" />
+                  </q-td>
+                </template>
+              </q-table>
+            </q-card>
+
+            <q-card flat bordered>
+              <q-card-section class="row items-center">
+                <div>
+                  <div class="text-subtitle1 text-weight-medium">Ações tomadas</div>
+                  <div class="text-caption text-grey-7">Procedimentos executados pelo técnico.</div>
+                </div>
+                <q-space />
+                <q-btn outline color="primary" icon="mdi-plus" label="Ação" @click="abrirCatalogo('action')" />
+              </q-card-section>
+              <q-table flat :data="acoes" :columns="colunasCatalogo" row-key="id">
+                <template v-slot:body-cell-active="props">
+                  <q-td :props="props">
+                    <q-badge :color="props.value ? 'positive' : 'grey'">{{ props.value ? 'Ativo' : 'Inativo' }}</q-badge>
+                  </q-td>
+                </template>
+                <template v-slot:body-cell-actions="props">
+                  <q-td :props="props">
+                    <q-btn flat round dense icon="mdi-pencil" @click="abrirCatalogo('action', props.row)" />
+                  </q-td>
+                </template>
+              </q-table>
+            </q-card>
+          </div>
         </q-tab-panel>
 
         <q-tab-panel name="pontos">
@@ -84,8 +141,34 @@
                 <q-btn flat round dense icon="mdi-swap-horizontal" @click="abrirMovimentacao(props.row)">
                   <q-tooltip>Registrar troca ou mudanca</q-tooltip>
                 </q-btn>
+                <q-btn flat round dense color="primary" icon="mdi-clipboard-check-outline" @click="abrirInspecao(props.row)">
+                  <q-tooltip>Inspecionar armadilha</q-tooltip>
+                </q-btn>
                 <q-btn flat round dense color="negative" icon="mdi-delete-outline" @click="removerPonto(props.row)" />
               </q-td>
+            </template>
+          </q-table>
+        </q-tab-panel>
+
+        <q-tab-panel name="inspecao">
+          <div class="inspection-mobile">
+            <q-select v-model="inspecao.monitoringPointId" :options="opcoesPontosInspecao" emit-value map-options outlined label="Armadilha *" />
+            <q-input v-model="inspecao.inspectionDate" outlined type="datetime-local" label="Data e hora da inspeção" />
+            <q-select v-model="inspecao.conditionIds" :options="opcoesCondicoes" emit-value map-options multiple use-chips outlined label="Situações identificadas" />
+            <q-select v-model="inspecao.actionIds" :options="opcoesAcoes" emit-value map-options multiple use-chips outlined label="Ações tomadas" />
+            <q-input v-model.trim="inspecao.notes" outlined type="textarea" autogrow label="Observações" />
+            <q-btn unelevated color="primary" icon="mdi-content-save-check-outline" label="Salvar inspeção" :disable="!inspecaoValida" :loading="saving" @click="salvarInspecao" />
+          </div>
+
+          <q-table class="q-mt-md" flat :data="inspecoes" :columns="colunasInspecoes" row-key="id">
+            <template v-slot:body-cell-monitoringPoint="props">
+              <q-td :props="props">{{ props.row.monitoringPoint?.label || '-' }}</q-td>
+            </template>
+            <template v-slot:body-cell-conditions="props">
+              <q-td :props="props">{{ (props.row.conditions || []).map(item => item.name).join(', ') || '-' }}</q-td>
+            </template>
+            <template v-slot:body-cell-actions="props">
+              <q-td :props="props">{{ (props.row.actions || []).map(item => item.name).join(', ') || '-' }}</q-td>
             </template>
           </q-table>
         </q-tab-panel>
@@ -156,8 +239,9 @@
         <q-card-section>
           <div class="row q-col-gutter-md">
             <q-input v-model.trim="tipo.name" outlined label="Nome *" class="col-12 col-md-6" />
-            <q-input v-model.trim="tipo.code" outlined label="Codigo *" class="col-12 col-md-3" />
-            <q-input v-model.trim="tipo.type" outlined label="Tipo *" class="col-12 col-md-3" />
+            <q-input v-model.trim="tipo.code" outlined label="Sigla *" class="col-12 col-md-3" />
+            <q-input v-model.trim="tipo.type" outlined label="Tipo" class="col-12 col-md-3" />
+            <q-select v-model="tipo.pestIds" :options="opcoesPragas" emit-value map-options multiple use-chips outlined label="Pragas vinculadas" class="col-12" />
             <q-input v-model.trim="tipo.description" outlined type="textarea" autogrow label="Descricao" class="col-12" />
             <q-toggle v-model="tipo.active" label="Ativo" />
           </div>
@@ -165,6 +249,23 @@
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" @click="modalTipo = false" />
           <q-btn unelevated color="primary" label="Salvar" :disable="!tipoValido" :loading="saving" @click="salvarTipo" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="modalCatalogo" persistent>
+      <q-card class="monitoramento-modal app-card">
+        <q-card-section class="monitoramento-modal__header">
+          <div class="monitoramento-modal__title">{{ catalogo.id ? 'Editar' : 'Novo' }} {{ catalogo.type === 'condition' ? 'situação' : 'ação' }}</div>
+          <q-btn flat round dense icon="mdi-close" @click="modalCatalogo = false" />
+        </q-card-section>
+        <q-card-section class="row q-col-gutter-md">
+          <q-input v-model.trim="catalogo.name" outlined label="Nome *" class="col-12" />
+          <q-toggle v-model="catalogo.active" label="Ativo" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" @click="modalCatalogo = false" />
+          <q-btn unelevated color="primary" label="Salvar" :disable="!catalogo.name" :loading="saving" @click="salvarCatalogo" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -245,25 +346,36 @@
 import { ListarClientes } from 'src/service/clientes'
 import {
   AlterarPontoMonitoramento,
+  AlterarAcaoArmadilha,
+  AlterarSituacaoArmadilha,
   AlterarTipoArmadilha,
+  CriarAcaoArmadilha,
+  CriarInspecaoArmadilha,
   CriarPlantaCliente,
   CriarPontosMonitoramento,
+  CriarSituacaoArmadilha,
   CriarTipoArmadilha,
   ExcluirPontoMonitoramento,
   ExcluirTipoArmadilha,
+  ListarAcoesArmadilha,
+  ListarInspecoesArmadilha,
   ListarPlantasCliente,
   ListarPontosMonitoramento,
+  ListarSituacoesArmadilha,
   ListarTiposArmadilha,
   PosicionarPontoMonitoramento
 } from 'src/service/monitoramento'
+import { ListarPragasServico } from 'src/service/ordensServico'
 
 const hoje = () => new Date().toISOString().slice(0, 10)
 
 const tipoVazio = () => ({
   name: '',
   code: '',
-  type: '',
+  acronym: '',
+  type: 'monitoramento',
   description: '',
+  pestIds: [],
   active: true
 })
 
@@ -291,8 +403,14 @@ export default {
       pontos: [],
       plantas: [],
       clientes: [],
+      pragas: [],
+      condicoes: [],
+      acoes: [],
+      inspecoes: [],
       mapa: { clientId: null, addressId: null, floorPlanId: null, pointId: null },
       planta: { name: '', clientId: null, addressId: null, file: null, notes: '' },
+      inspecao: { monitoringPointId: null, inspectionDate: '', conditionIds: [], actionIds: [], notes: '' },
+      catalogo: { type: 'condition', name: '', active: true },
       zoom: 1,
       pan: { x: 0, y: 0 },
       panning: false,
@@ -307,12 +425,26 @@ export default {
       modalPontos: false,
       modalPlanta: false,
       modalMovimentacao: false,
+      modalCatalogo: false,
       colunasTipos: [
         { name: 'name', label: 'Nome', field: 'name', align: 'left', sortable: true },
-        { name: 'code', label: 'Codigo', field: 'code', align: 'left' },
-        { name: 'type', label: 'Tipo', field: 'type', align: 'left' },
+        { name: 'code', label: 'Sigla', field: row => row.acronym || row.code, align: 'left' },
+        { name: 'pests', label: 'Pragas', field: 'pests', align: 'left' },
         { name: 'active', label: 'Status', field: 'active', align: 'left' },
         { name: 'actions', label: 'Acoes', field: 'actions', align: 'right' }
+      ],
+      colunasCatalogo: [
+        { name: 'name', label: 'Nome', field: 'name', align: 'left', sortable: true },
+        { name: 'active', label: 'Status', field: 'active', align: 'left' },
+        { name: 'actions', label: 'Ações', field: 'actions', align: 'right' }
+      ],
+      colunasInspecoes: [
+        { name: 'inspectionDate', label: 'Data', field: row => this.formatarData(row.inspectionDate), align: 'left' },
+        { name: 'monitoringPoint', label: 'Armadilha', field: 'monitoringPoint', align: 'left' },
+        { name: 'technician', label: 'Técnico', field: row => row.technician?.name || '-', align: 'left' },
+        { name: 'conditions', label: 'Situações', field: 'conditions', align: 'left' },
+        { name: 'actions', label: 'Ações', field: 'actions', align: 'left' },
+        { name: 'notes', label: 'Observações', field: 'notes', align: 'left' }
       ],
       colunasPontos: [
         { name: 'label', label: 'Ponto', field: 'label', align: 'left', sortable: true },
@@ -336,7 +468,13 @@ export default {
   },
   computed: {
     tipoValido () {
-      return !!(this.tipo.name && this.tipo.code && this.tipo.type)
+      return !!(this.tipo.name && this.tipo.code)
+    },
+    inspecaoValida () {
+      return Boolean(
+        this.inspecao.monitoringPointId &&
+        (this.inspecao.conditionIds.length || this.inspecao.actionIds.length || this.inspecao.notes)
+      )
     },
     pontoValido () {
       return !!(
@@ -375,6 +513,21 @@ export default {
     },
     opcoesTipos () {
       return this.tipos.filter(tipo => tipo.active).map(tipo => ({ label: `${tipo.name} (${tipo.code})`, value: tipo.id }))
+    },
+    opcoesPragas () {
+      return this.pragas.map(praga => ({ label: `${praga.commonName} — ${praga.scientificName}`, value: praga.id }))
+    },
+    opcoesCondicoes () {
+      return this.condicoes.filter(item => item.active).map(item => ({ label: item.name, value: item.id }))
+    },
+    opcoesAcoes () {
+      return this.acoes.filter(item => item.active).map(item => ({ label: item.name, value: item.id }))
+    },
+    opcoesPontosInspecao () {
+      return this.pontos.map(ponto => ({
+        label: `${ponto.label} - ${ponto.trapType?.name || 'Tipo'} - ${ponto.sector?.name || 'Setor'}`,
+        value: ponto.id
+      }))
     },
     plantaValida () {
       return !!(this.planta.name && this.planta.clientId && this.planta.addressId && this.planta.file)
@@ -457,9 +610,20 @@ export default {
     async carregarTudo () {
       this.loading = true
       try {
-        const [tipos, clientes] = await Promise.all([ListarTiposArmadilha(), ListarClientes()])
+        const [tipos, clientes, pragas, condicoes, acoes, inspecoes] = await Promise.all([
+          ListarTiposArmadilha(),
+          ListarClientes(),
+          ListarPragasServico(),
+          ListarSituacoesArmadilha(),
+          ListarAcoesArmadilha(),
+          ListarInspecoesArmadilha()
+        ])
         this.tipos = tipos.data
         this.clientes = clientes.data
+        this.pragas = pragas.data
+        this.condicoes = condicoes.data
+        this.acoes = acoes.data
+        this.inspecoes = inspecoes.data
         await this.carregarPontos()
       } catch (error) {
         this.$notificarErro('Nao foi possivel carregar o monitoramento.', error)
@@ -472,6 +636,10 @@ export default {
         clientId: this.filtros.clientId || undefined
       })
       this.pontos = data
+    },
+    async carregarInspecoes () {
+      const { data } = await ListarInspecoesArmadilha()
+      this.inspecoes = data
     },
     urlArquivo (fileUrl) {
       return `${process.env.VUE_URL_API || ''}${fileUrl}`
@@ -560,14 +728,15 @@ export default {
       return 'map-marker--bait'
     },
     abrirTipo (tipo = null) {
-      this.tipo = tipo ? { ...tipo } : tipoVazio()
+      const pestIds = tipo ? (tipo.trapTypePests || []).map(item => item.pestId) : []
+      this.tipo = tipo ? { ...tipo, code: tipo.acronym || tipo.code, pestIds } : tipoVazio()
       this.modalTipo = true
     },
     async salvarTipo () {
       this.saving = true
       try {
         const action = this.tipo.id ? AlterarTipoArmadilha : CriarTipoArmadilha
-        await action(this.tipo)
+        await action({ ...this.tipo, acronym: this.tipo.code })
         this.modalTipo = false
         this.$q.notify({ type: 'positive', message: 'Tipo de armadilha salvo.' })
         await this.carregarTudo()
@@ -590,6 +759,58 @@ export default {
     abrirPontos () {
       this.ponto = pontoVazio()
       this.modalPontos = true
+    },
+    abrirCatalogo (type, item = null) {
+      this.catalogo = item ? { ...item, type } : { type, name: '', active: true }
+      this.modalCatalogo = true
+    },
+    async salvarCatalogo () {
+      this.saving = true
+      try {
+        const action = this.catalogo.type === 'condition'
+          ? (this.catalogo.id ? AlterarSituacaoArmadilha : CriarSituacaoArmadilha)
+          : (this.catalogo.id ? AlterarAcaoArmadilha : CriarAcaoArmadilha)
+        await action(this.catalogo)
+        this.modalCatalogo = false
+        this.$q.notify({ type: 'positive', message: 'Cadastro salvo.' })
+        await this.carregarTudo()
+      } catch (error) {
+        this.$notificarErro('Não foi possível salvar o cadastro.', error)
+      } finally {
+        this.saving = false
+      }
+    },
+    abrirInspecao (ponto) {
+      this.inspecao = {
+        monitoringPointId: ponto.id,
+        inspectionDate: new Date().toISOString().slice(0, 16),
+        conditionIds: [],
+        actionIds: [],
+        notes: ''
+      }
+      this.tab = 'inspecao'
+    },
+    async salvarInspecao () {
+      this.saving = true
+      try {
+        await CriarInspecaoArmadilha(this.inspecao)
+        this.$q.notify({ type: 'positive', message: 'Inspeção registrada.' })
+        this.inspecao = { monitoringPointId: null, inspectionDate: '', conditionIds: [], actionIds: [], notes: '' }
+        await Promise.all([this.carregarPontos(), this.carregarInspecoes()])
+      } catch (error) {
+        this.$notificarErro('Não foi possível registrar a inspeção.', error)
+      } finally {
+        this.saving = false
+      }
+    },
+    pragasTipo (tipo) {
+      return (tipo.trapTypePests || [])
+        .map(item => item.pest?.scientificName || item.pest?.commonName)
+        .filter(Boolean)
+        .join(', ') || '-'
+    },
+    formatarData (value) {
+      return value ? new Date(value).toLocaleString('pt-BR') : '-'
     },
     async gerarPontos () {
       this.saving = true
@@ -649,6 +870,24 @@ export default {
   grid-template-columns: minmax(220px, 320px);
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.inspection-mobile {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  max-width: 980px;
+}
+
+.inspection-mobile .q-textarea,
+.inspection-mobile .q-btn {
+  grid-column: 1 / -1;
 }
 
 .monitoramento-name {
@@ -778,6 +1017,11 @@ export default {
 
 @media (max-width: 700px) {
   .monitoramento-filtros {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-grid,
+  .inspection-mobile {
     grid-template-columns: 1fr;
   }
 

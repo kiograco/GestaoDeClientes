@@ -21,6 +21,7 @@ import ClientSector from "./ClientSector";
 import ClientFloorPlan from "./ClientFloorPlan";
 import TrapType from "./TrapType";
 import MonitoringPointHistory from "./MonitoringPointHistory";
+import TrapInspection from "./TrapInspection";
 
 @Table({ tableName: "monitoring_points", paranoid: true })
 class MonitoringPoint extends Model<MonitoringPoint> {
@@ -112,6 +113,9 @@ class MonitoringPoint extends Model<MonitoringPoint> {
 
   @HasMany(() => MonitoringPointHistory)
   history: MonitoringPointHistory[];
+
+  @HasMany(() => TrapInspection)
+  inspections: TrapInspection[];
 
   @CreatedAt
   @Column({ field: "created_at" })

@@ -81,6 +81,49 @@ monitoringRoutes.delete(
 );
 
 monitoringRoutes.get(
+  "/monitoring/trap-conditions",
+  isAuth,
+  MonitoringController.listConditions
+);
+monitoringRoutes.post(
+  "/monitoring/trap-conditions",
+  isAuth,
+  MonitoringController.storeCondition
+);
+monitoringRoutes.put(
+  "/monitoring/trap-conditions/:conditionId",
+  isAuth,
+  MonitoringController.updateCondition
+);
+
+monitoringRoutes.get(
+  "/monitoring/trap-actions",
+  isAuth,
+  MonitoringController.listActions
+);
+monitoringRoutes.post(
+  "/monitoring/trap-actions",
+  isAuth,
+  MonitoringController.storeAction
+);
+monitoringRoutes.put(
+  "/monitoring/trap-actions/:actionId",
+  isAuth,
+  MonitoringController.updateAction
+);
+
+monitoringRoutes.get(
+  "/monitoring/inspections",
+  isAuth,
+  MonitoringController.listInspections
+);
+monitoringRoutes.post(
+  "/monitoring/inspections",
+  isAuth,
+  MonitoringController.storeInspection
+);
+
+monitoringRoutes.get(
   "/monitoring/floor-plans",
   isAuth,
   MonitoringController.listFloorPlans

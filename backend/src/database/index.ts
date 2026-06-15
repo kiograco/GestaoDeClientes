@@ -20,6 +20,12 @@ import UserMessagesLog from "../models/UserMessagesLog";
 import FastReply from "../models/FastReply";
 import Tag from "../models/Tag";
 import TrapType from "../models/TrapType";
+import TrapAction from "../models/TrapAction";
+import TrapCondition from "../models/TrapCondition";
+import TrapInspection from "../models/TrapInspection";
+import TrapInspectionAction from "../models/TrapInspectionAction";
+import TrapInspectionCondition from "../models/TrapInspectionCondition";
+import TrapTypePest from "../models/TrapTypePest";
 import ContactWallet from "../models/ContactWallet";
 import ContactTag from "../models/ContactTag";
 import Campaign from "../models/Campaign";
@@ -91,6 +97,12 @@ const models = [
   Contact,
   Ticket,
   TrapType,
+  TrapAction,
+  TrapCondition,
+  TrapInspection,
+  TrapInspectionAction,
+  TrapInspectionCondition,
+  TrapTypePest,
   MonitoringPoint,
   MonitoringPointHistory,
   Message,

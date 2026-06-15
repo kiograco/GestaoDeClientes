@@ -11,10 +11,13 @@ import {
   ForeignKey,
   BelongsTo,
   HasMany,
+  BelongsToMany,
   DataType
 } from "sequelize-typescript";
 import Tenant from "./Tenant";
 import MonitoringPoint from "./MonitoringPoint";
+import Pest from "./Pest";
+import TrapTypePest from "./TrapTypePest";
 
 @Table({ tableName: "trap_types", paranoid: true })
 class TrapType extends Model<TrapType> {
@@ -37,6 +40,9 @@ class TrapType extends Model<TrapType> {
   code: string;
 
   @Column
+  acronym: string;
+
+  @Column
   type: string;
 
   @Column(DataType.TEXT)
@@ -48,6 +54,12 @@ class TrapType extends Model<TrapType> {
 
   @HasMany(() => MonitoringPoint)
   monitoringPoints: MonitoringPoint[];
+
+  @HasMany(() => TrapTypePest)
+  trapTypePests: TrapTypePest[];
+
+  @BelongsToMany(() => Pest, () => TrapTypePest)
+  pests: Pest[];
 
   @CreatedAt
   @Column({ field: "created_at" })

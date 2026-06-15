@@ -11,9 +11,25 @@ const nullableString = Yup.string()
 const trapTypeSchema = Yup.object().shape({
   name: Yup.string().trim().required().min(2),
   code: Yup.string().trim().required().min(2),
-  type: Yup.string().trim().required().min(2),
+  acronym: nullableString,
+  type: Yup.string().trim().default("monitoramento"),
   description: nullableString,
+  active: Yup.boolean(),
+  pestIds: Yup.array().of(Yup.number().integer().positive()).default([])
+});
+
+const catalogSchema = Yup.object().shape({
+  name: Yup.string().trim().required().min(2),
   active: Yup.boolean()
+});
+
+const inspectionSchema = Yup.object().shape({
+  monitoringPointId: Yup.number().integer().positive().required(),
+  technicianId: Yup.number().integer().positive().nullable(),
+  inspectionDate: Yup.date().nullable(),
+  conditionIds: Yup.array().of(Yup.number().integer().positive()).default([]),
+  actionIds: Yup.array().of(Yup.number().integer().positive()).default([]),
+  notes: nullableString
 });
 
 const pointCreateSchema = Yup.object().shape({
@@ -134,6 +150,96 @@ export const removeTrapType = async (
   await Monitoring.deleteTrapType(req.user.tenantId, req.params.trapTypeId);
   await auditMonitoringAction(req, "trap_type_deleted", req.params.trapTypeId);
   return res.status(204).send();
+};
+
+export const listConditions = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(await Monitoring.listConditions(req.user.tenantId));
+
+export const storeCondition = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const condition = await Monitoring.createCondition(
+    req.user.tenantId,
+    await validate<Monitoring.TrapCatalogData>(catalogSchema, req.body)
+  );
+  await auditMonitoringAction(req, "trap_condition_created", condition.id);
+  return res.status(201).json(condition);
+};
+
+export const updateCondition = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const condition = await Monitoring.updateCondition(
+    req.user.tenantId,
+    req.params.conditionId,
+    await validate<Monitoring.TrapCatalogData>(catalogSchema, req.body)
+  );
+  await auditMonitoringAction(req, "trap_condition_updated", condition.id);
+  return res.json(condition);
+};
+
+export const listActions = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(await Monitoring.listActions(req.user.tenantId));
+
+export const storeAction = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const action = await Monitoring.createAction(
+    req.user.tenantId,
+    await validate<Monitoring.TrapCatalogData>(catalogSchema, req.body)
+  );
+  await auditMonitoringAction(req, "trap_action_created", action.id);
+  return res.status(201).json(action);
+};
+
+export const updateAction = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const action = await Monitoring.updateAction(
+    req.user.tenantId,
+    req.params.actionId,
+    await validate<Monitoring.TrapCatalogData>(catalogSchema, req.body)
+  );
+  await auditMonitoringAction(req, "trap_action_updated", action.id);
+  return res.json(action);
+};
+
+export const listInspections = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await Monitoring.listInspections(req.user.tenantId, {
+      monitoringPointId:
+        typeof req.query.monitoringPointId === "string"
+          ? req.query.monitoringPointId
+          : undefined
+    })
+  );
+
+export const storeInspection = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const inspection = await Monitoring.createInspection(
+    req.user.tenantId,
+    Number(req.user.id),
+    await validate<Monitoring.TrapInspectionData>(inspectionSchema, req.body)
+  );
+  await auditMonitoringAction(req, "trap_inspection_created", inspection.id, {
+    monitoringPointId: inspection.monitoringPointId
+  });
+  return res.status(201).json(inspection);
 };
 
 export const listPoints = async (
