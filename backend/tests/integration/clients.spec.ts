@@ -101,6 +101,7 @@ describe("clients API", () => {
           document: "11222333000181",
           status: "active"
         });
+        expect(body.contactId).toEqual(expect.any(Number));
         expect(body.addresses).toHaveLength(2);
         expect(body.addresses[0].areas).toHaveLength(1);
         expect(body.addresses[0].areas[0]).toMatchObject({

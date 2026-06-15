@@ -9,6 +9,8 @@ import PDFDocument from "pdfkit";
 import { Resend } from "resend";
 import sequelize from "../../database";
 import AppError from "../../errors/AppError";
+import Client from "../../models/Client";
+import ClientContact from "../../models/ClientContact";
 import Contact from "../../models/Contact";
 import CustomerAddress from "../../models/CustomerAddress";
 import Pest from "../../models/Pest";
@@ -559,8 +561,47 @@ const ensureCustomer = async (
     where: { id: contactId, tenantId },
     transaction
   });
-  if (!contact) throw new AppError("ERR_NO_CONTACT_FOUND", 404);
-  return contact;
+  if (contact) return contact;
+
+  const client = await Client.findOne({
+    where: { id: contactId, tenantId },
+    include: [{ model: ClientContact, as: "contacts", required: false }],
+    transaction
+  });
+  if (!client) throw new AppError("ERR_NO_CONTACT_FOUND", 404);
+
+  if (client.contactId) {
+    const linkedContact = await Contact.findOne({
+      where: { id: client.contactId, tenantId },
+      transaction
+    });
+    if (linkedContact) return linkedContact;
+  }
+
+  const primaryContact = client.contacts?.find(item => item.name);
+  const preferredNumber =
+    normalizeDigits(primaryContact?.whatsapp) ||
+    normalizeDigits(primaryContact?.phone) ||
+    normalizeDigits(client.document) ||
+    `crm-client-${tenantId}-${client.id}`;
+  const duplicatedNumber = await Contact.findOne({
+    where: { tenantId, number: preferredNumber },
+    transaction
+  });
+  const createdContact = await Contact.create(
+    {
+      tenantId,
+      name: client.legalName || client.tradeName || `Cliente #${client.id}`,
+      number: duplicatedNumber
+        ? `crm-client-${tenantId}-${client.id}`
+        : preferredNumber,
+      email: cleanText(primaryContact?.email)?.toLowerCase() || null,
+      profilePicUrl: ""
+    },
+    { transaction }
+  );
+  await client.update({ contactId: createdContact.id }, { transaction });
+  return createdContact;
 };
 
 const ensureAttendant = async (
@@ -2737,9 +2778,14 @@ export const createOrder = async (
   const created = await sequelize.transaction(
     { isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE },
     async transaction => {
-      await ensureCustomer(tenantId, data.contactId, transaction);
+      const contact = await ensureCustomer(
+        tenantId,
+        data.contactId,
+        transaction
+      );
+      const normalizedData = { ...data, contactId: contact.id };
       await ensureAttendant(tenantId, data.attendantId, transaction);
-      const payload = buildOrderPayload(tenantId, userId, data);
+      const payload = buildOrderPayload(tenantId, userId, normalizedData);
       await ensureNoScheduleConflict(
         tenantId,
         payload.attendantId,
@@ -2752,7 +2798,7 @@ export const createOrder = async (
       await replaceOrderItems(
         tenantId,
         serviceOrder.id,
-        data.items,
+        normalizedData.items,
         transaction
       );
       if (serviceOrder.status === "concluida") {
@@ -2804,7 +2850,12 @@ export const updateOrder = async (
         lock: transaction.LOCK.UPDATE
       });
       if (!serviceOrder) throw new AppError("ERR_SERVICE_ORDER_NOT_FOUND", 404);
-      await ensureCustomer(tenantId, data.contactId, transaction);
+      const contact = await ensureCustomer(
+        tenantId,
+        data.contactId,
+        transaction
+      );
+      const normalizedData = { ...data, contactId: contact.id };
       await ensureAttendant(tenantId, data.attendantId, transaction);
       const oldValue = {
         status: serviceOrder.status,
@@ -2816,7 +2867,7 @@ export const updateOrder = async (
         recurrenceIntervalDays: serviceOrder.recurrenceIntervalDays,
         inventoryDeductedAt: serviceOrder.inventoryDeductedAt
       };
-      const payload = buildOrderPayload(tenantId, userId, data);
+      const payload = buildOrderPayload(tenantId, userId, normalizedData);
       payload.createdByUserId = serviceOrder.createdByUserId;
       if (payload.status === "concluida" && !serviceOrder.completedAt) {
         payload.completedAt = new Date();
@@ -2836,7 +2887,7 @@ export const updateOrder = async (
       await replaceOrderItems(
         tenantId,
         serviceOrder.id,
-        data.items,
+        normalizedData.items,
         transaction
       );
       if (payload.status === "concluida" && !oldValue.inventoryDeductedAt) {

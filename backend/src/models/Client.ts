@@ -14,6 +14,7 @@ import {
   DataType
 } from "sequelize-typescript";
 import Tenant from "./Tenant";
+import Contact from "./Contact";
 import ClientAddress from "./ClientAddress";
 import ClientContact from "./ClientContact";
 import ClientArea from "./ClientArea";
@@ -31,6 +32,13 @@ class Client extends Model<Client> {
 
   @BelongsTo(() => Tenant)
   tenant: Tenant;
+
+  @ForeignKey(() => Contact)
+  @Column({ field: "contact_id" })
+  contactId: number;
+
+  @BelongsTo(() => Contact)
+  contact: Contact;
 
   @Column({ field: "registration_type" })
   registrationType: string;

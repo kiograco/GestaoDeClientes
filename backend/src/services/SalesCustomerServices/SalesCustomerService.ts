@@ -8,6 +8,7 @@ import ClientAreaService from "../../models/ClientAreaService";
 import ClientAddress from "../../models/ClientAddress";
 import ClientContact from "../../models/ClientContact";
 import ClientSector from "../../models/ClientSector";
+import Contact from "../../models/Contact";
 
 interface SectorData {
   id?: number;
@@ -178,6 +179,94 @@ const contactPayload = (
   email: nullable(contact.email)?.toLowerCase() || null,
   notes: nullable(contact.notes)
 });
+
+const primaryContactData = (
+  client: Client,
+  data?: CustomerData
+): ContactData | ClientContact | null => {
+  const payloadContact = data?.contacts?.find(contact => contact.name);
+  if (payloadContact) return payloadContact;
+  return client.contacts?.find(contact => contact.name) || null;
+};
+
+const resolveClientContactNumber = async (
+  tenantId: string | number,
+  clientId: number,
+  preferredNumber: string | null,
+  currentContactId: number | null,
+  transaction: LegacyAny
+): Promise<string> => {
+  const candidates = [
+    preferredNumber,
+    `crm-client-${tenantId}-${clientId}`,
+    `crm-client-${tenantId}-${clientId}-${Date.now()}`
+  ].filter(Boolean) as string[];
+
+  const duplicateChecks = await Promise.all(
+    candidates.map(async candidate => ({
+      candidate,
+      duplicate: await Contact.findOne({
+        where: {
+          tenantId,
+          number: candidate,
+          ...(currentContactId ? { id: { [Op.ne]: currentContactId } } : {})
+        },
+        transaction
+      })
+    }))
+  );
+  const availableCandidate = duplicateChecks.find(
+    check => !check.duplicate
+  )?.candidate;
+
+  if (availableCandidate) return availableCandidate;
+
+  return `crm-client-${tenantId}-${clientId}-${Date.now()}`;
+};
+
+const ensureClientContact = async (
+  tenantId: string | number,
+  client: Client,
+  transaction: LegacyAny,
+  data?: CustomerData
+): Promise<Contact> => {
+  const primaryContact = primaryContactData(client, data);
+  const preferredNumber =
+    normalizeDigits(primaryContact?.whatsapp) ||
+    normalizeDigits(primaryContact?.phone) ||
+    normalizeDigits(client.document);
+
+  const existingContact = client.contactId
+    ? await Contact.findOne({
+        where: { id: client.contactId, tenantId },
+        transaction
+      })
+    : null;
+
+  const number = await resolveClientContactNumber(
+    tenantId,
+    client.id,
+    preferredNumber,
+    existingContact?.id || null,
+    transaction
+  );
+  const payload = {
+    tenantId,
+    name: client.legalName || client.tradeName || primaryContact?.name,
+    number,
+    email: nullable(primaryContact?.email)?.toLowerCase() || null,
+    profilePicUrl: existingContact?.profilePicUrl || ""
+  };
+
+  if (existingContact) {
+    await existingContact.update(payload, { transaction });
+    return existingContact;
+  }
+
+  const contact = await Contact.create(payload, { transaction });
+  await client.update({ contactId: contact.id }, { transaction });
+  return contact;
+};
 
 const areaPayload = (
   tenantId: string | number,
@@ -510,7 +599,7 @@ export const listCustomers = async (
   ];
   if (digits) searchConditions.push({ document: { [Op.like]: `%${digits}%` } });
 
-  return Client.findAll({
+  const clients = await Client.findAll({
     where: {
       tenantId,
       ...(search ? { [Op.or]: searchConditions } : {})
@@ -518,12 +607,40 @@ export const listCustomers = async (
     include: clientInclude,
     order: [["legalName", "ASC"]]
   });
+
+  const clientsWithoutContact = clients.filter(client => !client.contactId);
+  if (clientsWithoutContact.length) {
+    await Promise.all(
+      clientsWithoutContact.map(client =>
+        sequelize.transaction(transaction =>
+          ensureClientContact(tenantId, client, transaction)
+        )
+      )
+    );
+    return Client.findAll({
+      where: {
+        tenantId,
+        ...(search ? { [Op.or]: searchConditions } : {})
+      },
+      include: clientInclude,
+      order: [["legalName", "ASC"]]
+    });
+  }
+
+  return clients;
 };
 
 export const showCustomer = async (
   tenantId: string | number,
   clientId: string
-): Promise<Client> => findClient(tenantId, clientId);
+): Promise<Client> => {
+  const client = await findClient(tenantId, clientId);
+  if (client.contactId) return client;
+  await sequelize.transaction(transaction =>
+    ensureClientContact(tenantId, client, transaction)
+  );
+  return findClient(tenantId, clientId);
+};
 
 export const createCustomer = async (
   tenantId: string | number,
@@ -548,6 +665,7 @@ export const createCustomer = async (
       transaction
     );
     await syncAreas(tenantId, created.id, data.areas, addressIds, transaction);
+    await ensureClientContact(tenantId, created, transaction, data);
     return created;
   });
   return showCustomer(tenantId, String(client.id));
@@ -578,6 +696,7 @@ export const updateCustomer = async (
       transaction
     );
     await syncAreas(tenantId, client.id, data.areas, addressIds, transaction);
+    await ensureClientContact(tenantId, client, transaction, data);
   });
   return showCustomer(tenantId, clientId);
 };

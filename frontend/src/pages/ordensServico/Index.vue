@@ -754,6 +754,7 @@
             v-model="form.contactId"
             emit-value map-options
             :options="clientes"
+            @focus="carregarClientesServico"
             @filter="filtrarClientes"
           >
             <template v-slot:before-options>
@@ -1194,7 +1195,7 @@
 
     <ClienteModal
       v-model="modalCliente"
-      :contactId="selectedContactId"
+      :clientId="selectedClientId"
       @saved="clienteSalvo"
     />
   </q-page>
@@ -1362,7 +1363,7 @@ export default {
       modalPraga: false,
       modalNotificacao: false,
       modalCliente: false,
-      selectedContactId: null,
+      selectedClientId: null,
       form: emptyForm(),
       atendente: { active: true },
       itemEstoque: emptyInventoryItem(),
@@ -1858,19 +1859,50 @@ export default {
       this.fechamentoMensal = data
     },
     async filtrarClientes (val, update) {
-      const { data } = await ListarClientes({ searchParam: val })
+      const { data } = await ListarClientes({ searchParam: val || '' })
       update(() => {
         this.clientes = data.map(this.formatarOpcaoCliente)
       })
     },
+    async carregarClientesServico () {
+      const { data } = await ListarClientes({ searchParam: '' })
+      this.clientes = data.map(this.formatarOpcaoCliente)
+    },
     formatarOpcaoCliente (cliente) {
+      const nome = cliente.legalName || cliente.name || 'Cliente sem nome'
+      const fantasia = cliente.tradeName ? ` - ${cliente.tradeName}` : ''
+      const documento = this.formatarDocumentoCliente(cliente.document)
+      const contato = (cliente.contacts || [])[0] || {}
+      const telefone = contato.whatsapp || contato.phone || cliente.number || ''
+      const detalhe = documento || telefone || cliente.email || ''
       return {
-        label: `${cliente.name} - ${cliente.number || cliente.email || ''}`,
-        value: cliente.id
+        label: `${nome}${fantasia}${detalhe ? ` - ${detalhe}` : ''}`,
+        value: cliente.contactId || cliente.id,
+        clientId: cliente.id
+      }
+    },
+    formatarDocumentoCliente (documento) {
+      const digits = String(documento || '').replace(/\D/g, '')
+      if (digits.length === 11) {
+        return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+      }
+      if (digits.length === 14) {
+        return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
+      }
+      return documento || ''
+    },
+    registrarOpcaoContatoOrdem (contact) {
+      if (!contact) return
+      const opcao = {
+        label: `${contact.name || 'Cliente'}${contact.number ? ` - ${contact.number}` : ''}`,
+        value: contact.id
+      }
+      if (!this.clientes.some(item => item.value === opcao.value)) {
+        this.clientes.unshift(opcao)
       }
     },
     abrirCadastroCliente () {
-      this.selectedContactId = null
+      this.selectedClientId = null
       this.modalCliente = true
     },
     clienteSalvo (cliente) {
@@ -1903,6 +1935,8 @@ export default {
         : emptyForm()
       this.servicoOrdemSelecionado = null
       this.produtoOrdemSelecionado = null
+      this.registrarOpcaoContatoOrdem(ordem?.contact)
+      this.carregarClientesServico()
       this.modalOrdem = true
     },
     abrirAtendente (atendente) {

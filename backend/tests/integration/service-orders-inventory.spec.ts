@@ -420,6 +420,68 @@ describe("service orders inventory API", () => {
     );
   });
 
+  it("cria ordem de servico selecionando cliente do cadastro centralizado", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    await createContact({ tenantId: user.tenantId });
+
+    const { body: client } = await request(app)
+      .post("/clients")
+      .set("Authorization", authorization)
+      .send({
+        registrationType: "legal_entity",
+        legalName: "Cliente OS Integrado Ltda",
+        tradeName: "Cliente Integrado",
+        document: "22333444000155",
+        status: "active",
+        addresses: [
+          {
+            addressType: "Matriz",
+            zipCode: "01001000",
+            street: "Praca da Se",
+            number: "100",
+            district: "Se",
+            city: "Sao Paulo",
+            state: "SP"
+          }
+        ],
+        contacts: [
+          {
+            name: "Responsavel OS",
+            phone: "11977770000",
+            email: "os-integrado@example.test",
+            addressIndex: 0
+          }
+        ]
+      })
+      .expect(201);
+
+    const inventoryItem = await ServiceInventoryItem.create({
+      tenantId: user.tenantId,
+      name: "Produto para OS integrada",
+      unit: "unidade",
+      quantity: 5,
+      minQuantity: 1,
+      costPrice: 10,
+      salePrice: 30,
+      active: true
+    });
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send(orderPayload(client.contactId, inventoryItem.id, 1))
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.contactId).toBe(client.contactId);
+        expect(body.contact).toMatchObject({
+          id: client.contactId,
+          name: "Cliente OS Integrado Ltda"
+        });
+      });
+  });
+
   it("exige lote e consome o lote selecionado quando controle de lote esta habilitado", async () => {
     const app = await makeTestApp();
     const user = await createAdminUser();
