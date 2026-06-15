@@ -756,6 +756,7 @@
             :options="clientes"
             @focus="carregarClientesServico"
             @filter="filtrarClientes"
+            @input="preencherDadosClienteOrdem"
           >
             <template v-slot:before-options>
               <q-item clickable @click.stop="abrirCadastroCliente">
@@ -844,9 +845,10 @@
             max="365"
           />
           <q-input dense outlined class="col-12 col-md-6" label="Endereço" v-model="form.address" />
-          <q-input dense outlined class="col-12 col-md-3" label="Cidade" v-model="form.city" />
-          <q-input dense outlined maxlength="2" class="col-12 col-md-1" label="UF" v-model="form.state" />
-          <q-input dense outlined mask="#####-###" class="col-12 col-md-2" label="CEP" v-model="form.zipCode" />
+          <q-input dense outlined class="col-12 col-md-6" label="Complemento / Referência" v-model="form.addressComplement" />
+          <q-input dense outlined class="col-12 col-md-5" label="Cidade" v-model="form.city" />
+          <q-input dense outlined maxlength="2" class="col-12 col-md-2" label="UF" v-model="form.state" />
+          <q-input dense outlined mask="#####-###" class="col-12 col-md-3" label="CEP" v-model="form.zipCode" />
           <q-input dense outlined type="textarea" class="col-12" label="Descrição" v-model="form.description" />
           <div class="col-12">
             <q-separator class="q-my-sm" />
@@ -1203,7 +1205,7 @@
 
 <script>
 import { socketIO } from 'src/utils/socket'
-import { ListarClientes } from 'src/service/clientes'
+import { ListarClientes, ObterCliente } from 'src/service/clientes'
 import ClienteModal from 'src/pages/clientes/ClienteModal'
 import {
   ListarAtendentesServico,
@@ -1278,6 +1280,7 @@ const emptyForm = () => ({
   scheduledStart: '',
   scheduledEnd: '',
   address: '',
+  addressComplement: '',
   city: '',
   state: '',
   zipCode: '',
@@ -1878,7 +1881,8 @@ export default {
       return {
         label: `${nome}${fantasia}${detalhe ? ` - ${detalhe}` : ''}`,
         value: cliente.contactId || cliente.id,
-        clientId: cliente.id
+        clientId: cliente.id,
+        raw: cliente
       }
     },
     formatarDocumentoCliente (documento) {
@@ -1911,6 +1915,52 @@ export default {
       if (index === -1) this.clientes.unshift(opcao)
       else this.$set(this.clientes, index, opcao)
       this.form.contactId = opcao.value
+      this.aplicarDadosClienteNaOrdem(cliente, true)
+    },
+    async preencherDadosClienteOrdem (contactId) {
+      const opcao = this.clientes.find(item => item.value === contactId)
+      if (!opcao) return
+      if (opcao.raw) {
+        this.aplicarDadosClienteNaOrdem(opcao.raw, true)
+        return
+      }
+      if (!opcao.clientId) return
+      const { data } = await ObterCliente(opcao.clientId)
+      this.aplicarDadosClienteNaOrdem(data, true)
+    },
+    aplicarDadosClienteNaOrdem (cliente, sobrescrever = false) {
+      if (!cliente) return
+      const endereco = this.enderecoPrincipalCliente(cliente)
+      if (endereco) {
+        this.preencherCampoOrdem('address', this.formatarEnderecoOrdem(endereco), sobrescrever)
+        this.preencherCampoOrdem('addressComplement', this.formatarComplementoEnderecoOrdem(endereco), sobrescrever)
+        this.preencherCampoOrdem('city', endereco.city || '', sobrescrever)
+        this.preencherCampoOrdem('state', String(endereco.state || '').toUpperCase(), sobrescrever)
+        this.preencherCampoOrdem('zipCode', endereco.zipCode || '', sobrescrever)
+      }
+      if (!this.form.internalObservation && cliente.notes) {
+        this.form.internalObservation = cliente.notes
+      }
+    },
+    enderecoPrincipalCliente (cliente) {
+      const enderecos = cliente.addresses || []
+      return enderecos.find(endereco =>
+        ['principal', 'matriz'].includes(String(endereco.addressType || '').toLowerCase())
+      ) || enderecos[0] || null
+    },
+    preencherCampoOrdem (field, value, sobrescrever) {
+      if (!value) return
+      if (sobrescrever || !this.form[field]) this.form[field] = value
+    },
+    formatarEnderecoOrdem (endereco) {
+      return [endereco.street, endereco.number].filter(Boolean).join(', ')
+    },
+    formatarComplementoEnderecoOrdem (endereco) {
+      return [
+        endereco.complement,
+        endereco.district ? `Bairro: ${endereco.district}` : '',
+        endereco.reference
+      ].filter(Boolean).join(' - ')
     },
     abrirOrdem (ordem) {
       this.form = ordem
