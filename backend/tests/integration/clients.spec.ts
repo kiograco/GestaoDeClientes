@@ -344,5 +344,18 @@ describe("clients API", () => {
           activitySector: "Controle de pragas urbanas"
         });
       });
+
+    const notFoundError = new Error("not found") as LegacyAny;
+    notFoundError.isAxiosError = true;
+    notFoundError.response = { status: 404 };
+    jest.spyOn(axios, "get").mockRejectedValueOnce(notFoundError);
+
+    await request(app)
+      .get("/clients/cnpj/50911840000184")
+      .set("Authorization", bearerTokenFor(user))
+      .expect(404)
+      .expect(({ body }) => {
+        expect(body.error).toBe("ERR_CNPJ_NOT_FOUND");
+      });
   });
 });

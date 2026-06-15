@@ -488,7 +488,19 @@ export default {
           state: endereco.state || data.state || ''
         })
       } catch (error) {
-        this.$notificarErro('Nao foi possivel consultar o CNPJ.', error)
+        const status = error?.status || error?.response?.status
+        const code = error?.data?.error || error?.response?.data?.error
+        if (status === 404 || code === 'ERR_CNPJ_NOT_FOUND') {
+          this.$q.notify({
+            type: 'warning',
+            message: 'CNPJ nao encontrado na consulta publica. Preencha os dados manualmente.'
+          })
+          return
+        }
+        this.$q.notify({
+          type: 'negative',
+          message: 'Nao foi possivel consultar o CNPJ. Preencha os dados manualmente.'
+        })
       } finally {
         this.loadingCnpj = false
       }

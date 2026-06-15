@@ -763,6 +763,9 @@ export const findCompanyByCnpj = async (cnpj: string): Promise<LegacyAny> => {
     };
   } catch (error) {
     if (error instanceof AppError) throw error;
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      throw new AppError("ERR_CNPJ_NOT_FOUND", 404);
+    }
     throw new AppError("Nao foi possivel consultar o CNPJ", 502);
   }
 };
