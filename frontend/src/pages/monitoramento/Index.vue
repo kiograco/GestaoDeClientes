@@ -20,6 +20,7 @@
       <q-tabs v-model="tab" dense align="left" active-color="primary" indicator-color="primary">
         <q-tab name="tipos" icon="mdi-toy-brick-marker-outline" label="Tipos de Armadilhas" />
         <q-tab name="pontos" icon="mdi-map-marker-radius-outline" label="Pontos" />
+        <q-tab name="mapa" icon="mdi-floor-plan" label="Mapa" />
       </q-tabs>
       <q-separator />
 
@@ -87,6 +88,61 @@
               </q-td>
             </template>
           </q-table>
+        </q-tab-panel>
+
+        <q-tab-panel name="mapa">
+          <div class="map-toolbar">
+            <q-select v-model="mapa.clientId" :options="opcoesClientes" emit-value map-options outlined dense label="Cliente" />
+            <q-select v-model="mapa.addressId" :options="opcoesEnderecosMapa" emit-value map-options outlined dense label="Endereco" @input="carregarPlantas" />
+            <q-select v-model="mapa.floorPlanId" :options="opcoesPlantas" emit-value map-options outlined dense label="Planta" />
+            <q-select v-model="mapa.pointId" :options="opcoesPontosMapa" emit-value map-options outlined dense label="Armadilha para posicionar" />
+            <q-btn outline color="primary" icon="mdi-upload" label="Planta" @click="modalPlanta = true" />
+            <q-btn flat round icon="mdi-magnify-plus-outline" @click="zoom = Math.min(zoom + 0.1, 2.5)" />
+            <q-btn flat round icon="mdi-magnify-minus-outline" @click="zoom = Math.max(zoom - 0.1, 0.5)" />
+            <q-btn flat round icon="mdi-fit-to-page-outline" @click="resetMapa" />
+            <q-btn flat round icon="mdi-fullscreen" @click="fullscreen = !fullscreen" />
+          </div>
+
+          <div :class="['map-shell', { 'map-shell--fullscreen': fullscreen }]">
+            <div
+              ref="mapCanvas"
+              class="map-canvas"
+              :style="{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }"
+              @click="posicionarPorClique"
+              @mousedown="iniciarPan"
+              @mousemove="moverPan"
+              @mouseup="encerrarPan"
+              @mouseleave="encerrarPan"
+            >
+              <iframe v-if="plantaSelecionada?.fileType === 'application/pdf'" class="map-media" :src="urlArquivo(plantaSelecionada.fileUrl)" />
+              <img v-else-if="plantaSelecionada" class="map-media" :src="urlArquivo(plantaSelecionada.fileUrl)" alt="Planta baixa" draggable="false">
+              <div v-else class="map-empty">Selecione ou envie uma planta baixa.</div>
+
+              <button
+                v-for="ponto in pontosDaPlanta"
+                :key="ponto.id"
+                class="map-marker"
+                :class="classeMarcador(ponto)"
+                :style="{ left: `${ponto.positionX}%`, top: `${ponto.positionY}%` }"
+                draggable="true"
+                @dragstart="pontoArrastado = ponto"
+                @dragend="arrastarMarcador"
+                @click.stop="mapa.pointId = ponto.id"
+              >
+                {{ ponto.mapLabel || ponto.pointNumber }}
+                <q-tooltip>
+                  {{ ponto.label }} - {{ ponto.trapType?.name || 'Tipo' }} - {{ ponto.area?.name || '-' }} / {{ ponto.sector?.name || '-' }}
+                </q-tooltip>
+              </button>
+            </div>
+          </div>
+
+          <div class="map-legend">
+            <span><i class="legend-dot legend-dot--bait" /> Porta Isca</span>
+            <span><i class="legend-dot legend-dot--glue" /> Cola</span>
+            <span><i class="legend-dot legend-dot--light" /> Armadilha Luminosa</span>
+            <span><i class="legend-dot legend-dot--maintenance" /> Necessita manutenção</span>
+          </div>
         </q-tab-panel>
       </q-tab-panels>
     </q-card>
@@ -160,6 +216,28 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="modalPlanta" persistent>
+      <q-card class="monitoramento-modal app-card">
+        <q-card-section class="monitoramento-modal__header">
+          <div class="monitoramento-modal__title">Enviar planta baixa</div>
+          <q-btn flat round dense icon="mdi-close" @click="modalPlanta = false" />
+        </q-card-section>
+        <q-card-section>
+          <div class="row q-col-gutter-md">
+            <q-input v-model.trim="planta.name" outlined label="Nome da Planta *" class="col-12 col-md-6" />
+            <q-select v-model="planta.clientId" :options="opcoesClientes" emit-value map-options outlined label="Cliente *" class="col-12 col-md-6" />
+            <q-select v-model="planta.addressId" :options="opcoesEnderecosPlanta" emit-value map-options outlined label="Endereco *" class="col-12" />
+            <q-file v-model="planta.file" outlined accept=".pdf,.jpg,.jpeg,.png,.webp" label="PDF, JPG, PNG ou WEBP *" class="col-12" />
+            <q-input v-model.trim="planta.notes" outlined label="Observacoes" class="col-12" />
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" @click="modalPlanta = false" />
+          <q-btn unelevated color="primary" label="Enviar" :disable="!plantaValida" :loading="saving" @click="enviarPlanta" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -168,12 +246,15 @@ import { ListarClientes } from 'src/service/clientes'
 import {
   AlterarPontoMonitoramento,
   AlterarTipoArmadilha,
+  CriarPlantaCliente,
   CriarPontosMonitoramento,
   CriarTipoArmadilha,
   ExcluirPontoMonitoramento,
   ExcluirTipoArmadilha,
+  ListarPlantasCliente,
   ListarPontosMonitoramento,
-  ListarTiposArmadilha
+  ListarTiposArmadilha,
+  PosicionarPontoMonitoramento
 } from 'src/service/monitoramento'
 
 const hoje = () => new Date().toISOString().slice(0, 10)
@@ -208,13 +289,23 @@ export default {
       saving: false,
       tipos: [],
       pontos: [],
+      plantas: [],
       clientes: [],
+      mapa: { clientId: null, addressId: null, floorPlanId: null, pointId: null },
+      planta: { name: '', clientId: null, addressId: null, file: null, notes: '' },
+      zoom: 1,
+      pan: { x: 0, y: 0 },
+      panning: false,
+      lastPan: null,
+      fullscreen: false,
+      pontoArrastado: null,
       filtros: { clientId: null },
       tipo: tipoVazio(),
       ponto: pontoVazio(),
       movimento: {},
       modalTipo: false,
       modalPontos: false,
+      modalPlanta: false,
       modalMovimentacao: false,
       colunasTipos: [
         { name: 'name', label: 'Nome', field: 'name', align: 'left', sortable: true },
@@ -285,6 +376,39 @@ export default {
     opcoesTipos () {
       return this.tipos.filter(tipo => tipo.active).map(tipo => ({ label: `${tipo.name} (${tipo.code})`, value: tipo.id }))
     },
+    plantaValida () {
+      return !!(this.planta.name && this.planta.clientId && this.planta.addressId && this.planta.file)
+    },
+    clienteMapa () {
+      return this.clientes.find(cliente => cliente.id === this.mapa.clientId)
+    },
+    opcoesEnderecosMapa () {
+      return (this.clienteMapa?.addresses || []).map(endereco => ({
+        label: `${endereco.addressType || 'Endereco'} - ${endereco.street || endereco.city || endereco.id}`,
+        value: endereco.id
+      }))
+    },
+    opcoesEnderecosPlanta () {
+      const cliente = this.clientes.find(item => item.id === this.planta.clientId)
+      return (cliente?.addresses || []).map(endereco => ({
+        label: `${endereco.addressType || 'Endereco'} - ${endereco.street || endereco.city || endereco.id}`,
+        value: endereco.id
+      }))
+    },
+    opcoesPlantas () {
+      return this.plantas.map(planta => ({ label: planta.name, value: planta.id }))
+    },
+    plantaSelecionada () {
+      return this.plantas.find(planta => planta.id === this.mapa.floorPlanId)
+    },
+    opcoesPontosMapa () {
+      return this.pontos
+        .filter(ponto => !this.mapa.addressId || ponto.addressId === this.mapa.addressId)
+        .map(ponto => ({ label: `${ponto.label} - ${ponto.sector?.name || 'Setor'}`, value: ponto.id }))
+    },
+    pontosDaPlanta () {
+      return this.pontos.filter(ponto => ponto.floorPlanId === this.mapa.floorPlanId && ponto.isPositioned)
+    },
     clienteMovimento () {
       return this.clientes.find(cliente => cliente.id === this.movimento.clientId)
     },
@@ -314,6 +438,12 @@ export default {
     'ponto.areaId' () {
       this.ponto.sectorId = null
     },
+    'mapa.clientId' () {
+      this.mapa.addressId = null
+      this.mapa.floorPlanId = null
+      this.mapa.pointId = null
+      this.plantas = []
+    },
     'movimento.areaId' () {
       if (!this.opcoesSetoresMovimento.some(setor => setor.value === this.movimento.sectorId)) {
         this.movimento.sectorId = null
@@ -342,6 +472,92 @@ export default {
         clientId: this.filtros.clientId || undefined
       })
       this.pontos = data
+    },
+    urlArquivo (fileUrl) {
+      return `${process.env.VUE_URL_API || ''}${fileUrl}`
+    },
+    async carregarPlantas () {
+      if (!this.mapa.addressId) return
+      const { data } = await ListarPlantasCliente({
+        clientId: this.mapa.clientId,
+        addressId: this.mapa.addressId
+      })
+      this.plantas = data
+      this.mapa.floorPlanId = data[0]?.id || null
+    },
+    async enviarPlanta () {
+      const formData = new FormData()
+      formData.append('name', this.planta.name)
+      formData.append('clientId', this.planta.clientId)
+      formData.append('addressId', this.planta.addressId)
+      formData.append('notes', this.planta.notes || '')
+      formData.append('file', this.planta.file)
+      this.saving = true
+      try {
+        await CriarPlantaCliente(formData)
+        this.modalPlanta = false
+        this.mapa.clientId = this.planta.clientId
+        this.mapa.addressId = this.planta.addressId
+        this.planta = { name: '', clientId: null, addressId: null, file: null, notes: '' }
+        await this.carregarPlantas()
+        this.$q.notify({ type: 'positive', message: 'Planta enviada.' })
+      } catch (error) {
+        this.$notificarErro('Nao foi possivel enviar a planta.', error)
+      } finally {
+        this.saving = false
+      }
+    },
+    coordenadasDoEvento (event) {
+      const rect = this.$refs.mapCanvas.getBoundingClientRect()
+      return {
+        x: Math.min(Math.max(((event.clientX - rect.left) / rect.width) * 100, 0), 100),
+        y: Math.min(Math.max(((event.clientY - rect.top) / rect.height) * 100, 0), 100)
+      }
+    },
+    async salvarPosicao (pointId, coords) {
+      if (!this.mapa.floorPlanId || !pointId) return
+      await PosicionarPontoMonitoramento(pointId, {
+        floorPlanId: this.mapa.floorPlanId,
+        positionX: Number(coords.x.toFixed(4)),
+        positionY: Number(coords.y.toFixed(4))
+      })
+      await this.carregarPontos()
+    },
+    async posicionarPorClique (event) {
+      if (this.panning || !this.mapa.pointId || !this.plantaSelecionada) return
+      await this.salvarPosicao(this.mapa.pointId, this.coordenadasDoEvento(event))
+    },
+    async arrastarMarcador (event) {
+      if (!this.pontoArrastado || !this.plantaSelecionada) return
+      const coords = this.coordenadasDoEvento(event)
+      await this.salvarPosicao(this.pontoArrastado.id, coords)
+      this.pontoArrastado = null
+    },
+    iniciarPan (event) {
+      if (event.target.classList?.contains('map-marker')) return
+      this.panning = true
+      this.lastPan = { x: event.clientX, y: event.clientY }
+    },
+    moverPan (event) {
+      if (!this.panning || !this.lastPan) return
+      this.pan.x += event.clientX - this.lastPan.x
+      this.pan.y += event.clientY - this.lastPan.y
+      this.lastPan = { x: event.clientX, y: event.clientY }
+    },
+    encerrarPan () {
+      this.panning = false
+      this.lastPan = null
+    },
+    resetMapa () {
+      this.zoom = 1
+      this.pan = { x: 0, y: 0 }
+    },
+    classeMarcador (ponto) {
+      const name = (ponto.trapType?.name || '').toLowerCase()
+      if (!ponto.active) return 'map-marker--maintenance'
+      if (name.includes('luminosa')) return 'map-marker--light'
+      if (name.includes('cola')) return 'map-marker--glue'
+      return 'map-marker--bait'
     },
     abrirTipo (tipo = null) {
       this.tipo = tipo ? { ...tipo } : tipoVazio()
@@ -464,9 +680,113 @@ export default {
   font-weight: 750;
 }
 
+.map-toolbar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr)) repeat(5, auto);
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.map-shell {
+  height: 620px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  position: relative;
+}
+
+.map-shell--fullscreen {
+  position: fixed;
+  inset: 16px;
+  z-index: 7000;
+  height: auto;
+  background: var(--surface);
+}
+
+.map-canvas {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-origin: center center;
+  cursor: grab;
+}
+
+.map-canvas:active {
+  cursor: grabbing;
+}
+
+.map-media {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  border: 0;
+  background: #fff;
+}
+
+.map-empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.map-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  min-width: 30px;
+  height: 30px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12px;
+  line-height: 24px;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .24);
+  cursor: move;
+}
+
+.map-marker--bait { background: #16a34a; }
+.map-marker--glue { background: #0ea5e9; }
+.map-marker--light { background: #f59e0b; }
+.map-marker--maintenance { background: #ef4444; }
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.legend-dot--bait { background: #16a34a; }
+.legend-dot--glue { background: #0ea5e9; }
+.legend-dot--light { background: #f59e0b; }
+.legend-dot--maintenance { background: #ef4444; }
+
 @media (max-width: 700px) {
   .monitoramento-filtros {
     grid-template-columns: 1fr;
+  }
+
+  .map-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .map-shell {
+    height: 420px;
   }
 }
 </style>

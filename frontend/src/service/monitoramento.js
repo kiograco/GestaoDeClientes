@@ -9,3 +9,8 @@ export const ListarPontosMonitoramento = params => request({ url: '/monitoring/p
 export const CriarPontosMonitoramento = data => request({ url: '/monitoring/points', method: 'post', data })
 export const AlterarPontoMonitoramento = data => request({ url: `/monitoring/points/${data.id}`, method: 'put', data })
 export const ExcluirPontoMonitoramento = id => request({ url: `/monitoring/points/${id}`, method: 'delete' })
+export const ListarPlantasCliente = params => request({ url: '/monitoring/floor-plans', method: 'get', params })
+export const CriarPlantaCliente = data => request({ url: '/monitoring/floor-plans', method: 'post', data })
+export const AlterarPlantaCliente = data => request({ url: `/monitoring/floor-plans/${data.id}`, method: 'put', data })
+export const ExcluirPlantaCliente = id => request({ url: `/monitoring/floor-plans/${id}`, method: 'delete' })
+export const PosicionarPontoMonitoramento = (id, data) => request({ url: `/monitoring/points/${id}/position`, method: 'put', data })

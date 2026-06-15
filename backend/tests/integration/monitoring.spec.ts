@@ -1,6 +1,7 @@
 import request from "supertest";
 import MonitoringPoint from "../../src/models/MonitoringPoint";
 import MonitoringPointHistory from "../../src/models/MonitoringPointHistory";
+import ClientFloorPlan from "../../src/models/ClientFloorPlan";
 import TrapType from "../../src/models/TrapType";
 import { bearerTokenFor } from "../helpers/auth";
 import { makeTestApp } from "../helpers/app";
@@ -144,6 +145,63 @@ describe("monitoring API", () => {
             expect.objectContaining({ action: "sector_change" })
           ])
         );
+      });
+
+    await request(app)
+      .post("/monitoring/floor-plans")
+      .set("Authorization", authorization)
+      .field("clientId", String(client.body.id))
+      .field("addressId", String(address.id))
+      .field("name", "Planta Cozinha")
+      .field("notes", "Versao inicial")
+      .attach("file", Buffer.from("fake-png"), {
+        filename: "planta.png",
+        contentType: "image/png"
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          tenantId: user.tenantId,
+          clientId: client.body.id,
+          addressId: address.id,
+          name: "Planta Cozinha",
+          fileType: "image/png",
+          originalFilename: "planta.png"
+        });
+        expect(body.fileUrl).toContain("/public/floor-plans/");
+      });
+
+    const floorPlan = await ClientFloorPlan.findOne({
+      where: { tenantId: user.tenantId, name: "Planta Cozinha" }
+    });
+    expect(floorPlan).toBeTruthy();
+
+    await request(app)
+      .put(`/monitoring/points/${createdPoints.body[2].id}/position`)
+      .set("Authorization", authorization)
+      .send({
+        floorPlanId: floorPlan?.id,
+        positionX: 32.5,
+        positionY: 66.25,
+        mapLabel: "PI-03"
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          floorPlanId: floorPlan?.id,
+          mapLabel: "PI-03",
+          isPositioned: true
+        });
+        expect(Number(body.positionX)).toBeCloseTo(32.5);
+        expect(Number(body.positionY)).toBeCloseTo(66.25);
+      });
+
+    await request(app)
+      .get(`/monitoring/floor-plans?clientId=${client.body.id}`)
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toHaveLength(1);
       });
 
     await request(app)

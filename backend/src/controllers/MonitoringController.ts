@@ -50,6 +50,20 @@ const pointUpdateSchema = Yup.object().shape({
   historyNotes: nullableString
 });
 
+const floorPlanSchema = Yup.object().shape({
+  clientId: Yup.number().integer().positive().required(),
+  addressId: Yup.number().integer().positive().required(),
+  name: Yup.string().trim().required().min(2),
+  notes: nullableString
+});
+
+const pointPositionSchema = Yup.object().shape({
+  floorPlanId: Yup.number().integer().positive().required(),
+  positionX: Yup.number().min(0).max(100).required(),
+  positionY: Yup.number().min(0).max(100).required(),
+  mapLabel: nullableString
+});
+
 const validate = async <T>(
   schema: Yup.ObjectSchema<LegacyAny>,
   data: LegacyAny
@@ -141,6 +155,77 @@ export const listPoints = async (
     })
   );
 
+export const listFloorPlans = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await Monitoring.listFloorPlans(req.user.tenantId, {
+      clientId:
+        typeof req.query.clientId === "string" ? req.query.clientId : undefined,
+      addressId:
+        typeof req.query.addressId === "string"
+          ? req.query.addressId
+          : undefined
+    })
+  );
+
+export const storeFloorPlan = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  if (!req.file) throw new AppError("Envie PDF, JPG, PNG ou WEBP", 400);
+  const payload = await validate<{
+    clientId: number;
+    addressId: number;
+    name: string;
+    notes?: string | null;
+  }>(floorPlanSchema, req.body);
+  const floorPlan = await Monitoring.createFloorPlan(req.user.tenantId, {
+    ...payload,
+    fileUrl: `/public/floor-plans/${req.file.filename}`,
+    fileType: req.file.mimetype,
+    originalFilename: req.file.originalname
+  });
+  await auditMonitoringAction(req, "floor_plan_created", floorPlan.id, {
+    clientId: floorPlan.clientId,
+    addressId: floorPlan.addressId
+  });
+  return res.status(201).json(floorPlan);
+};
+
+export const updateFloorPlan = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const floorPlan = await Monitoring.updateFloorPlan(
+    req.user.tenantId,
+    req.params.floorPlanId,
+    await validate<Partial<Monitoring.FloorPlanData>>(
+      Yup.object().shape({
+        name: Yup.string().trim().required().min(2),
+        notes: nullableString
+      }),
+      req.body
+    )
+  );
+  await auditMonitoringAction(req, "floor_plan_updated", floorPlan.id);
+  return res.json(floorPlan);
+};
+
+export const removeFloorPlan = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  await Monitoring.deleteFloorPlan(req.user.tenantId, req.params.floorPlanId);
+  await auditMonitoringAction(
+    req,
+    "floor_plan_deleted",
+    req.params.floorPlanId
+  );
+  return res.status(204).send();
+};
+
 export const storePoints = async (
   req: Request,
   res: Response
@@ -170,6 +255,23 @@ export const updatePoint = async (
   );
   await auditMonitoringAction(req, "monitoring_point_updated", point.id, {
     action: req.body.historyAction || null
+  });
+  return res.json(point);
+};
+
+export const updatePointPosition = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const point = await Monitoring.updatePointPosition(
+    req.user.tenantId,
+    req.params.pointId,
+    await validate<Monitoring.PointPositionData>(pointPositionSchema, req.body)
+  );
+  await auditMonitoringAction(req, "monitoring_point_positioned", point.id, {
+    floorPlanId: point.floorPlanId,
+    positionX: point.positionX,
+    positionY: point.positionY
   });
   return res.json(point);
 };

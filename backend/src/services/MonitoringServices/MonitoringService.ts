@@ -4,6 +4,7 @@ import AppError from "../../errors/AppError";
 import Client from "../../models/Client";
 import ClientAddress from "../../models/ClientAddress";
 import ClientArea from "../../models/ClientArea";
+import ClientFloorPlan from "../../models/ClientFloorPlan";
 import ClientSector from "../../models/ClientSector";
 import MonitoringPoint from "../../models/MonitoringPoint";
 import MonitoringPointHistory from "../../models/MonitoringPointHistory";
@@ -45,6 +46,23 @@ export interface MonitoringPointUpdateData {
   historyNotes?: string | null;
 }
 
+export interface FloorPlanData {
+  clientId: number;
+  addressId: number;
+  name: string;
+  fileUrl: string;
+  fileType: string;
+  originalFilename: string;
+  notes?: string | null;
+}
+
+export interface PointPositionData {
+  floorPlanId: number;
+  positionX: number;
+  positionY: number;
+  mapLabel?: string | null;
+}
+
 const nullable = (value?: string | number | null): string | null => {
   if (value === null || value === undefined) return null;
   const text = String(value).trim();
@@ -56,6 +74,7 @@ const pointInclude = [
   { model: ClientAddress, as: "address", required: false },
   { model: ClientArea, as: "area", required: false },
   { model: ClientSector, as: "sector", required: false },
+  { model: ClientFloorPlan, as: "floorPlan", required: false },
   { model: TrapType, as: "trapType", required: false },
   { model: MonitoringPointHistory, as: "history", required: false }
 ];
@@ -73,6 +92,17 @@ const ensureUniqueTrapCode = async (
     }
   });
   if (duplicate) throw new AppError("ERR_TRAP_TYPE_CODE_ALREADY_EXISTS", 409);
+};
+
+const ensureFloorPlan = async (
+  tenantId: string | number,
+  floorPlanId: number
+): Promise<ClientFloorPlan> => {
+  const floorPlan = await ClientFloorPlan.findOne({
+    where: { id: floorPlanId, tenantId }
+  });
+  if (!floorPlan) throw new AppError("ERR_FLOOR_PLAN_NOT_FOUND", 404);
+  return floorPlan;
 };
 
 const ensureTrapType = async (
@@ -221,6 +251,94 @@ export const deleteTrapType = async (
   await trapType.destroy();
 };
 
+export const listFloorPlans = async (
+  tenantId: string | number,
+  filters: { clientId?: string; addressId?: string } = {}
+): Promise<ClientFloorPlan[]> =>
+  ClientFloorPlan.findAll({
+    where: {
+      tenantId,
+      ...(filters.clientId ? { clientId: filters.clientId } : {}),
+      ...(filters.addressId ? { addressId: filters.addressId } : {})
+    },
+    include: [
+      { model: Client, as: "client", required: false },
+      { model: ClientAddress, as: "address", required: false }
+    ],
+    order: [["name", "ASC"]]
+  });
+
+export const createFloorPlan = async (
+  tenantId: string | number,
+  data: FloorPlanData
+): Promise<ClientFloorPlan> => {
+  await ensureLocation(tenantId, data.clientId, data.addressId, 0, 0).catch(
+    async error => {
+      if (
+        error instanceof AppError &&
+        error.message === "ERR_CLIENT_AREA_NOT_FOUND"
+      ) {
+        return;
+      }
+      throw error;
+    }
+  );
+  await ClientAddress.findOne({
+    where: { id: data.addressId, clientId: data.clientId, tenantId }
+  }).then(address => {
+    if (!address) throw new AppError("ERR_CLIENT_ADDRESS_NOT_FOUND", 404);
+  });
+  return ClientFloorPlan.create({
+    tenantId,
+    clientId: data.clientId,
+    addressId: data.addressId,
+    name: data.name.trim(),
+    fileUrl: data.fileUrl,
+    fileType: data.fileType,
+    originalFilename: data.originalFilename,
+    notes: nullable(data.notes)
+  });
+};
+
+export const updateFloorPlan = async (
+  tenantId: string | number,
+  floorPlanId: string,
+  data: Partial<FloorPlanData>
+): Promise<ClientFloorPlan> => {
+  const floorPlan = await ClientFloorPlan.findOne({
+    where: { id: floorPlanId, tenantId }
+  });
+  if (!floorPlan) throw new AppError("ERR_FLOOR_PLAN_NOT_FOUND", 404);
+  await floorPlan.update({
+    name: data.name?.trim() || floorPlan.name,
+    notes: data.notes !== undefined ? nullable(data.notes) : floorPlan.notes
+  });
+  return floorPlan;
+};
+
+export const deleteFloorPlan = async (
+  tenantId: string | number,
+  floorPlanId: string
+): Promise<void> => {
+  const floorPlan = await ClientFloorPlan.findOne({
+    where: { id: floorPlanId, tenantId }
+  });
+  if (!floorPlan) throw new AppError("ERR_FLOOR_PLAN_NOT_FOUND", 404);
+  await sequelize.transaction(async transaction => {
+    await MonitoringPoint.update(
+      {
+        floorPlanId: null,
+        positionX: null,
+        positionY: null,
+        mapLabel: null,
+        isPositioned: false
+      },
+      { where: { tenantId, floorPlanId }, transaction }
+    );
+    await floorPlan.destroy({ transaction });
+  });
+};
+
 export const listPoints = async (
   tenantId: string | number,
   filters: {
@@ -358,6 +476,32 @@ export const updatePoint = async (
       data.historyNotes,
       previous
     );
+  });
+  return showPoint(tenantId, pointId);
+};
+
+export const updatePointPosition = async (
+  tenantId: string | number,
+  pointId: string,
+  data: PointPositionData
+): Promise<MonitoringPoint> => {
+  const point = await MonitoringPoint.findOne({
+    where: { id: pointId, tenantId }
+  });
+  if (!point) throw new AppError("ERR_MONITORING_POINT_NOT_FOUND", 404);
+  const floorPlan = await ensureFloorPlan(tenantId, data.floorPlanId);
+  if (
+    floorPlan.clientId !== point.clientId ||
+    floorPlan.addressId !== point.addressId
+  ) {
+    throw new AppError("ERR_FLOOR_PLAN_LOCATION_MISMATCH", 400);
+  }
+  await point.update({
+    floorPlanId: floorPlan.id,
+    positionX: data.positionX,
+    positionY: data.positionY,
+    mapLabel: nullable(data.mapLabel) || point.label,
+    isPositioned: true
   });
   return showPoint(tenantId, pointId);
 };

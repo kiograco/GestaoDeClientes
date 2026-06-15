@@ -18,6 +18,7 @@ import Client from "./Client";
 import ClientAddress from "./ClientAddress";
 import ClientArea from "./ClientArea";
 import ClientSector from "./ClientSector";
+import ClientFloorPlan from "./ClientFloorPlan";
 import TrapType from "./TrapType";
 import MonitoringPointHistory from "./MonitoringPointHistory";
 
@@ -69,6 +70,26 @@ class MonitoringPoint extends Model<MonitoringPoint> {
 
   @BelongsTo(() => TrapType)
   trapType: TrapType;
+
+  @ForeignKey(() => ClientFloorPlan)
+  @Column({ field: "floor_plan_id" })
+  floorPlanId: number;
+
+  @BelongsTo(() => ClientFloorPlan)
+  floorPlan: ClientFloorPlan;
+
+  @Column({ field: "position_x", type: DataType.DECIMAL(8, 4) })
+  positionX: number;
+
+  @Column({ field: "position_y", type: DataType.DECIMAL(8, 4) })
+  positionY: number;
+
+  @Column({ field: "map_label" })
+  mapLabel: string;
+
+  @Default(false)
+  @Column({ field: "is_positioned" })
+  isPositioned: boolean;
 
   @Column
   owner: string;

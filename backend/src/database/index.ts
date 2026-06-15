@@ -35,6 +35,7 @@ import ClientArea from "../models/ClientArea";
 import ClientAreaService from "../models/ClientAreaService";
 import ClientAddress from "../models/ClientAddress";
 import ClientContact from "../models/ClientContact";
+import ClientFloorPlan from "../models/ClientFloorPlan";
 import ClientSector from "../models/ClientSector";
 import Pest from "../models/Pest";
 import Plan from "../models/Plan";
@@ -124,6 +125,7 @@ const models = [
   ClientAreaService,
   ClientAddress,
   ClientContact,
+  ClientFloorPlan,
   ClientSector,
   Pest,
   ProductCategory,
