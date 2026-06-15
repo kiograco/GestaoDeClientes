@@ -7,17 +7,17 @@ import {
   Model,
   PrimaryKey,
   AutoIncrement,
+  Default,
   ForeignKey,
   BelongsTo,
   HasMany,
   DataType
 } from "sequelize-typescript";
 import Tenant from "./Tenant";
-import ClientArea from "./ClientArea";
 import MonitoringPoint from "./MonitoringPoint";
 
-@Table({ tableName: "client_sectors", paranoid: true })
-class ClientSector extends Model<ClientSector> {
+@Table({ tableName: "trap_types", paranoid: true })
+class TrapType extends Model<TrapType> {
   @PrimaryKey
   @AutoIncrement
   @Column
@@ -30,21 +30,21 @@ class ClientSector extends Model<ClientSector> {
   @BelongsTo(() => Tenant)
   tenant: Tenant;
 
-  @ForeignKey(() => ClientArea)
-  @Column({ field: "area_id" })
-  areaId: number;
-
-  @BelongsTo(() => ClientArea)
-  area: ClientArea;
-
   @Column
   name: string;
+
+  @Column
+  code: string;
+
+  @Column
+  type: string;
 
   @Column(DataType.TEXT)
   description: string;
 
-  @Column(DataType.TEXT)
-  notes: string;
+  @Default(true)
+  @Column
+  active: boolean;
 
   @HasMany(() => MonitoringPoint)
   monitoringPoints: MonitoringPoint[];
@@ -62,4 +62,4 @@ class ClientSector extends Model<ClientSector> {
   deletedAt: Date;
 }
 
-export default ClientSector;
+export default TrapType;

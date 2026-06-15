@@ -30,6 +30,7 @@ import deliveryOrderRoutes from "./deliveryOrderRoutes";
 import salesCustomerRoutes from "./salesCustomerRoutes";
 import salesPipelineRoutes from "./salesPipelineRoutes";
 import serviceOrderRoutes from "./serviceOrderRoutes";
+import monitoringRoutes from "./monitoringRoutes";
 
 const routes = Router();
 
@@ -64,5 +65,6 @@ routes.use(deliveryOrderRoutes);
 routes.use(salesCustomerRoutes);
 routes.use(salesPipelineRoutes);
 routes.use(serviceOrderRoutes);
+routes.use(monitoringRoutes);
 
 export default routes;

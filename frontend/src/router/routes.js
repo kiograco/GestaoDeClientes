@@ -20,6 +20,7 @@ const routes = [
       { path: '/clientes', name: 'clientes', component: () => import('pages/clientes/Index.vue') },
       { path: '/pipeline-vendas', name: 'pipeline-vendas', component: () => import('pages/pipelineVendas/Index.vue') },
       { path: '/ordens-servico', name: 'ordens-servico', component: () => import('pages/ordensServico/Index.vue') },
+      { path: '/monitoramento', name: 'monitoramento', component: () => import('pages/monitoramento/Index.vue') },
       { path: '/usuarios', name: 'usuarios', component: () => import('pages/usuarios/Index.vue') },
       { path: '/auto-resposta', name: 'auto-resposta', component: () => import('pages/fluxoAutoResposta/Index.vue') },
       { path: '/mensagens-rapidas', name: 'mensagens-rapidas', component: () => import('pages/mensagensRapidas/Index.vue') },

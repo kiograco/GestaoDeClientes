@@ -503,6 +503,12 @@ const objMenu = [
     caption: 'Agenda e técnicos',
     icon: 'mdi-calendar-check-outline',
     routeName: 'ordens-servico'
+  },
+  {
+    title: 'Monitoramento',
+    caption: 'Armadilhas e pontos',
+    icon: 'mdi-map-marker-radius-outline',
+    routeName: 'monitoramento'
   }
 ]
 
@@ -517,7 +523,7 @@ const objMenuGroups = [
   },
   {
     title: 'Atendimento',
-    routes: ['atendimento', 'ordens-servico']
+    routes: ['atendimento', 'ordens-servico', 'monitoramento']
   }
 ].map(group => ({
   title: group.title,

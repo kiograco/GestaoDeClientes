@@ -7,6 +7,8 @@ import Whatsapp from "../models/Whatsapp";
 import ContactCustomField from "../models/ContactCustomField";
 import Message from "../models/Message";
 import MessageOffLine from "../models/MessageOffLine";
+import MonitoringPoint from "../models/MonitoringPoint";
+import MonitoringPointHistory from "../models/MonitoringPointHistory";
 import AutoReply from "../models/AutoReply";
 import StepsReply from "../models/StepsReply";
 import StepsReplyAction from "../models/StepsReplyAction";
@@ -17,6 +19,7 @@ import AutoReplyLogs from "../models/AutoReplyLogs";
 import UserMessagesLog from "../models/UserMessagesLog";
 import FastReply from "../models/FastReply";
 import Tag from "../models/Tag";
+import TrapType from "../models/TrapType";
 import ContactWallet from "../models/ContactWallet";
 import ContactTag from "../models/ContactTag";
 import Campaign from "../models/Campaign";
@@ -86,6 +89,9 @@ const models = [
   User,
   Contact,
   Ticket,
+  TrapType,
+  MonitoringPoint,
+  MonitoringPointHistory,
   Message,
   MessageOffLine,
   Whatsapp,
