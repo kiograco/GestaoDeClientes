@@ -3,8 +3,30 @@ import { Op } from "sequelize";
 import sequelize from "../../database";
 import AppError from "../../errors/AppError";
 import Client from "../../models/Client";
+import ClientArea from "../../models/ClientArea";
+import ClientAreaService from "../../models/ClientAreaService";
 import ClientAddress from "../../models/ClientAddress";
 import ClientContact from "../../models/ClientContact";
+import ClientSector from "../../models/ClientSector";
+
+interface SectorData {
+  id?: number;
+  name: string;
+  description?: string | null;
+  notes?: string | null;
+}
+
+interface AreaData {
+  id?: number;
+  addressId?: number | null;
+  addressIndex?: number | null;
+  name: string;
+  areaType?: string | null;
+  description?: string | null;
+  notes?: string | null;
+  services?: string[];
+  sectors?: SectorData[];
+}
 
 interface AddressData {
   id?: number;
@@ -45,6 +67,7 @@ export interface CustomerData {
   notes?: string | null;
   addresses?: AddressData[];
   contacts?: ContactData[];
+  areas?: AreaData[];
 }
 
 const normalizeDigits = (value?: string | null): string =>
@@ -60,7 +83,18 @@ const clientInclude = [
   {
     model: ClientAddress,
     as: "addresses",
-    required: false
+    required: false,
+    include: [
+      {
+        model: ClientArea,
+        as: "areas",
+        required: false,
+        include: [
+          { model: ClientAreaService, as: "services", required: false },
+          { model: ClientSector, as: "sectors", required: false }
+        ]
+      }
+    ]
   },
   {
     model: ClientContact,
@@ -79,6 +113,12 @@ const findClient = async (
     include: clientInclude,
     order: [
       [{ model: ClientAddress, as: "addresses" }, "id", "ASC"],
+      [
+        { model: ClientAddress, as: "addresses" },
+        { model: ClientArea, as: "areas" },
+        "id",
+        "ASC"
+      ],
       [{ model: ClientContact, as: "contacts" }, "id", "ASC"]
     ]
   });
@@ -139,6 +179,55 @@ const contactPayload = (
   notes: nullable(contact.notes)
 });
 
+const areaPayload = (
+  tenantId: string | number,
+  clientId: number,
+  addressId: number,
+  area: AreaData
+) => ({
+  tenantId,
+  clientId,
+  addressId,
+  name: area.name.trim(),
+  areaType: nullable(area.areaType),
+  description: nullable(area.description),
+  notes: nullable(area.notes)
+});
+
+const sectorPayload = (
+  tenantId: string | number,
+  areaId: number,
+  sector: SectorData
+) => ({
+  tenantId,
+  areaId,
+  name: sector.name.trim(),
+  description: nullable(sector.description),
+  notes: nullable(sector.notes)
+});
+
+const areaInclude = [
+  { model: ClientAddress, as: "address", required: false },
+  { model: ClientAreaService, as: "services", required: false },
+  { model: ClientSector, as: "sectors", required: false }
+];
+
+async function deleteAreaChildren(
+  tenantId: string | number,
+  areaIds: number[],
+  transaction: LegacyAny
+) {
+  if (!areaIds.length) return;
+  await ClientSector.destroy({
+    where: { tenantId, areaId: areaIds },
+    transaction
+  });
+  await ClientAreaService.destroy({
+    where: { tenantId, areaId: areaIds },
+    transaction
+  });
+}
+
 const syncAddresses = async (
   tenantId: string | number,
   clientId: number,
@@ -179,6 +268,20 @@ const syncAddresses = async (
     .map(address => address.id)
     .filter(id => !receivedIds.has(id));
   if (idsToDelete.length) {
+    const areasToDelete = await ClientArea.findAll({
+      where: { tenantId, clientId, addressId: idsToDelete },
+      attributes: ["id"],
+      transaction
+    });
+    await deleteAreaChildren(
+      tenantId,
+      areasToDelete.map(area => area.id),
+      transaction
+    );
+    await ClientArea.destroy({
+      where: { tenantId, clientId, addressId: idsToDelete },
+      transaction
+    });
     await ClientAddress.destroy({
       where: { id: idsToDelete, tenantId, clientId },
       transaction
@@ -251,6 +354,136 @@ const syncContacts = async (
   }
 };
 
+const syncAreaServices = async (
+  tenantId: string | number,
+  areaId: number,
+  services: string[] = [],
+  transaction: LegacyAny
+) => {
+  await ClientAreaService.destroy({
+    where: { tenantId, areaId },
+    transaction
+  });
+  const normalizedServices = Array.from(
+    new Set(services.map(service => nullable(service)).filter(Boolean))
+  ) as string[];
+  if (!normalizedServices.length) return;
+  await ClientAreaService.bulkCreate(
+    normalizedServices.map(serviceName => ({
+      tenantId,
+      areaId,
+      serviceName
+    })),
+    { transaction }
+  );
+};
+
+const syncSectors = async (
+  tenantId: string | number,
+  areaId: number,
+  sectors: SectorData[] = [],
+  transaction: LegacyAny
+) => {
+  const existing = await ClientSector.findAll({
+    where: { tenantId, areaId },
+    transaction
+  });
+  const existingIds = new Set(existing.map(sector => sector.id));
+  const receivedIds = new Set<number>();
+
+  await Promise.all(
+    sectors.map(async sector => {
+      if (sector.id && existingIds.has(sector.id)) {
+        receivedIds.add(sector.id);
+        await ClientSector.update(sectorPayload(tenantId, areaId, sector), {
+          where: { id: sector.id, tenantId, areaId },
+          transaction
+        });
+        return;
+      }
+      await ClientSector.create(sectorPayload(tenantId, areaId, sector), {
+        transaction
+      });
+    })
+  );
+
+  const idsToDelete = existing
+    .map(sector => sector.id)
+    .filter(id => !receivedIds.has(id));
+  if (idsToDelete.length) {
+    await ClientSector.destroy({
+      where: { id: idsToDelete, tenantId, areaId },
+      transaction
+    });
+  }
+};
+
+const syncAreas = async (
+  tenantId: string | number,
+  clientId: number,
+  areas: AreaData[] = [],
+  syncedAddressIds: number[],
+  transaction: LegacyAny
+) => {
+  const validAddressIds = new Set(
+    (
+      await ClientAddress.findAll({
+        where: { tenantId, clientId },
+        transaction
+      })
+    ).map(address => address.id)
+  );
+  const existing = await ClientArea.findAll({
+    where: { tenantId, clientId },
+    transaction
+  });
+  const existingIds = new Set(existing.map(area => area.id));
+  const receivedIds = new Set<number>();
+
+  await Promise.all(
+    areas.map(async area => {
+      const addressId =
+        area.addressId ||
+        (area.addressIndex !== null && area.addressIndex !== undefined
+          ? syncedAddressIds[area.addressIndex]
+          : null);
+      if (!addressId || !validAddressIds.has(addressId)) {
+        throw new AppError("ERR_CLIENT_AREA_ADDRESS_NOT_FOUND", 404);
+      }
+      if (area.id && existingIds.has(area.id)) {
+        receivedIds.add(area.id);
+        await ClientArea.update(
+          areaPayload(tenantId, clientId, addressId, area),
+          {
+            where: { id: area.id, tenantId, clientId },
+            transaction
+          }
+        );
+        await syncAreaServices(tenantId, area.id, area.services, transaction);
+        await syncSectors(tenantId, area.id, area.sectors, transaction);
+        return;
+      }
+      const created = await ClientArea.create(
+        areaPayload(tenantId, clientId, addressId, area),
+        { transaction }
+      );
+      await syncAreaServices(tenantId, created.id, area.services, transaction);
+      await syncSectors(tenantId, created.id, area.sectors, transaction);
+    })
+  );
+
+  const idsToDelete = existing
+    .map(area => area.id)
+    .filter(id => !receivedIds.has(id));
+  if (idsToDelete.length) {
+    await deleteAreaChildren(tenantId, idsToDelete, transaction);
+    await ClientArea.destroy({
+      where: { id: idsToDelete, tenantId, clientId },
+      transaction
+    });
+  }
+};
+
 const baseClientPayload = (tenantId: string | number, data: CustomerData) => ({
   tenantId,
   registrationType: data.registrationType,
@@ -314,6 +547,7 @@ export const createCustomer = async (
       addressIds,
       transaction
     );
+    await syncAreas(tenantId, created.id, data.areas, addressIds, transaction);
     return created;
   });
   return showCustomer(tenantId, String(client.id));
@@ -343,6 +577,7 @@ export const updateCustomer = async (
       addressIds,
       transaction
     );
+    await syncAreas(tenantId, client.id, data.areas, addressIds, transaction);
   });
   return showCustomer(tenantId, clientId);
 };
@@ -354,6 +589,20 @@ export const deleteCustomer = async (
   const client = await Client.findOne({ where: { id: clientId, tenantId } });
   if (!client) throw new AppError("ERR_CLIENT_NOT_FOUND", 404);
   await sequelize.transaction(async transaction => {
+    const areas = await ClientArea.findAll({
+      where: { tenantId, clientId: client.id },
+      attributes: ["id"],
+      transaction
+    });
+    await deleteAreaChildren(
+      tenantId,
+      areas.map(area => area.id),
+      transaction
+    );
+    await ClientArea.destroy({
+      where: { tenantId, clientId: client.id },
+      transaction
+    });
     await ClientContact.destroy({
       where: { tenantId, clientId: client.id },
       transaction
@@ -363,6 +612,109 @@ export const deleteCustomer = async (
       transaction
     });
     await client.destroy({ transaction });
+  });
+};
+
+const ensureClientAddress = async (
+  tenantId: string | number,
+  clientId: string | number,
+  addressId: string | number
+): Promise<ClientAddress> => {
+  const address = await ClientAddress.findOne({
+    where: { id: addressId, clientId, tenantId }
+  });
+  if (!address) throw new AppError("ERR_CLIENT_ADDRESS_NOT_FOUND", 404);
+  return address;
+};
+
+const showArea = async (
+  tenantId: string | number,
+  areaId: string | number
+): Promise<ClientArea> => {
+  const area = await ClientArea.findOne({
+    where: { id: areaId, tenantId },
+    include: areaInclude
+  });
+  if (!area) throw new AppError("ERR_CLIENT_AREA_NOT_FOUND", 404);
+  return area;
+};
+
+export const listAreas = async (
+  tenantId: string | number,
+  clientId: string,
+  addressId?: string
+): Promise<ClientArea[]> => {
+  await Client.findOne({ where: { id: clientId, tenantId } }).then(client => {
+    if (!client) throw new AppError("ERR_CLIENT_NOT_FOUND", 404);
+  });
+  return ClientArea.findAll({
+    where: {
+      tenantId,
+      clientId,
+      ...(addressId ? { addressId } : {})
+    },
+    include: areaInclude,
+    order: [
+      ["name", "ASC"],
+      [{ model: ClientSector, as: "sectors" }, "name", "ASC"]
+    ]
+  });
+};
+
+export const createArea = async (
+  tenantId: string | number,
+  clientId: string,
+  data: AreaData
+): Promise<ClientArea> => {
+  if (!data.addressId) throw new AppError("ERR_CLIENT_AREA_ADDRESS_REQUIRED");
+  await ensureClientAddress(tenantId, clientId, data.addressId);
+  const area = await sequelize.transaction(async transaction => {
+    const created = await ClientArea.create(
+      areaPayload(tenantId, Number(clientId), data.addressId as number, data),
+      { transaction }
+    );
+    await syncAreaServices(tenantId, created.id, data.services, transaction);
+    await syncSectors(tenantId, created.id, data.sectors, transaction);
+    return created;
+  });
+  return showArea(tenantId, area.id);
+};
+
+export const updateArea = async (
+  tenantId: string | number,
+  clientId: string,
+  areaId: string,
+  data: AreaData
+): Promise<ClientArea> => {
+  const area = await ClientArea.findOne({
+    where: { id: areaId, tenantId, clientId }
+  });
+  if (!area) throw new AppError("ERR_CLIENT_AREA_NOT_FOUND", 404);
+  const addressId = data.addressId || area.addressId;
+  await ensureClientAddress(tenantId, clientId, addressId);
+  await sequelize.transaction(async transaction => {
+    await area.update(
+      areaPayload(tenantId, Number(clientId), addressId, data),
+      { transaction }
+    );
+    await syncAreaServices(tenantId, area.id, data.services, transaction);
+    await syncSectors(tenantId, area.id, data.sectors, transaction);
+  });
+  return showArea(tenantId, areaId);
+};
+
+export const deleteArea = async (
+  tenantId: string | number,
+  clientId: string,
+  areaId: string
+): Promise<void> => {
+  const area = await ClientArea.findOne({
+    where: { id: areaId, tenantId, clientId }
+  });
+  if (!area) throw new AppError("ERR_CLIENT_AREA_NOT_FOUND", 404);
+  await sequelize.transaction(async transaction => {
+    await deleteAreaChildren(tenantId, [area.id], transaction);
+    await area.destroy({ transaction });
   });
 };
 

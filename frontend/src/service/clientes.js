@@ -7,3 +7,7 @@ export const AlterarCliente = data => request({ url: `/clients/${data.id}`, meth
 export const ExcluirCliente = clientId => request({ url: `/clients/${clientId}`, method: 'delete' })
 export const ConsultarCep = zipCode => request({ url: `/sales/address/cep/${zipCode}`, method: 'get' })
 export const ConsultarCnpj = cnpj => request({ url: `/clients/cnpj/${cnpj}`, method: 'get' })
+export const ListarAreasCliente = (clientId, params) => request({ url: `/clients/${clientId}/areas`, method: 'get', params })
+export const CriarAreaCliente = (clientId, data) => request({ url: `/clients/${clientId}/areas`, method: 'post', data })
+export const AlterarAreaCliente = (clientId, data) => request({ url: `/clients/${clientId}/areas/${data.id}`, method: 'put', data })
+export const ExcluirAreaCliente = (clientId, areaId) => request({ url: `/clients/${clientId}/areas/${areaId}`, method: 'delete' })

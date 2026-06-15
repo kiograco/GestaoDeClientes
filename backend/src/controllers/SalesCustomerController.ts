@@ -43,6 +43,25 @@ const contactSchema = Yup.object().shape({
   notes: nullableString
 });
 
+const sectorSchema = Yup.object().shape({
+  id: Yup.number().integer().positive(),
+  name: Yup.string().trim().required().min(2),
+  description: nullableString,
+  notes: nullableString
+});
+
+const areaSchema = Yup.object().shape({
+  id: Yup.number().integer().positive(),
+  addressId: Yup.number().integer().positive().nullable(),
+  addressIndex: Yup.number().integer().min(0).nullable(),
+  name: Yup.string().trim().required().min(2),
+  areaType: nullableString,
+  description: nullableString,
+  notes: nullableString,
+  services: Yup.array().of(Yup.string().trim().required()).default([]),
+  sectors: Yup.array().of(sectorSchema).default([])
+});
+
 const customerSchema = Yup.object().shape({
   registrationType: Yup.string()
     .oneOf(["person", "legal_entity", "condominium", "company"])
@@ -58,7 +77,8 @@ const customerSchema = Yup.object().shape({
   status: Yup.string().oneOf(["prospect", "active", "inactive"]),
   notes: nullableString,
   addresses: Yup.array().of(addressSchema).default([]),
-  contacts: Yup.array().of(contactSchema).default([])
+  contacts: Yup.array().of(contactSchema).default([]),
+  areas: Yup.array().of(areaSchema).default([])
 });
 
 const validate = async (
@@ -68,6 +88,16 @@ const validate = async (
     return (await customerSchema.validate(data, {
       stripUnknown: true
     })) as SalesCustomer.CustomerData;
+  } catch (error) {
+    throw new AppError(error.message);
+  }
+};
+
+const validateArea = async (data: LegacyAny): Promise<LegacyAny> => {
+  try {
+    return await areaSchema.validate(data, {
+      stripUnknown: true
+    });
   } catch (error) {
     throw new AppError(error.message);
   }
@@ -137,6 +167,68 @@ export const remove = async (
 ): Promise<Response> => {
   await SalesCustomer.deleteCustomer(req.user.tenantId, req.params.clientId);
   await auditClientAction(req, "client_deleted", req.params.clientId);
+  return res.status(204).send();
+};
+
+export const listAreas = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  res.json(
+    await SalesCustomer.listAreas(
+      req.user.tenantId,
+      req.params.clientId,
+      typeof req.query.addressId === "string" ? req.query.addressId : undefined
+    )
+  );
+
+export const storeArea = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const area = await SalesCustomer.createArea(
+    req.user.tenantId,
+    req.params.clientId,
+    await validateArea(req.body)
+  );
+  await auditClientAction(req, "client_area_created", area.id, {
+    clientId: req.params.clientId,
+    addressId: area.addressId,
+    name: area.name
+  });
+  return res.status(201).json(area);
+};
+
+export const updateArea = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const area = await SalesCustomer.updateArea(
+    req.user.tenantId,
+    req.params.clientId,
+    req.params.areaId,
+    await validateArea(req.body)
+  );
+  await auditClientAction(req, "client_area_updated", area.id, {
+    clientId: req.params.clientId,
+    addressId: area.addressId,
+    name: area.name
+  });
+  return res.json(area);
+};
+
+export const removeArea = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  await SalesCustomer.deleteArea(
+    req.user.tenantId,
+    req.params.clientId,
+    req.params.areaId
+  );
+  await auditClientAction(req, "client_area_deleted", req.params.areaId, {
+    clientId: req.params.clientId
+  });
   return res.status(204).send();
 };
 

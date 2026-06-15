@@ -17,6 +17,7 @@
       <q-tabs v-model="tab" dense align="left" class="cliente-tabs" active-color="primary" indicator-color="primary">
         <q-tab name="dados" icon="mdi-card-account-details-outline" label="Dados" />
         <q-tab name="enderecos" icon="mdi-map-marker-outline" label="Enderecos" />
+        <q-tab name="areas" icon="mdi-floor-plan" label="Areas" />
         <q-tab name="contatos" icon="mdi-account-multiple-outline" label="Contatos" />
         <q-tab name="observacoes" icon="mdi-note-text-outline" label="Observacoes" />
       </q-tabs>
@@ -138,6 +139,78 @@
             </section>
           </q-tab-panel>
 
+          <q-tab-panel name="areas" class="q-pa-none">
+            <section class="cliente-section">
+              <div class="cliente-section__header cliente-section__header--action">
+                <div class="cliente-section__title-wrap">
+                  <q-icon name="mdi-floor-plan" />
+                  <div>
+                    <div class="cliente-section__title">Areas operacionais</div>
+                    <div class="cliente-section__description">Mapeie cozinhas, estoques, jardins e setores atendidos por endereco.</div>
+                  </div>
+                </div>
+                <q-btn outline color="primary" icon="mdi-plus" label="Area" @click="adicionarArea" />
+              </div>
+
+              <div v-if="!cliente.areas.length" class="cliente-empty">
+                Nenhuma area cadastrada.
+              </div>
+
+              <div v-for="(area, areaIndex) in cliente.areas" :key="area._key" class="cliente-repeat">
+                <div class="cliente-repeat__header">
+                  <div>{{ area.name || `Area ${areaIndex + 1}` }}</div>
+                  <q-btn flat round dense color="negative" icon="mdi-delete-outline" @click="removerArea(areaIndex)">
+                    <q-tooltip>Remover area</q-tooltip>
+                  </q-btn>
+                </div>
+                <div class="row q-col-gutter-md">
+                  <q-select
+                    v-model="area.addressKey"
+                    :options="opcoesEndereco"
+                    emit-value
+                    map-options
+                    outlined
+                    label="Endereco vinculado *"
+                    class="col-12 col-md-4"
+                  />
+                  <q-input v-model.trim="area.name" outlined label="Nome da area *" class="col-12 col-md-4" />
+                  <q-input v-model.trim="area.areaType" outlined label="Tipo da area" class="col-12 col-md-4" />
+                  <q-select
+                    v-model="area.services"
+                    :options="opcoesServicosArea"
+                    outlined
+                    multiple
+                    use-chips
+                    use-input
+                    new-value-mode="add-unique"
+                    label="Servicos por area"
+                    class="col-12"
+                  />
+                  <q-input v-model.trim="area.description" outlined type="textarea" autogrow label="Descricao" class="col-12 col-md-6" />
+                  <q-input v-model.trim="area.notes" outlined type="textarea" autogrow label="Observacoes" class="col-12 col-md-6" />
+                </div>
+
+                <div class="cliente-subsection">
+                  <div class="cliente-subsection__header">
+                    <div>Setores</div>
+                    <q-btn flat color="primary" icon="mdi-plus" label="Setor" @click="adicionarSetor(areaIndex)" />
+                  </div>
+                  <div v-if="!area.sectors.length" class="cliente-empty cliente-empty--compact">
+                    Nenhum setor cadastrado.
+                  </div>
+                  <div v-for="(setor, setorIndex) in area.sectors" :key="setor._key" class="cliente-sector">
+                    <q-input v-model.trim="setor.name" outlined dense label="Nome do setor *" class="col-grow" />
+                    <q-input v-model.trim="setor.description" outlined dense label="Descricao" class="col-grow" />
+                    <q-input v-model.trim="setor.notes" outlined dense label="Observacoes" class="col-grow" />
+                    <q-btn flat round dense color="negative" icon="mdi-delete-outline" @click="removerSetor(areaIndex, setorIndex)">
+                      <q-tooltip>Remover setor</q-tooltip>
+                    </q-btn>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </q-tab-panel>
+
           <q-tab-panel name="contatos" class="q-pa-none">
             <section class="cliente-section">
               <div class="cliente-section__header cliente-section__header--action">
@@ -245,6 +318,24 @@ const contatoVazio = () => ({
   notes: ''
 })
 
+const setorVazio = () => ({
+  _key: novoKey('setor'),
+  name: '',
+  description: '',
+  notes: ''
+})
+
+const areaVazia = () => ({
+  _key: novoKey('area'),
+  addressKey: null,
+  name: '',
+  areaType: '',
+  description: '',
+  notes: '',
+  services: [],
+  sectors: []
+})
+
 const clienteVazio = () => ({
   registrationType: 'person',
   legalName: '',
@@ -256,6 +347,7 @@ const clienteVazio = () => ({
   status: 'prospect',
   notes: '',
   addresses: [enderecoVazio()],
+  areas: [],
   contacts: []
 })
 
@@ -288,6 +380,16 @@ export default {
         { label: 'Prospect', value: 'prospect' },
         { label: 'Ativo', value: 'active' },
         { label: 'Inativo', value: 'inactive' }
+      ],
+      opcoesServicosArea: [
+        'Controle de Baratas',
+        'Controle de Formigas',
+        'Controle de Roedores',
+        'Controle de Cupins',
+        'Sanitizacao',
+        'Monitoramento',
+        'Desratizacao',
+        'Desinsetizacao'
       ]
     }
   },
@@ -296,6 +398,7 @@ export default {
       return !!(
         this.cliente.registrationType &&
         this.cliente.legalName &&
+        this.cliente.areas.every(area => area.name && area.addressKey && area.sectors.every(setor => setor.name)) &&
         this.cliente.contacts.every(contato => contato.name)
       )
     },
@@ -325,6 +428,16 @@ export default {
           ...address,
           _key: novoKey('endereco')
         }))
+        const areas = addresses.flatMap(address => (address.areas || []).map(area => ({
+          ...area,
+          _key: novoKey('area'),
+          addressKey: `id-${address.id}`,
+          services: (area.services || []).map(service => service.serviceName),
+          sectors: (area.sectors || []).map(sector => ({
+            ...sector,
+            _key: novoKey('setor')
+          }))
+        })))
         this.cliente = {
           id: data.id,
           registrationType: data.registrationType || 'person',
@@ -337,6 +450,7 @@ export default {
           status: data.status || 'prospect',
           notes: data.notes || '',
           addresses: addresses.length ? addresses : [enderecoVazio()],
+          areas,
           contacts: (data.contacts || []).map(contact => ({
             ...contact,
             _key: novoKey('contato'),
@@ -406,10 +520,28 @@ export default {
     },
     removerEndereco (index) {
       this.cliente.addresses.splice(index, 1)
+      this.cliente.areas = this.cliente.areas.map(area => ({
+        ...area,
+        addressKey: area.addressKey && area.addressKey.startsWith('index-') ? null : area.addressKey
+      }))
       this.cliente.contacts = this.cliente.contacts.map(contact => ({
         ...contact,
         addressKey: contact.addressKey && contact.addressKey.startsWith('index-') ? null : contact.addressKey
       }))
+    },
+    adicionarArea () {
+      const area = areaVazia()
+      area.addressKey = this.opcoesEndereco[0]?.value || null
+      this.cliente.areas.push(area)
+    },
+    removerArea (index) {
+      this.cliente.areas.splice(index, 1)
+    },
+    adicionarSetor (areaIndex) {
+      this.cliente.areas[areaIndex].sectors.push(setorVazio())
+    },
+    removerSetor (areaIndex, setorIndex) {
+      this.cliente.areas[areaIndex].sectors.splice(setorIndex, 1)
     },
     adicionarContato () {
       this.cliente.contacts.push(contatoVazio())
@@ -452,6 +584,30 @@ export default {
             whatsapp: this.somenteDigitos(contato.whatsapp),
             email: contato.email,
             notes: contato.notes
+          }
+        }),
+        areas: this.cliente.areas.map(area => {
+          const addressId = area.addressKey && area.addressKey.startsWith('id-')
+            ? Number(area.addressKey.replace('id-', ''))
+            : null
+          const addressIndex = area.addressKey && area.addressKey.startsWith('index-')
+            ? Number(area.addressKey.replace('index-', ''))
+            : null
+          return {
+            id: area.id,
+            addressId,
+            addressIndex,
+            name: area.name,
+            areaType: area.areaType,
+            description: area.description,
+            notes: area.notes,
+            services: area.services,
+            sectors: area.sectors.map(setor => ({
+              id: setor.id,
+              name: setor.name,
+              description: setor.description,
+              notes: setor.notes
+            }))
           }
         })
       }
@@ -606,6 +762,39 @@ export default {
   text-align: center;
 }
 
+.cliente-empty--compact {
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.cliente-subsection {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.cliente-subsection__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 750;
+  margin-bottom: 12px;
+}
+
+.cliente-sector {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(160px, 1fr) minmax(160px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.cliente-sector + .cliente-sector {
+  margin-top: 10px;
+}
+
 .cliente-modal__actions {
   display: flex;
   align-items: center;
@@ -637,6 +826,10 @@ export default {
   .cliente-section,
   .cliente-repeat {
     padding: 14px;
+  }
+
+  .cliente-sector {
+    grid-template-columns: 1fr;
   }
 
   .cliente-section__header--action,

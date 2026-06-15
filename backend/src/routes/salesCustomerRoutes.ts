@@ -40,6 +40,26 @@ salesCustomerRoutes.delete(
   SalesCustomerController.remove
 );
 salesCustomerRoutes.get(
+  "/sales/customers/:clientId/areas",
+  isAuth,
+  SalesCustomerController.listAreas
+);
+salesCustomerRoutes.post(
+  "/sales/customers/:clientId/areas",
+  isAuth,
+  SalesCustomerController.storeArea
+);
+salesCustomerRoutes.put(
+  "/sales/customers/:clientId/areas/:areaId",
+  isAuth,
+  SalesCustomerController.updateArea
+);
+salesCustomerRoutes.delete(
+  "/sales/customers/:clientId/areas/:areaId",
+  isAuth,
+  SalesCustomerController.removeArea
+);
+salesCustomerRoutes.get(
   "/clients/cnpj/:cnpj",
   isAuth,
   SalesCustomerController.showCompanyByCnpj
@@ -60,6 +80,26 @@ salesCustomerRoutes.delete(
   "/clients/:clientId",
   isAuth,
   SalesCustomerController.remove
+);
+salesCustomerRoutes.get(
+  "/clients/:clientId/areas",
+  isAuth,
+  SalesCustomerController.listAreas
+);
+salesCustomerRoutes.post(
+  "/clients/:clientId/areas",
+  isAuth,
+  SalesCustomerController.storeArea
+);
+salesCustomerRoutes.put(
+  "/clients/:clientId/areas/:areaId",
+  isAuth,
+  SalesCustomerController.updateArea
+);
+salesCustomerRoutes.delete(
+  "/clients/:clientId/areas/:areaId",
+  isAuth,
+  SalesCustomerController.removeArea
 );
 
 export default salesCustomerRoutes;

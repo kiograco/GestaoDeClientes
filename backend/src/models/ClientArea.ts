@@ -14,10 +14,12 @@ import {
 } from "sequelize-typescript";
 import Tenant from "./Tenant";
 import Client from "./Client";
-import ClientArea from "./ClientArea";
+import ClientAddress from "./ClientAddress";
+import ClientAreaService from "./ClientAreaService";
+import ClientSector from "./ClientSector";
 
-@Table({ tableName: "client_addresses", paranoid: true })
-class ClientAddress extends Model<ClientAddress> {
+@Table({ tableName: "client_areas", paranoid: true })
+class ClientArea extends Model<ClientArea> {
   @PrimaryKey
   @AutoIncrement
   @Column
@@ -37,41 +39,30 @@ class ClientAddress extends Model<ClientAddress> {
   @BelongsTo(() => Client)
   client: Client;
 
-  @Column({ field: "address_type" })
-  addressType: string;
+  @ForeignKey(() => ClientAddress)
+  @Column({ field: "address_id" })
+  addressId: number;
 
-  @Column({ field: "linked_document" })
-  linkedDocument: string;
-
-  @Column({ field: "zip_code" })
-  zipCode: string;
+  @BelongsTo(() => ClientAddress)
+  address: ClientAddress;
 
   @Column
-  street: string;
+  name: string;
 
-  @Column
-  number: string;
+  @Column({ field: "area_type" })
+  areaType: string;
 
-  @Column
-  complement: string;
-
-  @Column
-  district: string;
-
-  @Column
-  city: string;
-
-  @Column
-  state: string;
-
-  @Column
-  reference: string;
+  @Column(DataType.TEXT)
+  description: string;
 
   @Column(DataType.TEXT)
   notes: string;
 
-  @HasMany(() => ClientArea)
-  areas: ClientArea[];
+  @HasMany(() => ClientAreaService)
+  services: ClientAreaService[];
+
+  @HasMany(() => ClientSector)
+  sectors: ClientSector[];
 
   @CreatedAt
   @Column({ field: "created_at" })
@@ -86,4 +77,4 @@ class ClientAddress extends Model<ClientAddress> {
   deletedAt: Date;
 }
 
-export default ClientAddress;
+export default ClientArea;

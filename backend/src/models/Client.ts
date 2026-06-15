@@ -16,6 +16,7 @@ import {
 import Tenant from "./Tenant";
 import ClientAddress from "./ClientAddress";
 import ClientContact from "./ClientContact";
+import ClientArea from "./ClientArea";
 
 @Table({ tableName: "clients", paranoid: true })
 class Client extends Model<Client> {
@@ -64,6 +65,9 @@ class Client extends Model<Client> {
 
   @HasMany(() => ClientContact)
   contacts: ClientContact[];
+
+  @HasMany(() => ClientArea)
+  areas: ClientArea[];
 
   @CreatedAt
   @Column({ field: "created_at" })

@@ -2,8 +2,11 @@ import axios from "axios";
 import request from "supertest";
 import AuditLog from "../../src/models/AuditLog";
 import Client from "../../src/models/Client";
+import ClientArea from "../../src/models/ClientArea";
+import ClientAreaService from "../../src/models/ClientAreaService";
 import ClientAddress from "../../src/models/ClientAddress";
 import ClientContact from "../../src/models/ClientContact";
+import ClientSector from "../../src/models/ClientSector";
 import { bearerTokenFor } from "../helpers/auth";
 import { makeTestApp } from "../helpers/app";
 import { createAdminUser } from "../factories";
@@ -53,6 +56,27 @@ const clientPayload = (document = "11222333000181") => ({
       addressIndex: 0,
       notes: "Contato principal"
     }
+  ],
+  areas: [
+    {
+      addressIndex: 0,
+      name: "Cozinha",
+      areaType: "Area critica",
+      description: "Area de preparo de alimentos",
+      notes: "Atendimento fora do horario comercial",
+      services: ["Controle de Baratas", "Controle de Formigas"],
+      sectors: [
+        {
+          name: "Bancada",
+          description: "Bancada de preparo",
+          notes: "Inspecionar frestas"
+        },
+        {
+          name: "Camara Fria",
+          description: "Armazenamento refrigerado"
+        }
+      ]
+    }
   ]
 });
 
@@ -78,6 +102,23 @@ describe("clients API", () => {
           status: "active"
         });
         expect(body.addresses).toHaveLength(2);
+        expect(body.addresses[0].areas).toHaveLength(1);
+        expect(body.addresses[0].areas[0]).toMatchObject({
+          name: "Cozinha",
+          areaType: "Area critica"
+        });
+        expect(body.addresses[0].areas[0].services).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ serviceName: "Controle de Baratas" }),
+            expect.objectContaining({ serviceName: "Controle de Formigas" })
+          ])
+        );
+        expect(body.addresses[0].areas[0].sectors).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ name: "Bancada" }),
+            expect.objectContaining({ name: "Camara Fria" })
+          ])
+        );
         expect(body.contacts).toHaveLength(1);
         expect(body.contacts[0]).toMatchObject({
           name: "Marina Silva",
@@ -97,6 +138,70 @@ describe("clients API", () => {
       .set("Authorization", bearerTokenFor(otherUser))
       .send(clientPayload())
       .expect(201);
+
+    await request(app)
+      .post(`/clients/${created.body.id}/areas`)
+      .set("Authorization", authorization)
+      .send({
+        addressId: created.body.addresses[1].id,
+        name: "Estoque",
+        areaType: "Armazenamento",
+        services: ["Controle de Roedores"],
+        sectors: [{ name: "Prateleiras" }]
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          tenantId: user.tenantId,
+          clientId: created.body.id,
+          addressId: created.body.addresses[1].id,
+          name: "Estoque"
+        });
+        expect(body.services).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ serviceName: "Controle de Roedores" })
+          ])
+        );
+        expect(body.sectors).toEqual(
+          expect.arrayContaining([expect.objectContaining({ name: "Prateleiras" })])
+        );
+      });
+
+    await request(app)
+      .get(`/clients/${created.body.id}/areas`)
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toHaveLength(2);
+      });
+
+    const areaToUpdate = await ClientArea.findOne({
+      where: { tenantId: user.tenantId, name: "Estoque" }
+    });
+    await request(app)
+      .put(`/clients/${created.body.id}/areas/${areaToUpdate?.id}`)
+      .set("Authorization", authorization)
+      .send({
+        addressId: created.body.addresses[1].id,
+        name: "Estoque Principal",
+        areaType: "Armazenamento",
+        services: ["Monitoramento"],
+        sectors: [{ name: "Corredor A" }]
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.name).toBe("Estoque Principal");
+        expect(body.services).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ serviceName: "Monitoramento" })
+          ])
+        );
+      });
+
+    await request(app)
+      .delete(`/clients/${created.body.id}/areas/${areaToUpdate?.id}`)
+      .set("Authorization", authorization)
+      .expect(204);
 
     await request(app)
       .get(`/clients/${created.body.id}`)
@@ -177,13 +282,31 @@ describe("clients API", () => {
       })
     ).toBeGreaterThan(0);
     expect(
+      await ClientArea.count({
+        where: { tenantId: user.tenantId },
+        paranoid: false
+      })
+    ).toBeGreaterThan(0);
+    expect(
+      await ClientAreaService.count({
+        where: { tenantId: user.tenantId },
+        paranoid: false
+      })
+    ).toBeGreaterThan(0);
+    expect(
+      await ClientSector.count({
+        where: { tenantId: user.tenantId },
+        paranoid: false
+      })
+    ).toBeGreaterThan(0);
+    expect(
       await AuditLog.count({
         where: {
           tenantId: user.tenantId,
           resource: "client"
         }
       })
-    ).toBe(3);
+    ).toBe(6);
   });
 
   it("consulta CNPJ em API publica sem depender de rede real", async () => {
