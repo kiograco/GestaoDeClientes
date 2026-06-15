@@ -1,9 +1,13 @@
 import request from "supertest";
 import AuditLog from "../../src/models/AuditLog";
+import Pest from "../../src/models/Pest";
+import ProductPest from "../../src/models/ProductPest";
 import ServiceInventoryBatch from "../../src/models/ServiceInventoryBatch";
 import ServiceInventoryItem from "../../src/models/ServiceInventoryItem";
 import ServiceInventoryMovement from "../../src/models/ServiceInventoryMovement";
+import ServiceInventoryPestRecommendation from "../../src/models/ServiceInventoryPestRecommendation";
 import ServiceOrder from "../../src/models/ServiceOrder";
+import ServicePest from "../../src/models/ServicePest";
 import { bearerTokenFor } from "../helpers/auth";
 import { makeTestApp } from "../helpers/app";
 import { createAdminUser, createAgentUser, createContact } from "../factories";
@@ -66,6 +70,289 @@ const countPdfPages = (pdf: Buffer): number =>
   (pdf.toString("latin1").match(/\/Type\s*\/Page\b/g) || []).length;
 
 describe("service orders inventory API", () => {
+  it("gerencia pragas centralizadas com busca, duplicidade e isolamento por tenant", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const otherUser = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+
+    const created = await request(app)
+      .post("/service/pests")
+      .set("Authorization", authorization)
+      .send({
+        commonName: "Barata Alemã",
+        scientificName: "Blattella germanica"
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          tenantId: user.tenantId,
+          commonName: "Barata Alemã",
+          scientificName: "Blattella germanica"
+        });
+      });
+
+    await request(app)
+      .post("/service/pests")
+      .set("Authorization", authorization)
+      .send({
+        commonName: "barata alemã",
+        scientificName: "Periplaneta americana"
+      })
+      .expect(409);
+
+    await request(app)
+      .post("/service/pests")
+      .set("Authorization", authorization)
+      .send({
+        commonName: "Barata de esgoto",
+        scientificName: "blattella germanica"
+      })
+      .expect(409);
+
+    await request(app)
+      .post("/service/pests")
+      .set("Authorization", bearerTokenFor(otherUser))
+      .send({
+        commonName: "Barata Alemã",
+        scientificName: "Blattella germanica"
+      })
+      .expect(201);
+
+    await request(app)
+      .get("/service/pests")
+      .query({ search: "blattella" })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toHaveLength(1);
+        expect(body[0]).toMatchObject({
+          id: created.body.id,
+          commonName: "Barata Alemã",
+          scientificName: "Blattella germanica"
+        });
+      });
+
+    await request(app)
+      .put(`/service/pests/${created.body.id}`)
+      .set("Authorization", authorization)
+      .send({
+        commonName: "Barata Germânica",
+        scientificName: "Blattella germanica"
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.commonName).toBe("Barata Germânica");
+      });
+
+    await request(app)
+      .delete(`/service/pests/${created.body.id}`)
+      .set("Authorization", authorization)
+      .expect(204);
+
+    expect(await Pest.count({ where: { tenantId: user.tenantId } })).toBe(0);
+    expect(await Pest.count({ where: { tenantId: otherUser.tenantId } })).toBe(
+      1
+    );
+  });
+
+  it("vincula produtos e serviços apenas a pragas cadastradas", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+
+    const { body: pest } = await request(app)
+      .post("/service/pests")
+      .set("Authorization", authorization)
+      .send({
+        commonName: "Camundongo",
+        scientificName: "Mus musculus"
+      })
+      .expect(201);
+
+    await request(app)
+      .post("/service/inventory")
+      .set("Authorization", authorization)
+      .send({
+        name: "Isca raticida sem praga cadastrada",
+        unit: "grama",
+        quantity: 10,
+        minQuantity: 1,
+        costPrice: 2,
+        salePrice: 10,
+        pestIds: [999999]
+      })
+      .expect(404)
+      .expect(({ body }) => {
+        expect(body.error).toBe("ERR_PEST_NOT_FOUND");
+      });
+
+    await request(app)
+      .post("/service/inventory")
+      .set("Authorization", authorization)
+      .send({
+        name: "Isca raticida manual",
+        unit: "grama",
+        quantity: 10,
+        minQuantity: 1,
+        costPrice: 2,
+        salePrice: 10,
+        pestRecommendations: [
+          {
+            pest: "Camundongo",
+            productQuantity: 10,
+            diluentQuantity: 0,
+            unit: "grama"
+          }
+        ]
+      })
+      .expect(400);
+
+    const { body: product } = await request(app)
+      .post("/service/inventory")
+      .set("Authorization", authorization)
+      .send({
+        name: "Isca raticida",
+        activeIngredient: "Brodifacoum",
+        chemicalGroup: "Anticoagulante",
+        productCategory: "raticida",
+        unit: "grama",
+        quantity: 100,
+        minQuantity: 10,
+        costPrice: 2,
+        salePrice: 10,
+        pestIds: [pest.id],
+        pestRecommendations: [
+          {
+            pestId: pest.id,
+            productQuantity: 10,
+            diluentQuantity: 0,
+            unit: "grama",
+            actionTime: "24 horas",
+            technicalObservation: "Instalar em porta-iscas"
+          }
+        ]
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.productPests).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              pestId: pest.id,
+              pest: expect.objectContaining({
+                commonName: "Camundongo",
+                scientificName: "Mus musculus"
+              })
+            })
+          ])
+        );
+        expect(body.pestRecommendations).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              pestId: pest.id,
+              pest: expect.objectContaining({ commonName: "Camundongo" })
+            })
+          ])
+        );
+      });
+
+    expect(
+      await ProductPest.count({
+        where: {
+          tenantId: user.tenantId,
+          productId: product.id,
+          pestId: pest.id
+        }
+      })
+    ).toBe(1);
+    expect(
+      await ServiceInventoryPestRecommendation.count({
+        where: {
+          tenantId: user.tenantId,
+          inventoryItemId: product.id,
+          pestId: pest.id
+        }
+      })
+    ).toBe(1);
+
+    await request(app)
+      .post("/service/types")
+      .set("Authorization", authorization)
+      .send({
+        name: "Controle de roedores inválido",
+        defaultPrice: 120,
+        pests: [{ pestId: 999999 }]
+      })
+      .expect(404)
+      .expect(({ body }) => {
+        expect(body.error).toBe("ERR_PEST_NOT_FOUND");
+      });
+
+    const { body: serviceType } = await request(app)
+      .post("/service/types")
+      .set("Authorization", authorization)
+      .send({
+        name: "Controle de roedores",
+        description: "Serviço para controle de camundongos",
+        technicalDescription: "Instalação e monitoramento de iscas",
+        defaultPrice: 120,
+        categories: ["controle_roedores"],
+        pests: [{ pestId: pest.id }],
+        environments: ["residencial"],
+        methods: ["iscagem"],
+        products: [
+          {
+            inventoryItemId: product.id,
+            averageConsumption: 10
+          }
+        ]
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.pests).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              pestId: pest.id,
+              pest: expect.objectContaining({
+                commonName: "Camundongo",
+                scientificName: "Mus musculus"
+              })
+            })
+          ])
+        );
+      });
+
+    expect(
+      await ServicePest.count({
+        where: {
+          tenantId: user.tenantId,
+          serviceTypeId: serviceType.id,
+          pestId: pest.id
+        }
+      })
+    ).toBe(1);
+
+    await request(app)
+      .get("/service/types")
+      .query({ pest: "mus musculus" })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              id: serviceType.id,
+              pests: expect.arrayContaining([
+                expect.objectContaining({
+                  pest: expect.objectContaining({ commonName: "Camundongo" })
+                })
+              ])
+            })
+          ])
+        );
+      });
+  });
+
   it("lista produtos com estoque baixo com lotes sem vazar dados de outro tenant", async () => {
     const app = await makeTestApp();
     const user = await createAdminUser();
@@ -222,7 +509,7 @@ describe("service orders inventory API", () => {
         paymentMethod: "pix",
         chargedAmount: 150,
         paidAmount: 50,
-        paymentDueDate: "2026-06-15T00:00:00.000Z",
+        paymentDueDate: "2026-06-20T00:00:00.000Z",
         financialObservation: "Pagamento parcial combinado"
       })
       .expect(201)

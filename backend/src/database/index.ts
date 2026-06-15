@@ -27,6 +27,9 @@ import LogTicket from "../models/LogTicket";
 import ChatFlow from "../models/ChatFlow";
 import Payment from "../models/Payment";
 import PaymentWebhookEvent from "../models/PaymentWebhookEvent";
+import Client from "../models/Client";
+import ClientAddress from "../models/ClientAddress";
+import ClientContact from "../models/ClientContact";
 import Pest from "../models/Pest";
 import Plan from "../models/Plan";
 import ProductPest from "../models/ProductPest";
@@ -107,6 +110,9 @@ const models = [
   Subscription,
   Payment,
   PaymentWebhookEvent,
+  Client,
+  ClientAddress,
+  ClientContact,
   Pest,
   ProductCategory,
   Product,
