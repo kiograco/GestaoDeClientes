@@ -9,6 +9,7 @@ import Message from "../models/Message";
 import MessageOffLine from "../models/MessageOffLine";
 import MonitoringPoint from "../models/MonitoringPoint";
 import MonitoringPointHistory from "../models/MonitoringPointHistory";
+import MonitoringPointMapHistory from "../models/MonitoringPointMapHistory";
 import AutoReply from "../models/AutoReply";
 import StepsReply from "../models/StepsReply";
 import StepsReplyAction from "../models/StepsReplyAction";
@@ -105,6 +106,7 @@ const models = [
   TrapTypePest,
   MonitoringPoint,
   MonitoringPointHistory,
+  MonitoringPointMapHistory,
   Message,
   MessageOffLine,
   Whatsapp,

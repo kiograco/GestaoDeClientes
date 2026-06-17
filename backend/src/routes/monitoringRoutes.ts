@@ -166,6 +166,11 @@ monitoringRoutes.put(
   MonitoringController.updatePointPosition
 );
 monitoringRoutes.delete(
+  "/monitoring/points/:pointId/position",
+  isAuth,
+  MonitoringController.removePointPosition
+);
+monitoringRoutes.delete(
   "/monitoring/points/:pointId",
   isAuth,
   MonitoringController.removePoint

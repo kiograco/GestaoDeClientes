@@ -21,6 +21,7 @@ import ClientSector from "./ClientSector";
 import ClientFloorPlan from "./ClientFloorPlan";
 import TrapType from "./TrapType";
 import MonitoringPointHistory from "./MonitoringPointHistory";
+import MonitoringPointMapHistory from "./MonitoringPointMapHistory";
 import TrapInspection from "./TrapInspection";
 
 @Table({ tableName: "monitoring_points", paranoid: true })
@@ -79,14 +80,24 @@ class MonitoringPoint extends Model<MonitoringPoint> {
   @BelongsTo(() => ClientFloorPlan)
   floorPlan: ClientFloorPlan;
 
-  @Column({ field: "position_x", type: DataType.DECIMAL(8, 4) })
+  @Column({ field: "position_x_percent", type: DataType.DECIMAL(8, 4) })
   positionX: number;
 
-  @Column({ field: "position_y", type: DataType.DECIMAL(8, 4) })
+  @Column({ field: "position_y_percent", type: DataType.DECIMAL(8, 4) })
   positionY: number;
 
   @Column({ field: "map_label" })
   mapLabel: string;
+
+  @Column({ field: "marker_color" })
+  markerColor: string;
+
+  @Column({ field: "marker_icon_url" })
+  markerIconUrl: string;
+
+  @Default("color")
+  @Column({ field: "marker_type" })
+  markerType: string;
 
   @Default(false)
   @Column({ field: "is_positioned" })
@@ -113,6 +124,9 @@ class MonitoringPoint extends Model<MonitoringPoint> {
 
   @HasMany(() => MonitoringPointHistory)
   history: MonitoringPointHistory[];
+
+  @HasMany(() => MonitoringPointMapHistory)
+  mapHistory: MonitoringPointMapHistory[];
 
   @HasMany(() => TrapInspection)
   inspections: TrapInspection[];

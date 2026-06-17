@@ -1,6 +1,7 @@
 import request from "supertest";
 import MonitoringPoint from "../../src/models/MonitoringPoint";
 import MonitoringPointHistory from "../../src/models/MonitoringPointHistory";
+import MonitoringPointMapHistory from "../../src/models/MonitoringPointMapHistory";
 import ClientFloorPlan from "../../src/models/ClientFloorPlan";
 import TrapType from "../../src/models/TrapType";
 import { bearerTokenFor } from "../helpers/auth";
@@ -175,26 +176,61 @@ describe("monitoring API", () => {
       where: { tenantId: user.tenantId, name: "Planta Cozinha" }
     });
     expect(floorPlan).toBeTruthy();
+    const floorPlanId = Number(floorPlan?.id);
 
     await request(app)
       .put(`/monitoring/points/${createdPoints.body[2].id}/position`)
       .set("Authorization", authorization)
       .send({
-        floorPlanId: floorPlan?.id,
+        floorPlanId,
         positionX: 32.5,
         positionY: 66.25,
-        mapLabel: "PI-03"
+        mapLabel: "PI-03",
+        markerColor: "#2563eb",
+        markerType: "color"
       })
       .expect(200)
       .expect(({ body }) => {
         expect(body).toMatchObject({
-          floorPlanId: floorPlan?.id,
+          floorPlanId,
           mapLabel: "PI-03",
+          markerColor: "#2563eb",
+          markerType: "color",
           isPositioned: true
         });
         expect(Number(body.positionX)).toBeCloseTo(32.5);
         expect(Number(body.positionY)).toBeCloseTo(66.25);
       });
+
+    expect(
+      await MonitoringPointMapHistory.count({
+        where: {
+          tenantId: user.tenantId,
+          monitoringPointId: createdPoints.body[2].id,
+          floorPlanId
+        }
+      })
+    ).toBe(1);
+
+    await request(app)
+      .delete(`/monitoring/points/${createdPoints.body[2].id}/position`)
+      .set("Authorization", authorization)
+      .send({ notes: "Reposicionar depois" })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.floorPlanId).toBeNull();
+        expect(body.isPositioned).toBe(false);
+      });
+
+    expect(
+      await MonitoringPointMapHistory.count({
+        where: {
+          tenantId: user.tenantId,
+          monitoringPointId: createdPoints.body[2].id,
+          floorPlanId
+        }
+      })
+    ).toBe(2);
 
     await request(app)
       .get(`/monitoring/floor-plans?clientId=${client.body.id}`)

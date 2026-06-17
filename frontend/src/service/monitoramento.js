@@ -22,3 +22,4 @@ export const CriarPlantaCliente = data => request({ url: '/monitoring/floor-plan
 export const AlterarPlantaCliente = data => request({ url: `/monitoring/floor-plans/${data.id}`, method: 'put', data })
 export const ExcluirPlantaCliente = id => request({ url: `/monitoring/floor-plans/${id}`, method: 'delete' })
 export const PosicionarPontoMonitoramento = (id, data) => request({ url: `/monitoring/points/${id}/position`, method: 'put', data })
+export const ExcluirPosicaoPontoMonitoramento = (id, data = {}) => request({ url: `/monitoring/points/${id}/position`, method: 'delete', data })

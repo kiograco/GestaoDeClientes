@@ -77,7 +77,11 @@ const pointPositionSchema = Yup.object().shape({
   floorPlanId: Yup.number().integer().positive().required(),
   positionX: Yup.number().min(0).max(100).required(),
   positionY: Yup.number().min(0).max(100).required(),
-  mapLabel: nullableString
+  mapLabel: nullableString,
+  markerColor: nullableString,
+  markerIconUrl: nullableString,
+  markerType: Yup.string().oneOf(["color", "icon"]).default("color"),
+  notes: nullableString
 });
 
 const validate = async <T>(
@@ -372,13 +376,35 @@ export const updatePointPosition = async (
   const point = await Monitoring.updatePointPosition(
     req.user.tenantId,
     req.params.pointId,
-    await validate<Monitoring.PointPositionData>(pointPositionSchema, req.body)
+    await validate<Monitoring.PointPositionData>(pointPositionSchema, req.body),
+    Number(req.user.id)
   );
   await auditMonitoringAction(req, "monitoring_point_positioned", point.id, {
     floorPlanId: point.floorPlanId,
     positionX: point.positionX,
     positionY: point.positionY
   });
+  return res.json(point);
+};
+
+export const removePointPosition = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const point = await Monitoring.removePointPosition(
+    req.user.tenantId,
+    req.params.pointId,
+    Number(req.user.id),
+    typeof req.body?.notes === "string" ? req.body.notes : undefined
+  );
+  await auditMonitoringAction(
+    req,
+    "monitoring_point_position_removed",
+    point.id,
+    {
+      floorPlanId: point.floorPlanId
+    }
+  );
   return res.json(point);
 };
 

@@ -321,6 +321,54 @@ No painel Meta for Developers:
 Configure as variaveis `INSTAGRAM_*` conforme `backend/.env.example`. O callback
 e o webhook precisam ser publicados por HTTPS para uso fora do ambiente local.
 
+## Mapa Interativo De Armadilhas
+
+O modulo de monitoramento ja possui cadastro de tipos de armadilha, pontos,
+upload de planta baixa e posicionamento sobre a planta. A tela fica em
+`Monitoramento > Mapa`.
+
+Arquivos principais:
+
+- Backend: `backend/src/models/ClientFloorPlan.ts`,
+  `backend/src/models/MonitoringPoint.ts`,
+  `backend/src/models/MonitoringPointMapHistory.ts`,
+  `backend/src/services/MonitoringServices/MonitoringService.ts`,
+  `backend/src/controllers/MonitoringController.ts` e
+  `backend/src/routes/monitoringRoutes.ts`.
+- Frontend: `frontend/src/pages/monitoramento/Index.vue`,
+  `frontend/src/components/monitoramento/FloorPlanTrapMap.vue` e
+  `frontend/src/service/monitoramento.js`.
+- Banco: `client_floor_plans`, `monitoring_points` com
+  `position_x_percent`, `position_y_percent`, `marker_color`,
+  `marker_icon_url`, `marker_type`, `is_positioned`, e
+  `monitoring_point_map_history`.
+
+Para cadastrar uma planta, acesse `Monitoramento > Mapa`, selecione cliente e
+endereco, clique em `Planta` e envie um arquivo PDF, JPG, PNG ou WEBP. O upload
+usa nome seguro gerado no backend e grava o arquivo em `/public/floor-plans`.
+
+Para posicionar uma armadilha, primeiro gere pontos em `Monitoramento > Pontos`.
+Depois, em `Monitoramento > Mapa`, selecione a planta e a armadilha. Clique no
+ponto desejado da planta ou arraste um chip de armadilha nao posicionada para o
+mapa. As coordenadas sao salvas como percentual relativo da planta.
+
+Para mover, arraste o marcador ja posicionado. Para remover somente a posicao no
+mapa, clique no marcador e use `Remover do mapa`; o ponto continua cadastrado e
+a mudanca fica registrada no historico de mapa. Para alterar cor ou icone,
+clique no marcador, ajuste `Cor do marcador`, `URL do icone` e `Visual`, depois
+salve.
+
+Para reutilizar em Ordem de Servico, Relatorio de Monitoramento, Relatorio
+Tecnico, Certificado ou PDF de inspecao, consulte:
+
+- `GET /monitoring/floor-plans?clientId=:id&addressId=:id` para obter a planta.
+- `GET /monitoring/points?clientId=:id&addressId=:id` para obter os pontos,
+  coordenadas percentuais, legenda visual e detalhes da ultima inspecao.
+
+A exportacao deve renderizar a imagem/PDF da planta, sobrepor os marcadores com
+`position_x_percent` e `position_y_percent`, exibir numero da armadilha,
+legenda de cores/icones, cliente, endereco e data do relatorio.
+
 ## Avisos
 
 Alguns canais utilizam bibliotecas não oficiais para comunicação com serviços

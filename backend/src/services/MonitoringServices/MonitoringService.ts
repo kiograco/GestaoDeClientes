@@ -8,6 +8,7 @@ import ClientFloorPlan from "../../models/ClientFloorPlan";
 import ClientSector from "../../models/ClientSector";
 import MonitoringPoint from "../../models/MonitoringPoint";
 import MonitoringPointHistory from "../../models/MonitoringPointHistory";
+import MonitoringPointMapHistory from "../../models/MonitoringPointMapHistory";
 import Pest from "../../models/Pest";
 import TrapAction from "../../models/TrapAction";
 import TrapCondition from "../../models/TrapCondition";
@@ -71,6 +72,10 @@ export interface PointPositionData {
   positionX: number;
   positionY: number;
   mapLabel?: string | null;
+  markerColor?: string | null;
+  markerIconUrl?: string | null;
+  markerType?: string | null;
+  notes?: string | null;
 }
 
 export interface TrapCatalogData {
@@ -122,6 +127,7 @@ const pointInclude = [
   { model: ClientFloorPlan, as: "floorPlan", required: false },
   { model: TrapType, as: "trapType", required: false },
   { model: MonitoringPointHistory, as: "history", required: false },
+  { model: MonitoringPointMapHistory, as: "mapHistory", required: false },
   {
     model: TrapInspection,
     as: "inspections",
@@ -168,6 +174,23 @@ const ensureFloorPlan = async (
   });
   if (!floorPlan) throw new AppError("ERR_FLOOR_PLAN_NOT_FOUND", 404);
   return floorPlan;
+};
+
+const ensureUniquePointNumbers = async (
+  tenantId: string | number,
+  addressId: number,
+  pointNumbers: number[],
+  pointId?: string
+): Promise<void> => {
+  const duplicate = await MonitoringPoint.findOne({
+    where: {
+      tenantId,
+      addressId,
+      pointNumber: { [Op.in]: pointNumbers },
+      ...(pointId ? { id: { [Op.ne]: pointId } } : {})
+    }
+  });
+  if (duplicate) throw new AppError("ERR_MONITORING_POINT_NUMBER_EXISTS", 409);
 };
 
 const ensureTrapType = async (
@@ -281,6 +304,31 @@ const createHistory = (
         label: point.label,
         trapTypeId: point.trapTypeId
       }
+    },
+    { transaction }
+  );
+
+const createMapHistory = (
+  tenantId: string | number,
+  point: MonitoringPoint,
+  floorPlanId: number,
+  changedByUserId: number | null,
+  transaction: LegacyAny,
+  notes?: string | null,
+  oldPosition?: { positionX: number | null; positionY: number | null },
+  newPosition?: { positionX: number | null; positionY: number | null }
+) =>
+  MonitoringPointMapHistory.create(
+    {
+      tenantId,
+      monitoringPointId: point.id,
+      floorPlanId,
+      oldPositionX: oldPosition?.positionX ?? null,
+      oldPositionY: oldPosition?.positionY ?? null,
+      newPositionX: newPosition?.positionX ?? null,
+      newPositionY: newPosition?.positionY ?? null,
+      changedByUserId,
+      notes: nullable(notes)
     },
     { transaction }
   );
@@ -706,6 +754,14 @@ export const createPoints = async (
     data.areaId,
     data.sectorId
   );
+  await ensureUniquePointNumbers(
+    tenantId,
+    data.addressId,
+    Array.from(
+      { length: data.finalNumber - data.initialNumber + 1 },
+      (_, index) => data.initialNumber + index
+    )
+  );
 
   const createdIds = await sequelize.transaction(async transaction => {
     const numbers = Array.from(
@@ -767,6 +823,14 @@ export const updatePoint = async (
     next.areaId,
     next.sectorId
   );
+  if (data.pointNumber && data.pointNumber !== point.pointNumber) {
+    await ensureUniquePointNumbers(
+      tenantId,
+      next.addressId,
+      [data.pointNumber],
+      pointId
+    );
+  }
 
   const previous = { areaId: point.areaId, sectorId: point.sectorId };
   await sequelize.transaction(async transaction => {
@@ -805,10 +869,22 @@ export const updatePoint = async (
   return showPoint(tenantId, pointId);
 };
 
+const defaultMarkerColor = (point: MonitoringPoint): string => {
+  const name = (point.trapType?.name || "").toLowerCase();
+  if (!point.active) return "#ef4444";
+  if (name.includes("luminosa")) return "#f59e0b";
+  if (name.includes("cola") || name.includes("adesiva")) return "#22c55e";
+  if (name.includes("avariada") || name.includes("pendente")) return "#ef4444";
+  if (name.includes("sem acesso") || name.includes("extraviada"))
+    return "#6b7280";
+  return "#2563eb";
+};
+
 export const updatePointPosition = async (
   tenantId: string | number,
   pointId: string,
-  data: PointPositionData
+  data: PointPositionData,
+  changedByUserId?: number
 ): Promise<MonitoringPoint> => {
   const point = await MonitoringPoint.findOne({
     where: { id: pointId, tenantId }
@@ -821,12 +897,83 @@ export const updatePointPosition = async (
   ) {
     throw new AppError("ERR_FLOOR_PLAN_LOCATION_MISMATCH", 400);
   }
-  await point.update({
-    floorPlanId: floorPlan.id,
-    positionX: data.positionX,
-    positionY: data.positionY,
-    mapLabel: nullable(data.mapLabel) || point.label,
-    isPositioned: true
+  const oldPosition = {
+    positionX: point.positionX === null ? null : Number(point.positionX),
+    positionY: point.positionY === null ? null : Number(point.positionY)
+  };
+  await sequelize.transaction(async transaction => {
+    await point.update(
+      {
+        floorPlanId: floorPlan.id,
+        positionX: data.positionX,
+        positionY: data.positionY,
+        mapLabel: nullable(data.mapLabel) || point.mapLabel || point.label,
+        markerColor:
+          nullable(data.markerColor) ||
+          point.markerColor ||
+          defaultMarkerColor(point),
+        markerIconUrl:
+          data.markerIconUrl !== undefined
+            ? nullable(data.markerIconUrl)
+            : point.markerIconUrl,
+        markerType: nullable(data.markerType) || point.markerType || "color",
+        isPositioned: true
+      },
+      { transaction }
+    );
+    await createMapHistory(
+      tenantId,
+      point,
+      floorPlan.id,
+      changedByUserId || null,
+      transaction,
+      data.notes,
+      oldPosition,
+      { positionX: data.positionX, positionY: data.positionY }
+    );
+  });
+  return showPoint(tenantId, pointId);
+};
+
+export const removePointPosition = async (
+  tenantId: string | number,
+  pointId: string,
+  changedByUserId?: number,
+  notes?: string
+): Promise<MonitoringPoint> => {
+  const point = await MonitoringPoint.findOne({
+    where: { id: pointId, tenantId },
+    include: [{ model: TrapType, as: "trapType", required: false }]
+  });
+  if (!point) throw new AppError("ERR_MONITORING_POINT_NOT_FOUND", 404);
+  if (!point.floorPlanId || !point.isPositioned)
+    return showPoint(tenantId, pointId);
+  const { floorPlanId } = point;
+  const oldPosition = {
+    positionX: point.positionX === null ? null : Number(point.positionX),
+    positionY: point.positionY === null ? null : Number(point.positionY)
+  };
+  await sequelize.transaction(async transaction => {
+    await point.update(
+      {
+        floorPlanId: null,
+        positionX: null,
+        positionY: null,
+        mapLabel: null,
+        isPositioned: false
+      },
+      { transaction }
+    );
+    await createMapHistory(
+      tenantId,
+      point,
+      floorPlanId,
+      changedByUserId || null,
+      transaction,
+      notes,
+      oldPosition,
+      { positionX: null, positionY: null }
+    );
   });
   return showPoint(tenantId, pointId);
 };

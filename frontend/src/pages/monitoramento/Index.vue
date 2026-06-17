@@ -180,52 +180,22 @@
             <q-select v-model="mapa.floorPlanId" :options="opcoesPlantas" emit-value map-options outlined dense label="Planta" />
             <q-select v-model="mapa.pointId" :options="opcoesPontosMapa" emit-value map-options outlined dense label="Armadilha para posicionar" />
             <q-btn outline color="primary" icon="mdi-upload" label="Planta" @click="modalPlanta = true" />
-            <q-btn flat round icon="mdi-magnify-plus-outline" @click="zoom = Math.min(zoom + 0.1, 2.5)" />
-            <q-btn flat round icon="mdi-magnify-minus-outline" @click="zoom = Math.max(zoom - 0.1, 0.5)" />
-            <q-btn flat round icon="mdi-fit-to-page-outline" @click="resetMapa" />
-            <q-btn flat round icon="mdi-fullscreen" @click="fullscreen = !fullscreen" />
           </div>
 
-          <div :class="['map-shell', { 'map-shell--fullscreen': fullscreen }]">
-            <div
-              ref="mapCanvas"
-              class="map-canvas"
-              :style="{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }"
-              @click="posicionarPorClique"
-              @mousedown="iniciarPan"
-              @mousemove="moverPan"
-              @mouseup="encerrarPan"
-              @mouseleave="encerrarPan"
-            >
-              <iframe v-if="plantaSelecionada?.fileType === 'application/pdf'" class="map-media" :src="urlArquivo(plantaSelecionada.fileUrl)" />
-              <img v-else-if="plantaSelecionada" class="map-media" :src="urlArquivo(plantaSelecionada.fileUrl)" alt="Planta baixa" draggable="false">
-              <div v-else class="map-empty">Selecione ou envie uma planta baixa.</div>
-
-              <button
-                v-for="ponto in pontosDaPlanta"
-                :key="ponto.id"
-                class="map-marker"
-                :class="classeMarcador(ponto)"
-                :style="{ left: `${ponto.positionX}%`, top: `${ponto.positionY}%` }"
-                draggable="true"
-                @dragstart="pontoArrastado = ponto"
-                @dragend="arrastarMarcador"
-                @click.stop="mapa.pointId = ponto.id"
-              >
-                {{ ponto.mapLabel || ponto.pointNumber }}
-                <q-tooltip>
-                  {{ ponto.label }} - {{ ponto.trapType?.name || 'Tipo' }} - {{ ponto.area?.name || '-' }} / {{ ponto.sector?.name || '-' }}
-                </q-tooltip>
-              </button>
-            </div>
-          </div>
-
-          <div class="map-legend">
-            <span><i class="legend-dot legend-dot--bait" /> Porta Isca</span>
-            <span><i class="legend-dot legend-dot--glue" /> Cola</span>
-            <span><i class="legend-dot legend-dot--light" /> Armadilha Luminosa</span>
-            <span><i class="legend-dot legend-dot--maintenance" /> Necessita manutenção</span>
-          </div>
+          <floor-plan-trap-map
+            :floor-plan-id="mapa.floorPlanId"
+            :client-id="mapa.clientId"
+            :address-id="mapa.addressId"
+            :floor-plan="plantaSelecionada"
+            :monitoring-points="pontos"
+            :selected-point-id="mapa.pointId"
+            :marker-mode="mapa.markerMode"
+            @select="mapa.pointId = $event"
+            @marker-mode="mapa.markerMode = $event"
+            @position="salvarPosicaoMapa"
+            @save-marker="salvarMarcadorMapa"
+            @remove-position="removerPosicaoMapa"
+          />
         </q-tab-panel>
       </q-tab-panels>
     </q-card>
@@ -356,6 +326,7 @@ import {
   CriarSituacaoArmadilha,
   CriarTipoArmadilha,
   ExcluirPontoMonitoramento,
+  ExcluirPosicaoPontoMonitoramento,
   ExcluirTipoArmadilha,
   ListarAcoesArmadilha,
   ListarInspecoesArmadilha,
@@ -366,6 +337,7 @@ import {
   PosicionarPontoMonitoramento
 } from 'src/service/monitoramento'
 import { ListarPragasServico } from 'src/service/ordensServico'
+import FloorPlanTrapMap from 'src/components/monitoramento/FloorPlanTrapMap.vue'
 
 const hoje = () => new Date().toISOString().slice(0, 10)
 
@@ -394,6 +366,7 @@ const pontoVazio = () => ({
 
 export default {
   name: 'MonitoramentoIndex',
+  components: { FloorPlanTrapMap },
   data () {
     return {
       tab: 'pontos',
@@ -407,16 +380,10 @@ export default {
       condicoes: [],
       acoes: [],
       inspecoes: [],
-      mapa: { clientId: null, addressId: null, floorPlanId: null, pointId: null },
+      mapa: { clientId: null, addressId: null, floorPlanId: null, pointId: null, markerMode: 'color' },
       planta: { name: '', clientId: null, addressId: null, file: null, notes: '' },
       inspecao: { monitoringPointId: null, inspectionDate: '', conditionIds: [], actionIds: [], notes: '' },
       catalogo: { type: 'condition', name: '', active: true },
-      zoom: 1,
-      pan: { x: 0, y: 0 },
-      panning: false,
-      lastPan: null,
-      fullscreen: false,
-      pontoArrastado: null,
       filtros: { clientId: null },
       tipo: tipoVazio(),
       ponto: pontoVazio(),
@@ -641,9 +608,6 @@ export default {
       const { data } = await ListarInspecoesArmadilha()
       this.inspecoes = data
     },
-    urlArquivo (fileUrl) {
-      return `${process.env.VUE_URL_API || ''}${fileUrl}`
-    },
     async carregarPlantas () {
       if (!this.mapa.addressId) return
       const { data } = await ListarPlantasCliente({
@@ -675,57 +639,33 @@ export default {
         this.saving = false
       }
     },
-    coordenadasDoEvento (event) {
-      const rect = this.$refs.mapCanvas.getBoundingClientRect()
-      return {
-        x: Math.min(Math.max(((event.clientX - rect.left) / rect.width) * 100, 0), 100),
-        y: Math.min(Math.max(((event.clientY - rect.top) / rect.height) * 100, 0), 100)
-      }
-    },
-    async salvarPosicao (pointId, coords) {
+    async salvarPosicaoMapa ({ pointId, coords }) {
       if (!this.mapa.floorPlanId || !pointId) return
       await PosicionarPontoMonitoramento(pointId, {
         floorPlanId: this.mapa.floorPlanId,
         positionX: Number(coords.x.toFixed(4)),
-        positionY: Number(coords.y.toFixed(4))
+        positionY: Number(coords.y.toFixed(4)),
+        markerType: this.mapa.markerMode
       })
       await this.carregarPontos()
     },
-    async posicionarPorClique (event) {
-      if (this.panning || !this.mapa.pointId || !this.plantaSelecionada) return
-      await this.salvarPosicao(this.mapa.pointId, this.coordenadasDoEvento(event))
+    async salvarMarcadorMapa ({ point, marker }) {
+      if (!point || !this.mapa.floorPlanId) return
+      await PosicionarPontoMonitoramento(point.id, {
+        floorPlanId: this.mapa.floorPlanId,
+        positionX: Number(point.positionX),
+        positionY: Number(point.positionY),
+        mapLabel: point.mapLabel || point.pointNumber,
+        markerColor: marker.markerColor,
+        markerIconUrl: marker.markerIconUrl,
+        markerType: marker.markerType
+      })
+      await this.carregarPontos()
     },
-    async arrastarMarcador (event) {
-      if (!this.pontoArrastado || !this.plantaSelecionada) return
-      const coords = this.coordenadasDoEvento(event)
-      await this.salvarPosicao(this.pontoArrastado.id, coords)
-      this.pontoArrastado = null
-    },
-    iniciarPan (event) {
-      if (event.target.classList?.contains('map-marker')) return
-      this.panning = true
-      this.lastPan = { x: event.clientX, y: event.clientY }
-    },
-    moverPan (event) {
-      if (!this.panning || !this.lastPan) return
-      this.pan.x += event.clientX - this.lastPan.x
-      this.pan.y += event.clientY - this.lastPan.y
-      this.lastPan = { x: event.clientX, y: event.clientY }
-    },
-    encerrarPan () {
-      this.panning = false
-      this.lastPan = null
-    },
-    resetMapa () {
-      this.zoom = 1
-      this.pan = { x: 0, y: 0 }
-    },
-    classeMarcador (ponto) {
-      const name = (ponto.trapType?.name || '').toLowerCase()
-      if (!ponto.active) return 'map-marker--maintenance'
-      if (name.includes('luminosa')) return 'map-marker--light'
-      if (name.includes('cola')) return 'map-marker--glue'
-      return 'map-marker--bait'
+    async removerPosicaoMapa (point) {
+      if (!point) return
+      await ExcluirPosicaoPontoMonitoramento(point.id, { notes: 'Removido da planta baixa' })
+      await this.carregarPontos()
     },
     abrirTipo (tipo = null) {
       const pestIds = tipo ? (tipo.trapTypePests || []).map(item => item.pestId) : []
@@ -921,7 +861,7 @@ export default {
 
 .map-toolbar {
   display: grid;
-  grid-template-columns: repeat(4, minmax(160px, 1fr)) repeat(5, auto);
+  grid-template-columns: repeat(4, minmax(160px, 1fr)) auto;
   gap: 10px;
   align-items: center;
   margin-bottom: 14px;
