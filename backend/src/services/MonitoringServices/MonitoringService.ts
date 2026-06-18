@@ -39,6 +39,9 @@ export interface MonitoringPointData {
   installedAt: string;
   initialNumber: number;
   finalNumber: number;
+  markerColor?: string | null;
+  markerIconUrl?: string | null;
+  markerType?: string | null;
   notes?: string | null;
 }
 
@@ -72,9 +75,6 @@ export interface PointPositionData {
   positionX: number;
   positionY: number;
   mapLabel?: string | null;
-  markerColor?: string | null;
-  markerIconUrl?: string | null;
-  markerType?: string | null;
   notes?: string | null;
 }
 
@@ -202,6 +202,16 @@ const ensureTrapType = async (
   });
   if (!trapType) throw new AppError("ERR_TRAP_TYPE_NOT_FOUND", 404);
   return trapType;
+};
+
+const defaultMarkerColorFromTrapType = (trapType: TrapType): string => {
+  const name = (trapType.name || "").toLowerCase();
+  if (name.includes("luminosa")) return "#f59e0b";
+  if (name.includes("cola") || name.includes("adesiva")) return "#22c55e";
+  if (name.includes("avariada") || name.includes("pendente")) return "#ef4444";
+  if (name.includes("sem acesso") || name.includes("extraviada"))
+    return "#6b7280";
+  return "#2563eb";
 };
 
 const ensurePests = async (
@@ -746,7 +756,7 @@ export const createPoints = async (
   if (data.finalNumber - data.initialNumber > 499) {
     throw new AppError("ERR_MONITORING_NUMBER_RANGE_TOO_LARGE", 400);
   }
-  await ensureTrapType(tenantId, data.trapTypeId);
+  const trapType = await ensureTrapType(tenantId, data.trapTypeId);
   await ensureLocation(
     tenantId,
     data.clientId,
@@ -780,6 +790,11 @@ export const createPoints = async (
         installedAt: data.installedAt,
         pointNumber,
         label: `Armadilha ${pointNumber}`,
+        markerColor:
+          nullable(data.markerColor) ||
+          defaultMarkerColorFromTrapType(trapType),
+        markerIconUrl: nullable(data.markerIconUrl),
+        markerType: nullable(data.markerType) || "color",
         notes: nullable(data.notes),
         active: true
       })),
@@ -908,15 +923,9 @@ export const updatePointPosition = async (
         positionX: data.positionX,
         positionY: data.positionY,
         mapLabel: nullable(data.mapLabel) || point.mapLabel || point.label,
-        markerColor:
-          nullable(data.markerColor) ||
-          point.markerColor ||
-          defaultMarkerColor(point),
-        markerIconUrl:
-          data.markerIconUrl !== undefined
-            ? nullable(data.markerIconUrl)
-            : point.markerIconUrl,
-        markerType: nullable(data.markerType) || point.markerType || "color",
+        markerColor: point.markerColor || defaultMarkerColor(point),
+        markerIconUrl: point.markerIconUrl,
+        markerType: point.markerType || "color",
         isPositioned: true
       },
       { transaction }

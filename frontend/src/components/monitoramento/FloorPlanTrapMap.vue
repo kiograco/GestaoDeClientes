@@ -126,34 +126,8 @@
           <div><b>Ultima inspecao:</b> {{ latestInspectionDate(selectedPoint) }}</div>
           <div class="floor-plan-details__full"><b>Observacoes:</b> {{ selectedPoint.notes || '-' }}</div>
         </q-card-section>
-        <q-card-section v-if="selectedPoint" class="row q-col-gutter-sm">
-          <q-input v-model="markerForm.markerColor" outlined dense label="Cor do marcador" class="col-12 col-sm-4">
-            <template v-slot:append>
-              <q-icon name="mdi-palette" class="cursor-pointer">
-                <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-color v-model="markerForm.markerColor" />
-                </q-popup-proxy>
-              </q-icon>
-            </template>
-          </q-input>
-          <q-input v-model.trim="markerForm.markerIconUrl" outlined dense label="URL do icone" class="col-12 col-sm-5" />
-          <q-select
-            v-model="markerForm.markerType"
-            :options="[
-              { label: 'Cor', value: 'color' },
-              { label: 'Icone', value: 'icon' }
-            ]"
-            emit-value
-            map-options
-            outlined
-            dense
-            label="Visual"
-            class="col-12 col-sm-3"
-          />
-        </q-card-section>
         <q-card-actions align="right">
           <q-btn flat color="negative" icon="mdi-map-marker-remove-outline" label="Remover do mapa" @click="removeFromMap" />
-          <q-btn unelevated color="primary" icon="mdi-content-save-outline" label="Salvar marcador" @click="saveMarker" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -182,7 +156,6 @@ export default {
       draggedPoint: null,
       detailsOpen: false,
       selectedPoint: null,
-      markerForm: { markerColor: '#2563eb', markerIconUrl: '', markerType: 'color' },
       localMarkerMode: this.markerMode
     }
   },
@@ -276,20 +249,8 @@ export default {
     },
     openDetails (point) {
       this.selectedPoint = point
-      this.markerForm = {
-        markerColor: point.markerColor || this.defaultMarkerColor(point),
-        markerIconUrl: point.markerIconUrl || '',
-        markerType: point.markerType || 'color'
-      }
       this.$emit('select', point.id)
       this.detailsOpen = true
-    },
-    saveMarker () {
-      this.$emit('save-marker', {
-        point: this.selectedPoint,
-        marker: { ...this.markerForm }
-      })
-      this.detailsOpen = false
     },
     removeFromMap () {
       this.$emit('remove-position', this.selectedPoint)

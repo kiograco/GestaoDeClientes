@@ -193,7 +193,6 @@
             @select="mapa.pointId = $event"
             @marker-mode="mapa.markerMode = $event"
             @position="salvarPosicaoMapa"
-            @save-marker="salvarMarcadorMapa"
             @remove-position="removerPosicaoMapa"
           />
         </q-tab-panel>
@@ -257,7 +256,29 @@
             <q-input v-model="ponto.installedAt" outlined type="date" label="Data de Instalacao *" class="col-12 col-md-3" />
             <q-input v-model.number="ponto.initialNumber" outlined type="number" min="1" label="Numero Inicial *" class="col-12 col-md-3" />
             <q-input v-model.number="ponto.finalNumber" outlined type="number" min="1" label="Numero Final *" class="col-12 col-md-3" />
-            <q-input v-model.trim="ponto.notes" outlined label="Observacoes" class="col-12 col-md-6" />
+            <q-input v-model="ponto.markerColor" outlined label="Cor da armadilha" class="col-12 col-md-3">
+              <template v-slot:append>
+                <q-icon name="mdi-palette" class="cursor-pointer">
+                  <q-popup-proxy transition-show="scale" transition-hide="scale">
+                    <q-color v-model="ponto.markerColor" />
+                  </q-popup-proxy>
+                </q-icon>
+              </template>
+            </q-input>
+            <q-input v-model.trim="ponto.markerIconUrl" outlined label="URL da imagem da armadilha" class="col-12 col-md-5" />
+            <q-select
+              v-model="ponto.markerType"
+              :options="[
+                { label: 'Cor', value: 'color' },
+                { label: 'Imagem', value: 'icon' }
+              ]"
+              emit-value
+              map-options
+              outlined
+              label="Visual no mapa"
+              class="col-12 col-md-4"
+            />
+            <q-input v-model.trim="ponto.notes" outlined label="Observacoes" class="col-12" />
           </div>
         </q-card-section>
         <q-card-actions align="right">
@@ -361,6 +382,9 @@ const pontoVazio = () => ({
   installedAt: hoje(),
   initialNumber: 1,
   finalNumber: 1,
+  markerColor: '#2563eb',
+  markerIconUrl: '',
+  markerType: 'color',
   notes: ''
 })
 
@@ -451,7 +475,8 @@ export default {
         this.ponto.sectorId &&
         this.ponto.trapTypeId &&
         this.ponto.initialNumber &&
-        this.ponto.finalNumber >= this.ponto.initialNumber
+        this.ponto.finalNumber >= this.ponto.initialNumber &&
+        (this.ponto.markerType !== 'icon' || this.ponto.markerIconUrl)
       )
     },
     opcoesClientes () {
@@ -644,21 +669,7 @@ export default {
       await PosicionarPontoMonitoramento(pointId, {
         floorPlanId: this.mapa.floorPlanId,
         positionX: Number(coords.x.toFixed(4)),
-        positionY: Number(coords.y.toFixed(4)),
-        markerType: this.mapa.markerMode
-      })
-      await this.carregarPontos()
-    },
-    async salvarMarcadorMapa ({ point, marker }) {
-      if (!point || !this.mapa.floorPlanId) return
-      await PosicionarPontoMonitoramento(point.id, {
-        floorPlanId: this.mapa.floorPlanId,
-        positionX: Number(point.positionX),
-        positionY: Number(point.positionY),
-        mapLabel: point.mapLabel || point.pointNumber,
-        markerColor: marker.markerColor,
-        markerIconUrl: marker.markerIconUrl,
-        markerType: marker.markerType
+        positionY: Number(coords.y.toFixed(4))
       })
       await this.carregarPontos()
     },

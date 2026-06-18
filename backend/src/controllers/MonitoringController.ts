@@ -42,6 +42,9 @@ const pointCreateSchema = Yup.object().shape({
   installedAt: Yup.date().required(),
   initialNumber: Yup.number().integer().min(1).required(),
   finalNumber: Yup.number().integer().min(1).required(),
+  markerColor: nullableString,
+  markerIconUrl: nullableString,
+  markerType: Yup.string().oneOf(["color", "icon"]).default("color"),
   notes: nullableString
 });
 
@@ -78,9 +81,6 @@ const pointPositionSchema = Yup.object().shape({
   positionX: Yup.number().min(0).max(100).required(),
   positionY: Yup.number().min(0).max(100).required(),
   mapLabel: nullableString,
-  markerColor: nullableString,
-  markerIconUrl: nullableString,
-  markerType: Yup.string().oneOf(["color", "icon"]).default("color"),
   notes: nullableString
 });
 

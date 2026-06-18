@@ -354,9 +354,8 @@ mapa. As coordenadas sao salvas como percentual relativo da planta.
 
 Para mover, arraste o marcador ja posicionado. Para remover somente a posicao no
 mapa, clique no marcador e use `Remover do mapa`; o ponto continua cadastrado e
-a mudanca fica registrada no historico de mapa. Para alterar cor ou icone,
-clique no marcador, ajuste `Cor do marcador`, `URL do icone` e `Visual`, depois
-salve.
+a mudanca fica registrada no historico de mapa. A cor, a imagem e o visual do
+marcador sao definidos na criacao dos pontos em `Monitoramento > Pontos`.
 
 Para reutilizar em Ordem de Servico, Relatorio de Monitoramento, Relatorio
 Tecnico, Certificado ou PDF de inspecao, consulte:

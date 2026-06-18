@@ -112,6 +112,9 @@ describe("monitoring API", () => {
         installedAt: "2026-06-15",
         initialNumber: 1,
         finalNumber: 3,
+        markerColor: "#123456",
+        markerIconUrl: "https://example.test/trap.png",
+        markerType: "icon",
         notes: "Instalacao inicial"
       })
       .expect(201)
@@ -122,6 +125,11 @@ describe("monitoring API", () => {
           "Armadilha 2",
           "Armadilha 3"
         ]);
+        expect(body[0]).toMatchObject({
+          markerColor: "#123456",
+          markerIconUrl: "https://example.test/trap.png",
+          markerType: "icon"
+        });
       });
 
     expect(
@@ -194,8 +202,9 @@ describe("monitoring API", () => {
         expect(body).toMatchObject({
           floorPlanId,
           mapLabel: "PI-03",
-          markerColor: "#2563eb",
-          markerType: "color",
+          markerColor: "#123456",
+          markerIconUrl: "https://example.test/trap.png",
+          markerType: "icon",
           isPositioned: true
         });
         expect(Number(body.positionX)).toBeCloseTo(32.5);
