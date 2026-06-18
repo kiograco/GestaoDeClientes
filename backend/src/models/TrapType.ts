@@ -48,6 +48,16 @@ class TrapType extends Model<TrapType> {
   @Column(DataType.TEXT)
   description: string;
 
+  @Column({ field: "marker_color" })
+  markerColor: string;
+
+  @Column({ field: "marker_icon_url" })
+  markerIconUrl: string;
+
+  @Default("color")
+  @Column({ field: "marker_type" })
+  markerType: string;
+
   @Default(true)
   @Column
   active: boolean;

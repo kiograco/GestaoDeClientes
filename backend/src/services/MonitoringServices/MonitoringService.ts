@@ -25,6 +25,9 @@ export interface TrapTypeData {
   acronym?: string | null;
   type: string;
   description?: string | null;
+  markerColor?: string | null;
+  markerIconUrl?: string | null;
+  markerType?: string | null;
   active?: boolean;
   pestIds?: number[];
 }
@@ -384,6 +387,9 @@ export const createTrapType = async (
         acronym: nullable(data.acronym) || data.code.trim(),
         type: data.type?.trim() || "monitoramento",
         description: nullable(data.description),
+        markerColor: nullable(data.markerColor),
+        markerIconUrl: nullable(data.markerIconUrl),
+        markerType: nullable(data.markerType) || "color",
         active: data.active !== false
       },
       { transaction }
@@ -412,6 +418,9 @@ export const updateTrapType = async (
         acronym: nullable(data.acronym) || data.code.trim(),
         type: data.type?.trim() || "monitoramento",
         description: nullable(data.description),
+        markerColor: nullable(data.markerColor),
+        markerIconUrl: nullable(data.markerIconUrl),
+        markerType: nullable(data.markerType) || "color",
         active: data.active !== false
       },
       { transaction }
@@ -792,9 +801,10 @@ export const createPoints = async (
         label: `Armadilha ${pointNumber}`,
         markerColor:
           nullable(data.markerColor) ||
+          trapType.markerColor ||
           defaultMarkerColorFromTrapType(trapType),
-        markerIconUrl: nullable(data.markerIconUrl),
-        markerType: nullable(data.markerType) || "color",
+        markerIconUrl: nullable(data.markerIconUrl) || trapType.markerIconUrl,
+        markerType: nullable(data.markerType) || trapType.markerType || "color",
         notes: nullable(data.notes),
         active: true
       })),

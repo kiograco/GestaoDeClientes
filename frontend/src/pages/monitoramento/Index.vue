@@ -211,6 +211,28 @@
             <q-input v-model.trim="tipo.code" outlined label="Sigla *" class="col-12 col-md-3" />
             <q-input v-model.trim="tipo.type" outlined label="Tipo" class="col-12 col-md-3" />
             <q-select v-model="tipo.pestIds" :options="opcoesPragas" emit-value map-options multiple use-chips outlined label="Pragas vinculadas" class="col-12" />
+            <q-input v-model="tipo.markerColor" outlined label="Cor padrao da armadilha" class="col-12 col-md-3">
+              <template v-slot:append>
+                <q-icon name="mdi-palette" class="cursor-pointer">
+                  <q-popup-proxy transition-show="scale" transition-hide="scale">
+                    <q-color v-model="tipo.markerColor" />
+                  </q-popup-proxy>
+                </q-icon>
+              </template>
+            </q-input>
+            <q-input v-model.trim="tipo.markerIconUrl" outlined label="URL da foto padrao" class="col-12 col-md-5" />
+            <q-select
+              v-model="tipo.markerType"
+              :options="[
+                { label: 'Cor', value: 'color' },
+                { label: 'Foto', value: 'icon' }
+              ]"
+              emit-value
+              map-options
+              outlined
+              label="Visual padrao no mapa"
+              class="col-12 col-md-4"
+            />
             <q-input v-model.trim="tipo.description" outlined type="textarea" autogrow label="Descricao" class="col-12" />
             <q-toggle v-model="tipo.active" label="Ativo" />
           </div>
@@ -256,28 +278,6 @@
             <q-input v-model="ponto.installedAt" outlined type="date" label="Data de Instalacao *" class="col-12 col-md-3" />
             <q-input v-model.number="ponto.initialNumber" outlined type="number" min="1" label="Numero Inicial *" class="col-12 col-md-3" />
             <q-input v-model.number="ponto.finalNumber" outlined type="number" min="1" label="Numero Final *" class="col-12 col-md-3" />
-            <q-input v-model="ponto.markerColor" outlined label="Cor da armadilha" class="col-12 col-md-3">
-              <template v-slot:append>
-                <q-icon name="mdi-palette" class="cursor-pointer">
-                  <q-popup-proxy transition-show="scale" transition-hide="scale">
-                    <q-color v-model="ponto.markerColor" />
-                  </q-popup-proxy>
-                </q-icon>
-              </template>
-            </q-input>
-            <q-input v-model.trim="ponto.markerIconUrl" outlined label="URL da imagem da armadilha" class="col-12 col-md-5" />
-            <q-select
-              v-model="ponto.markerType"
-              :options="[
-                { label: 'Cor', value: 'color' },
-                { label: 'Imagem', value: 'icon' }
-              ]"
-              emit-value
-              map-options
-              outlined
-              label="Visual no mapa"
-              class="col-12 col-md-4"
-            />
             <q-input v-model.trim="ponto.notes" outlined label="Observacoes" class="col-12" />
           </div>
         </q-card-section>
@@ -368,6 +368,9 @@ const tipoVazio = () => ({
   acronym: '',
   type: 'monitoramento',
   description: '',
+  markerColor: '#2563eb',
+  markerIconUrl: '',
+  markerType: 'color',
   pestIds: [],
   active: true
 })
@@ -382,9 +385,6 @@ const pontoVazio = () => ({
   installedAt: hoje(),
   initialNumber: 1,
   finalNumber: 1,
-  markerColor: '#2563eb',
-  markerIconUrl: '',
-  markerType: 'color',
   notes: ''
 })
 
@@ -475,8 +475,7 @@ export default {
         this.ponto.sectorId &&
         this.ponto.trapTypeId &&
         this.ponto.initialNumber &&
-        this.ponto.finalNumber >= this.ponto.initialNumber &&
-        (this.ponto.markerType !== 'icon' || this.ponto.markerIconUrl)
+        this.ponto.finalNumber >= this.ponto.initialNumber
       )
     },
     opcoesClientes () {

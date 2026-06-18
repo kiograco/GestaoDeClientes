@@ -340,7 +340,8 @@ Arquivos principais:
   `frontend/src/service/monitoramento.js`.
 - Banco: `client_floor_plans`, `monitoring_points` com
   `position_x_percent`, `position_y_percent`, `marker_color`,
-  `marker_icon_url`, `marker_type`, `is_positioned`, e
+  `marker_icon_url`, `marker_type`, `is_positioned`, `trap_types` com
+  cor/foto padrao de marcador, e
   `monitoring_point_map_history`.
 
 Para cadastrar uma planta, acesse `Monitoramento > Mapa`, selecione cliente e
@@ -354,8 +355,9 @@ mapa. As coordenadas sao salvas como percentual relativo da planta.
 
 Para mover, arraste o marcador ja posicionado. Para remover somente a posicao no
 mapa, clique no marcador e use `Remover do mapa`; o ponto continua cadastrado e
-a mudanca fica registrada no historico de mapa. A cor, a imagem e o visual do
-marcador sao definidos na criacao dos pontos em `Monitoramento > Pontos`.
+a mudanca fica registrada no historico de mapa. A cor, a foto e o visual padrao
+do marcador sao definidos no cadastro do tipo em `Monitoramento > Tipos de
+Armadilhas`, e os pontos gerados herdam esse visual.
 
 Para reutilizar em Ordem de Servico, Relatorio de Monitoramento, Relatorio
 Tecnico, Certificado ou PDF de inspecao, consulte:

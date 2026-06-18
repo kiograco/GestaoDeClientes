@@ -61,6 +61,9 @@ describe("monitoring API", () => {
         code: "PI",
         type: "Roedores",
         description: "Ponto de iscagem protegido",
+        markerColor: "#123456",
+        markerIconUrl: "https://example.test/trap.png",
+        markerType: "icon",
         active: true
       })
       .expect(201)
@@ -69,6 +72,9 @@ describe("monitoring API", () => {
           tenantId: user.tenantId,
           name: "Porta Isca",
           code: "PI",
+          markerColor: "#123456",
+          markerIconUrl: "https://example.test/trap.png",
+          markerType: "icon",
           active: true
         });
       });
@@ -112,9 +118,6 @@ describe("monitoring API", () => {
         installedAt: "2026-06-15",
         initialNumber: 1,
         finalNumber: 3,
-        markerColor: "#123456",
-        markerIconUrl: "https://example.test/trap.png",
-        markerType: "icon",
         notes: "Instalacao inicial"
       })
       .expect(201)

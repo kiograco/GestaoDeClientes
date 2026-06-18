@@ -14,6 +14,9 @@ const trapTypeSchema = Yup.object().shape({
   acronym: nullableString,
   type: Yup.string().trim().default("monitoramento"),
   description: nullableString,
+  markerColor: nullableString,
+  markerIconUrl: nullableString,
+  markerType: Yup.string().oneOf(["color", "icon"]).default("color"),
   active: Yup.boolean(),
   pestIds: Yup.array().of(Yup.number().integer().positive()).default([])
 });
@@ -44,7 +47,7 @@ const pointCreateSchema = Yup.object().shape({
   finalNumber: Yup.number().integer().min(1).required(),
   markerColor: nullableString,
   markerIconUrl: nullableString,
-  markerType: Yup.string().oneOf(["color", "icon"]).default("color"),
+  markerType: Yup.string().oneOf(["color", "icon"]),
   notes: nullableString
 });
 
