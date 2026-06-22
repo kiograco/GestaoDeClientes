@@ -1243,6 +1243,7 @@ import {
   ObterOrdemServico,
   CriarOrdemServico,
   AlterarOrdemServico,
+  AlterarParcialOrdemServico,
   AlterarOcorrenciaOrdemServico,
   DocumentoOrdemServico,
   DocumentoInternoOrdemServico,
@@ -2395,12 +2396,7 @@ export default {
       return `${batches.length} lote(s)`
     },
     async atualizarFinanceiroOrdem (ordem, changes) {
-      await this.salvarStatus({
-        ...ordem,
-        ...changes,
-        chargedAmount: changes.chargedAmount !== undefined ? changes.chargedAmount : ordem.chargedAmount,
-        paidAmount: changes.paidAmount !== undefined ? changes.paidAmount : ordem.paidAmount
-      })
+      await this.salvarStatus(ordem, changes)
     },
     async marcarComoCobrada (ordem) {
       await this.atualizarFinanceiroOrdem(ordem, { financialStatus: 'cobrado' })
@@ -2752,11 +2748,11 @@ export default {
     },
     async alterarStatus (status) {
       if (!this.ordemSelecionada) return
-      await this.salvarStatus({ ...this.ordemSelecionada, status })
+      await this.salvarStatus(this.ordemSelecionada, { status })
     },
     async alterarStatusOrdem (ordem, status) {
       this.ordemSelecionada = ordem
-      await this.salvarStatus({ ...ordem, status })
+      await this.salvarStatus(ordem, { status })
     },
     confirmarCancelamento () {
       this.$q.dialog({
@@ -2764,24 +2760,28 @@ export default {
         message: 'Confirma o cancelamento desta ordem de serviço?',
         cancel: true,
         persistent: true
-      }).onOk(() => this.salvarStatus({ ...this.ordemSelecionada, status: 'cancelada' }))
+      }).onOk(() => this.salvarStatus(this.ordemSelecionada, { status: 'cancelada' }))
     },
     cancelarOrdem (ordem) {
       this.ordemSelecionada = ordem
       this.confirmarCancelamento()
     },
-    async salvarStatus (payload) {
+    async salvarStatus (ordem, changes) {
       try {
-        const normalizedPayload = this.normalizarDatasPayload(payload)
-        const response = payload.recurringOccurrence
-          ? await AlterarOcorrenciaOrdemServico(payload.originalServiceOrderId || payload.id, {
-            occurrenceStart: payload.originalOccurrenceStart,
-            scheduledStart: normalizedPayload.scheduledStart,
-            scheduledEnd: normalizedPayload.scheduledEnd,
-            attendantId: normalizedPayload.attendantId,
-            status: normalizedPayload.status
+        const normalizedChanges = this.normalizarPatchOrdem(changes)
+        const effectiveOrder = { ...ordem, ...normalizedChanges }
+        const response = ordem.recurringOccurrence
+          ? await AlterarOcorrenciaOrdemServico(ordem.originalServiceOrderId || ordem.id, {
+            occurrenceStart: ordem.originalOccurrenceStart,
+            scheduledStart: effectiveOrder.scheduledStart,
+            scheduledEnd: effectiveOrder.scheduledEnd,
+            attendantId: effectiveOrder.attendantId,
+            status: effectiveOrder.status
           })
-          : await AlterarOrdemServico(normalizedPayload)
+          : await AlterarParcialOrdemServico(ordem.id, {
+            ...normalizedChanges,
+            expectedUpdatedAt: ordem.updatedAt
+          })
         const { data } = response
         this.ordemSelecionada = data
         await this.carregarOrdens()
@@ -2846,8 +2846,7 @@ export default {
       const duration = originalEnd - originalStart
       const nextStart = this.dataHoraAgenda(hour)
       const nextEnd = new Date(nextStart.getTime() + duration)
-      await this.salvarStatus({
-        ...this.ordemArrastada,
+      await this.salvarStatus(this.ordemArrastada, {
         attendantId: linha.id,
         scheduledStart: this.toInputDate(nextStart),
         scheduledEnd: this.toInputDate(nextEnd),
@@ -2856,10 +2855,8 @@ export default {
       this.ordemArrastada = null
     },
     async moverOrdemParaTecnico (ordem, tecnico) {
-      await this.salvarStatus({
-        ...ordem,
+      await this.salvarStatus(ordem, {
         attendantId: tecnico.id,
-        attendant: tecnico,
         status: ordem.status === 'agendada' ? 'reagendada' : ordem.status
       })
     },
@@ -2897,7 +2894,7 @@ export default {
       const end = new Date(ordem.scheduledEnd)
       end.setMinutes(end.getMinutes() + minutes)
       if (end <= new Date(ordem.scheduledStart)) return
-      await this.salvarStatus({ ...ordem, scheduledEnd: this.toInputDate(end) })
+      await this.salvarStatus(ordem, { scheduledEnd: this.toInputDate(end) })
     },
     dashboardList (source) {
       return Object.entries(source || {})
@@ -3188,6 +3185,28 @@ export default {
         scheduledStart: this.toApiScheduleDate(payload, 'scheduledStart', 'scheduledStartTime'),
         scheduledEnd: this.toApiScheduleDate(payload, 'scheduledEnd', 'scheduledEndTime')
       }
+    },
+    normalizarPatchOrdem (changes) {
+      const payload = { ...changes }
+      if (Object.prototype.hasOwnProperty.call(payload, 'scheduledStart')) {
+        payload.scheduledStart = this.toApiDate(payload.scheduledStart)
+      }
+      if (Object.prototype.hasOwnProperty.call(payload, 'scheduledEnd')) {
+        payload.scheduledEnd = this.toApiDate(payload.scheduledEnd)
+      }
+      if (Object.prototype.hasOwnProperty.call(payload, 'paymentDueDate')) {
+        payload.paymentDueDate = this.toApiDate(payload.paymentDueDate)
+      }
+      if (Object.prototype.hasOwnProperty.call(payload, 'paidAt')) {
+        payload.paidAt = this.toApiDate(payload.paidAt)
+      }
+      if (Object.prototype.hasOwnProperty.call(payload, 'chargedAmount')) {
+        payload.chargedAmount = this.parseMoeda(payload.chargedAmount) || 0
+      }
+      if (Object.prototype.hasOwnProperty.call(payload, 'paidAmount')) {
+        payload.paidAmount = this.parseMoeda(payload.paidAmount) || 0
+      }
+      return payload
     },
     normalizarRecorrenciaPayload (payload) {
       if (!payload.recurrenceActive || payload.recurrenceType === 'single') {

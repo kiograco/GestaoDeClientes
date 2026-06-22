@@ -217,6 +217,26 @@ const orderOccurrenceSchema = Yup.object().shape({
   status: Yup.string().oneOf(ServiceOrder.SERVICE_ORDER_STATUSES).required()
 });
 
+const orderPatchSchema = Yup.object().shape({
+  expectedUpdatedAt: Yup.date().required(),
+  attendantId: Yup.number().integer().positive().nullable(),
+  scheduledStart: Yup.date().nullable(),
+  scheduledEnd: Yup.date().nullable(),
+  status: Yup.string().oneOf(ServiceOrder.SERVICE_ORDER_STATUSES),
+  financialStatus: Yup.string().oneOf(
+    ServiceOrder.SERVICE_ORDER_FINANCIAL_STATUSES
+  ),
+  paymentMethod: nullableString.oneOf([
+    ...ServiceOrder.SERVICE_ORDER_PAYMENT_METHODS,
+    null
+  ]),
+  chargedAmount: Yup.number().min(0).nullable(),
+  paidAmount: Yup.number().min(0).nullable(),
+  paymentDueDate: Yup.date().nullable(),
+  paidAt: Yup.date().nullable(),
+  financialObservation: nullableString
+});
+
 const notificationSchema = Yup.object().shape({
   channels: Yup.array()
     .of(Yup.string().oneOf(["internal", "email", "whatsapp"]))
@@ -1039,6 +1059,46 @@ export const updateOrderOccurrence = async (
       data
     )
   );
+};
+
+export const patchOrder = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  ensureCanOperateServiceOrders(req.user.profile);
+  const hasFinancialChanges = financialAuditFields.some(
+    field => field in req.body
+  );
+  if (hasFinancialChanges) ensureCanManageServiceOrders(req.user.profile);
+  const previous = await ServiceOrder.showOrder(
+    req.user.tenantId,
+    req.user.profile,
+    req.params.serviceOrderId
+  );
+  const data = await validate<ServiceOrder.ServiceOrderPatchData>(
+    orderPatchSchema,
+    req.body
+  );
+  const serviceOrder = await ServiceOrder.patchOrder(
+    req.user.tenantId,
+    req.user.id,
+    req.params.serviceOrderId,
+    data
+  );
+  const changes = financialChanges(previous, serviceOrder, req.body);
+  if (Object.keys(changes).length) {
+    await auditFinancialAction(
+      req,
+      "service_order_financial_updated",
+      serviceOrder.id,
+      {
+        serviceOrderId: serviceOrder.id,
+        changedFields: Object.keys(changes),
+        changes
+      }
+    );
+  }
+  return res.json(serviceOrder);
 };
 
 export const publicDocument = async (

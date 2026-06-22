@@ -111,6 +111,7 @@ const serviceOrder = {
   recurrenceIntervalDays: null,
   scheduledStart: '2099-12-31T10:00:00.000Z',
   scheduledEnd: '2099-12-31T11:00:00.000Z',
+  updatedAt: '2099-01-01T00:00:00.000Z',
   address: 'Rua E2E, 100',
   city: 'Sao Paulo',
   state: 'SP',

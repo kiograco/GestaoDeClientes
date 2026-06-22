@@ -243,6 +243,21 @@ export interface ServiceOrderOccurrenceData {
   status: string;
 }
 
+export interface ServiceOrderPatchData {
+  expectedUpdatedAt: string | Date;
+  attendantId?: number | null;
+  scheduledStart?: string | Date | null;
+  scheduledEnd?: string | Date | null;
+  status?: string;
+  financialStatus?: string;
+  paymentMethod?: string | null;
+  chargedAmount?: number | null;
+  paidAmount?: number | null;
+  paymentDueDate?: string | Date | null;
+  paidAt?: string | Date | null;
+  financialObservation?: string | null;
+}
+
 const relevantStatuses = ["agendada", "em_atendimento", "reagendada"];
 const managerProfiles = ["admin", "superadmin", "supervisor"];
 const operatorProfiles = [...managerProfiles, "atendente"];
@@ -3171,6 +3186,137 @@ export const updateOrderOccurrence = async (
     ),
     loadedException
   );
+};
+
+export const patchOrder = async (
+  tenantId: string | number,
+  userId: string | number,
+  serviceOrderId: string,
+  data: ServiceOrderPatchData
+): Promise<ServiceOrder> => {
+  const expectedUpdatedAt = normalizeDate(data.expectedUpdatedAt);
+  if (!expectedUpdatedAt) {
+    throw new AppError("ERR_SERVICE_ORDER_VERSION_REQUIRED", 400);
+  }
+
+  const updated = await sequelize.transaction(
+    { isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE },
+    async transaction => {
+      const serviceOrder = await ServiceOrder.findOne({
+        where: { id: serviceOrderId, tenantId },
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      });
+      if (!serviceOrder) throw new AppError("ERR_SERVICE_ORDER_NOT_FOUND", 404);
+      if (serviceOrder.updatedAt.getTime() !== expectedUpdatedAt.getTime()) {
+        throw new AppError("ERR_SERVICE_ORDER_STALE_VERSION", 409);
+      }
+
+      const payload: LegacyAny = {};
+      if (data.attendantId !== undefined) {
+        await ensureAttendant(tenantId, data.attendantId, transaction);
+        payload.attendantId = data.attendantId || null;
+      }
+      if (data.scheduledStart !== undefined) {
+        payload.scheduledStart = normalizeDate(data.scheduledStart);
+      }
+      if (data.scheduledEnd !== undefined) {
+        payload.scheduledEnd = normalizeDate(data.scheduledEnd);
+      }
+      if (data.status !== undefined) payload.status = data.status;
+      if (data.financialStatus !== undefined) {
+        payload.financialStatus = data.financialStatus;
+      }
+      if (data.paymentMethod !== undefined) {
+        payload.paymentMethod = cleanText(data.paymentMethod);
+      }
+      if (data.chargedAmount !== undefined) {
+        payload.chargedAmount = normalizeMoney(data.chargedAmount || 0);
+      }
+      if (data.paidAmount !== undefined) {
+        payload.paidAmount = normalizeMoney(data.paidAmount || 0);
+      }
+      if (data.paymentDueDate !== undefined) {
+        payload.paymentDueDate = normalizeDate(data.paymentDueDate);
+      }
+      if (data.paidAt !== undefined) payload.paidAt = normalizeDate(data.paidAt);
+      if (data.financialObservation !== undefined) {
+        payload.financialObservation = cleanText(data.financialObservation);
+      }
+
+      const nextStatus = payload.status || serviceOrder.status;
+      const nextStart =
+        payload.scheduledStart !== undefined
+          ? payload.scheduledStart
+          : serviceOrder.scheduledStart;
+      const nextEnd =
+        payload.scheduledEnd !== undefined
+          ? payload.scheduledEnd
+          : serviceOrder.scheduledEnd;
+      const nextAttendantId =
+        payload.attendantId !== undefined
+          ? payload.attendantId
+          : serviceOrder.attendantId;
+      validateServiceOrderSchedule({
+        contactId: serviceOrder.contactId,
+        title: serviceOrder.title,
+        serviceType: serviceOrder.serviceType,
+        status: nextStatus,
+        scheduledStart: nextStart,
+        scheduledEnd: nextEnd,
+        recurrenceType: serviceOrder.recurrenceType,
+        recurrenceActive: serviceOrder.recurrenceActive,
+        recurrenceDayOfMonth: serviceOrder.recurrenceDayOfMonth,
+        recurrenceIntervalDays: serviceOrder.recurrenceIntervalDays
+      });
+      await ensureNoScheduleConflict(
+        tenantId,
+        nextAttendantId,
+        nextStart,
+        nextEnd,
+        serviceOrder.id,
+        transaction
+      );
+
+      const oldValue = Object.keys(payload).reduce(
+        (values, field) => ({ ...values, [field]: serviceOrder.get(field) }),
+        {} as Record<string, unknown>
+      );
+      if (nextStatus === "concluida" && !serviceOrder.completedAt) {
+        payload.completedAt = new Date();
+      }
+      if (nextStatus === "cancelada" && !serviceOrder.canceledAt) {
+        payload.canceledAt = new Date();
+      }
+      await serviceOrder.update(payload, { transaction });
+      if (nextStatus === "concluida" && !serviceOrder.inventoryDeductedAt) {
+        await deductInventoryForServiceOrder(
+          tenantId,
+          serviceOrder.id,
+          userId,
+          transaction
+        );
+        await serviceOrder.update(
+          { inventoryDeductedAt: new Date() },
+          { transaction }
+        );
+      }
+      await logOrder(
+        serviceOrder.id,
+        userId,
+        "patched",
+        "Ordem de servico atualizada parcialmente",
+        oldValue,
+        payload,
+        transaction
+      );
+      return serviceOrder;
+    }
+  );
+
+  const loaded = await loadOrder(tenantId, updated.id);
+  emitServiceOrderEvent(tenantId, "service_order_updated", loaded);
+  return loaded;
 };
 
 export const updateOrder = async (

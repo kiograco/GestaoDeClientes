@@ -176,6 +176,11 @@ serviceOrderRoutes.patch(
   isAuth,
   ServiceOrderController.updateOrderOccurrence
 );
+serviceOrderRoutes.patch(
+  "/service/orders/:serviceOrderId",
+  isAuth,
+  ServiceOrderController.patchOrder
+);
 serviceOrderRoutes.get(
   "/service/orders/:serviceOrderId/document",
   isAuth,

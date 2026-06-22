@@ -104,7 +104,7 @@ test('edicao de ordem envia horario alterado com timezone', async ({ page }) => 
   await login(page)
   let payloadEnviado = null
   await page.route('**/service/orders/70', async route => {
-    if (route.request().method() === 'PUT') {
+    if (route.request().method() === 'PATCH') {
       payloadEnviado = route.request().postDataJSON()
       return route.fulfill({
         status: 200,
@@ -209,6 +209,11 @@ test('menu contextual da agenda troca tecnico da ordem', async ({ page }) => {
   await page.locator('.q-menu').getByText(fixtures.serviceAttendant2.name).click()
 
   await expect.poll(() => payloadEnviado && payloadEnviado.attendantId).toBe(fixtures.serviceAttendant2.id)
+  expect(payloadEnviado).toEqual({
+    attendantId: fixtures.serviceAttendant2.id,
+    status: 'reagendada',
+    expectedUpdatedAt: fixtures.serviceOrder.updatedAt
+  })
 })
 
 test('reagenda ocorrencia recorrente sem atualizar a serie base', async ({ page }) => {
@@ -232,7 +237,7 @@ test('reagenda ocorrencia recorrente sem atualizar a serie base', async ({ page 
     body: JSON.stringify([recurringOccurrence])
   }))
   await page.route('**/service/orders/70', async route => {
-    if (route.request().method() === 'PUT') baseOrderUpdated = true
+    if (['PATCH', 'PUT'].includes(route.request().method())) baseOrderUpdated = true
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
