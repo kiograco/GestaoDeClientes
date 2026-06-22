@@ -1437,8 +1437,10 @@ export default {
         { label: 'Dia fixo todo mês', value: 'monthly_fixed_day' },
         { label: 'Intervalo em dias', value: 'custom_interval' }
       ],
-      timeOptions: Array.from({ length: 24 }, (_, hour) => {
-        const value = `${String(hour).padStart(2, '0')}:00`
+      timeOptions: Array.from({ length: 48 }, (_, index) => {
+        const hour = Math.floor(index / 2)
+        const minutes = index % 2 === 0 ? '00' : '30'
+        const value = `${String(hour).padStart(2, '0')}:${minutes}`
         return { label: value, value }
       }),
       notificationOptions: [
@@ -3130,8 +3132,6 @@ export default {
       if (!value) return ''
       const date = new Date(value)
       date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
-      if (date.getMinutes() >= 30) date.setHours(date.getHours() + 1)
-      date.setMinutes(0, 0, 0)
       return date.toISOString().slice(11, 16)
     },
     toApiDate (value) {

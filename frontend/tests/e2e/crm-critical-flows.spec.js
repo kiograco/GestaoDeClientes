@@ -137,6 +137,49 @@ test('edicao de ordem envia horario alterado com timezone', async ({ page }) => 
   expect(payloadEnviado.scheduledEnd).toBe(esperado.end)
 })
 
+test('edicao preserva agendamento em meia hora sem arredondar', async ({ page }) => {
+  await login(page)
+  const orderAtHalfHour = {
+    ...fixtures.serviceOrder,
+    scheduledStart: '2099-12-31T10:30:00.000Z',
+    scheduledEnd: '2099-12-31T11:30:00.000Z'
+  }
+  let payloadEnviado = null
+
+  await page.route(/\/service\/orders(?:\/70)?(?:\?.*)?$/, async route => {
+    const request = route.request()
+    if (request.method() === 'PUT') {
+      payloadEnviado = request.postDataJSON()
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...orderAtHalfHour, ...payloadEnviado })
+      })
+    }
+    const body = new URL(request.url()).pathname.endsWith('/70')
+      ? orderAtHalfHour
+      : [orderAtHalfHour]
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(body)
+    })
+  })
+
+  await page.goto('/#/ordens-servico')
+  await page.locator('input[type="date"]').fill('2099-12-31')
+  await page.getByRole('button', { name: /#70 visita e2e/i }).click()
+  await page.locator('.order-details-popover').getByRole('button', { name: /editar/i }).click()
+
+  const ordemDialog = page.getByRole('dialog').filter({ hasText: /editar ordem/i })
+  await expect(campoHora(ordemDialog, /hora início/i)).toContainText(/:30/)
+  await expect(campoHora(ordemDialog, /hora fim/i)).toContainText(/:30/)
+  await ordemDialog.getByRole('button', { name: /agendar/i }).click()
+
+  await expect.poll(() => payloadEnviado && payloadEnviado.scheduledStart).toBe(orderAtHalfHour.scheduledStart)
+  expect(payloadEnviado.scheduledEnd).toBe(orderAtHalfHour.scheduledEnd)
+})
+
 test('menu contextual da agenda troca tecnico da ordem', async ({ page }) => {
   await login(page)
   let payloadEnviado = null
