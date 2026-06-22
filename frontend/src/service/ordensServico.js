@@ -38,6 +38,7 @@ export const BaixarFechamentoMensalOrdensServico = params => request({ url: '/se
 export const ObterOrdemServico = id => request({ url: `/service/orders/${id}`, method: 'get' })
 export const CriarOrdemServico = data => request({ url: '/service/orders', method: 'post', data })
 export const AlterarOrdemServico = data => request({ url: `/service/orders/${data.id}`, method: 'put', data })
+export const AlterarOcorrenciaOrdemServico = (id, data) => request({ url: `/service/orders/${id}/occurrence`, method: 'patch', data })
 export const DocumentoOrdemServico = id => request({ url: `/service/orders/${id}/document`, method: 'get', responseType: 'blob' })
 export const DocumentoInternoOrdemServico = id => request({ url: `/service/orders/${id}/document/internal`, method: 'get', responseType: 'blob' })
 export const NotificarOrdemServico = (id, data) => request({ url: `/service/orders/${id}/notify`, method: 'post', data })

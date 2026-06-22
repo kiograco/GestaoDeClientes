@@ -211,6 +211,57 @@ test('menu contextual da agenda troca tecnico da ordem', async ({ page }) => {
   await expect.poll(() => payloadEnviado && payloadEnviado.attendantId).toBe(fixtures.serviceAttendant2.id)
 })
 
+test('reagenda ocorrencia recorrente sem atualizar a serie base', async ({ page }) => {
+  await login(page)
+  const recurringOccurrence = {
+    ...fixtures.serviceOrder,
+    recurrenceActive: true,
+    recurrenceType: 'custom_interval',
+    recurrenceIntervalDays: 30,
+    recurringOccurrence: true,
+    originalServiceOrderId: fixtures.serviceOrder.id,
+    originalOccurrenceStart: fixtures.serviceOrder.scheduledStart,
+    occurrenceKey: `${fixtures.serviceOrder.id}:${fixtures.serviceOrder.scheduledStart}`
+  }
+  let occurrencePayload = null
+  let baseOrderUpdated = false
+
+  await page.route(/\/service\/orders(?:\?.*)?$/, route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify([recurringOccurrence])
+  }))
+  await page.route('**/service/orders/70', async route => {
+    if (route.request().method() === 'PUT') baseOrderUpdated = true
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(recurringOccurrence)
+    })
+  })
+  await page.route('**/service/orders/70/occurrence', async route => {
+    occurrencePayload = route.request().postDataJSON()
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...recurringOccurrence,
+        ...occurrencePayload,
+        attendant: fixtures.serviceAttendant2
+      })
+    })
+  })
+
+  await page.goto('/#/ordens-servico')
+  await page.locator('input[type="date"]').fill('2099-12-31')
+  await page.getByRole('button', { name: /#70 visita e2e/i }).click({ button: 'right' })
+  await page.locator('.q-menu').getByText(fixtures.serviceAttendant2.name).click()
+
+  await expect.poll(() => occurrencePayload && occurrencePayload.attendantId).toBe(fixtures.serviceAttendant2.id)
+  expect(occurrencePayload.occurrenceStart).toBe(recurringOccurrence.originalOccurrenceStart)
+  expect(baseOrderUpdated).toBe(false)
+})
+
 test('clique na agenda exibe balao de detalhes da ordem', async ({ page }) => {
   await login(page)
   await page.goto('/#/ordens-servico')

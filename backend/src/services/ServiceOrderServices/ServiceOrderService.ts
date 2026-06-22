@@ -24,6 +24,7 @@ import ServiceMethod from "../../models/ServiceMethod";
 import ServiceOrder from "../../models/ServiceOrder";
 import ServiceOrderItem from "../../models/ServiceOrderItem";
 import ServiceOrderLog from "../../models/ServiceOrderLog";
+import ServiceOrderOccurrenceException from "../../models/ServiceOrderOccurrenceException";
 import ServicePest from "../../models/ServicePest";
 import ServiceProduct from "../../models/ServiceProduct";
 import ServiceType from "../../models/ServiceType";
@@ -234,6 +235,14 @@ export interface PestData {
   scientificName: string;
 }
 
+export interface ServiceOrderOccurrenceData {
+  occurrenceStart: string | Date;
+  scheduledStart: string | Date;
+  scheduledEnd: string | Date;
+  attendantId?: number | null;
+  status: string;
+}
+
 const relevantStatuses = ["agendada", "em_atendimento", "reagendada"];
 const managerProfiles = ["admin", "superadmin", "supervisor"];
 const operatorProfiles = [...managerProfiles, "atendente"];
@@ -390,9 +399,99 @@ const buildOccurrence = (
     scheduledStart: occurrenceStart.toISOString(),
     scheduledEnd: occurrenceEnd.toISOString(),
     originalServiceOrderId: order.id,
+    originalOccurrenceStart: occurrenceStart.toISOString(),
     recurringOccurrence: !isBaseOccurrence,
     occurrenceKey: `${order.id}:${occurrenceStart.toISOString()}`
   };
+};
+
+const applyOccurrenceException = (
+  occurrence: Record<string, unknown>,
+  exception: ServiceOrderOccurrenceException
+): Record<string, unknown> => ({
+  ...occurrence,
+  scheduledStart: exception.scheduledStart.toISOString(),
+  scheduledEnd: exception.scheduledEnd.toISOString(),
+  attendantId: exception.attendantId,
+  attendant: exception.attendant || null,
+  status: exception.status,
+  occurrenceExceptionId: exception.id,
+  originalOccurrenceStart: exception.occurrenceStart.toISOString(),
+  recurringOccurrence: true,
+  occurrenceKey: `${
+    exception.serviceOrderId
+  }:${exception.occurrenceStart.toISOString()}`
+});
+
+const applyOccurrenceExceptions = (
+  orders: Record<string, unknown>[],
+  occurrences: Record<string, unknown>[],
+  exceptions: ServiceOrderOccurrenceException[],
+  rangeStart: Date,
+  rangeEnd: Date
+): Record<string, unknown>[] => {
+  const exceptionByKey = new Map(
+    exceptions.map(exception => [
+      `${exception.serviceOrderId}:${exception.occurrenceStart.toISOString()}`,
+      exception
+    ])
+  );
+  const appliedKeys = new Set<string>();
+  const adjusted = occurrences.reduce<Record<string, unknown>[]>(
+    (result, occurrence) => {
+      const key = String(occurrence.occurrenceKey || "");
+      const exception = exceptionByKey.get(key);
+      if (!exception) return [...result, occurrence];
+      appliedKeys.add(key);
+      const adjustedOccurrence = applyOccurrenceException(
+        occurrence,
+        exception
+      );
+      const start = normalizeDate(
+        adjustedOccurrence.scheduledStart as string | Date
+      );
+      const end = normalizeDate(
+        adjustedOccurrence.scheduledEnd as string | Date
+      );
+      return start && end && start < rangeEnd && end > rangeStart
+        ? [...result, adjustedOccurrence]
+        : result;
+    },
+    []
+  );
+  const orderById = new Map(orders.map(order => [Number(order.id), order]));
+
+  exceptions.forEach(exception => {
+    const key = `${
+      exception.serviceOrderId
+    }:${exception.occurrenceStart.toISOString()}`;
+    if (appliedKeys.has(key)) return;
+    const order = orderById.get(exception.serviceOrderId);
+    const baseStart = normalizeDate(order?.scheduledStart as string | Date);
+    const baseEnd = normalizeDate(order?.scheduledEnd as string | Date);
+    if (!order || !baseStart || !baseEnd) return;
+    const adjustedOccurrence = applyOccurrenceException(
+      buildOccurrence(
+        order,
+        exception.occurrenceStart,
+        baseStart,
+        baseEnd.getTime() - baseStart.getTime()
+      ),
+      exception
+    );
+    if (
+      exception.scheduledStart < rangeEnd &&
+      exception.scheduledEnd > rangeStart
+    ) {
+      adjusted.push(adjustedOccurrence);
+    }
+  });
+
+  return adjusted.sort(
+    (a, b) =>
+      new Date(String(a.scheduledStart)).getTime() -
+      new Date(String(b.scheduledStart)).getTime()
+  );
 };
 
 const occurrenceOverlaps = (
@@ -1960,11 +2059,35 @@ export const listOrders = async (
   const where: LegacyAny = { tenantId };
   const rangeStart = filters.start ? new Date(filters.start) : null;
   const rangeEnd = filters.end ? new Date(filters.end) : null;
-  if (filters.status) where.status = filters.status;
+  if (filters.status && !(rangeStart && rangeEnd))
+    where.status = filters.status;
   applyServiceOrderFinancialFilters(where, filters);
   if (filters.priority) where.priority = filters.priority;
   if (filters.serviceType) where.serviceType = filters.serviceType;
-  if (filters.attendantId) where.attendantId = filters.attendantId;
+  if (filters.attendantId && !(rangeStart && rangeEnd)) {
+    where.attendantId = filters.attendantId;
+  }
+  const occurrenceExceptions =
+    rangeStart && rangeEnd
+      ? await ServiceOrderOccurrenceException.findAll({
+          where: {
+            tenantId,
+            [Op.or]: [
+              {
+                scheduledStart: { [Op.lt]: rangeEnd },
+                scheduledEnd: { [Op.gt]: rangeStart }
+              },
+              {
+                occurrenceStart: {
+                  [Op.gte]: rangeStart,
+                  [Op.lt]: rangeEnd
+                }
+              }
+            ]
+          },
+          include: [{ model: ServiceAttendant }]
+        })
+      : [];
   if (rangeStart && rangeEnd) {
     where[Op.or] = [
       {
@@ -1976,6 +2099,12 @@ export const listOrders = async (
         scheduledStart: { [Op.lt]: rangeEnd }
       }
     ];
+    const exceptionOrderIds = occurrenceExceptions.map(
+      exception => exception.serviceOrderId
+    );
+    if (exceptionOrderIds.length) {
+      where[Op.or].push({ id: { [Op.in]: exceptionOrderIds } });
+    }
   }
 
   const orders = await ServiceOrder.findAll({
@@ -1983,10 +2112,27 @@ export const listOrders = async (
     include: includeOrder,
     order: [["scheduledStart", "ASC"]]
   });
-  return expandServiceOrderOccurrences(
-    orders.map(order => scrubOrder(order, profile)),
+  const scrubbedOrders = orders.map(order => scrubOrder(order, profile));
+  const occurrences = expandServiceOrderOccurrences(
+    scrubbedOrders,
     rangeStart,
     rangeEnd
+  );
+  const result =
+    rangeStart && rangeEnd
+      ? applyOccurrenceExceptions(
+          scrubbedOrders,
+          occurrences,
+          occurrenceExceptions,
+          rangeStart,
+          rangeEnd
+        )
+      : occurrences;
+  return result.filter(
+    occurrence =>
+      (!filters.status || occurrence.status === filters.status) &&
+      (!filters.attendantId ||
+        Number(occurrence.attendantId) === Number(filters.attendantId))
   );
 };
 
@@ -2881,6 +3027,150 @@ export const createOrder = async (
   const loaded = await loadOrder(tenantId, created.id);
   emitServiceOrderEvent(tenantId, "service_order_created", loaded);
   return loaded;
+};
+
+export const updateOrderOccurrence = async (
+  tenantId: string | number,
+  userId: string | number,
+  serviceOrderId: string,
+  data: ServiceOrderOccurrenceData
+): Promise<Record<string, unknown>> => {
+  const occurrenceStart = normalizeDate(data.occurrenceStart);
+  const scheduledStart = normalizeDate(data.scheduledStart);
+  const scheduledEnd = normalizeDate(data.scheduledEnd);
+  if (!occurrenceStart || !scheduledStart || !scheduledEnd) {
+    throw new AppError("ERR_SERVICE_ORDER_OCCURRENCE_INVALID");
+  }
+  if (scheduledEnd <= scheduledStart) {
+    throw new AppError("Horario final deve ser maior que o horario inicial");
+  }
+  if (!SERVICE_ORDER_STATUSES.includes(data.status)) {
+    throw new AppError("Status da ordem invalido");
+  }
+
+  const exception = await sequelize.transaction(
+    { isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE },
+    async transaction => {
+      const serviceOrder = await ServiceOrder.findOne({
+        where: { id: serviceOrderId, tenantId },
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      });
+      if (!serviceOrder) throw new AppError("ERR_SERVICE_ORDER_NOT_FOUND", 404);
+      if (
+        !serviceOrder.recurrenceActive ||
+        serviceOrder.recurrenceType === "single"
+      ) {
+        throw new AppError("ERR_SERVICE_ORDER_OCCURRENCE_NOT_RECURRING", 409);
+      }
+      const validOccurrence = expandServiceOrderOccurrences(
+        [serviceOrder.toJSON() as Record<string, unknown>],
+        occurrenceStart,
+        new Date(occurrenceStart.getTime() + 1)
+      ).some(
+        occurrence =>
+          new Date(String(occurrence.scheduledStart)).getTime() ===
+          occurrenceStart.getTime()
+      );
+      if (!validOccurrence) {
+        throw new AppError("ERR_SERVICE_ORDER_OCCURRENCE_NOT_FOUND", 404);
+      }
+
+      await ensureAttendant(tenantId, data.attendantId, transaction);
+      if (relevantStatuses.includes(data.status)) {
+        await ensureNoScheduleConflict(
+          tenantId,
+          data.attendantId,
+          scheduledStart,
+          scheduledEnd,
+          serviceOrder.id,
+          transaction
+        );
+        const exceptionConflict = data.attendantId
+          ? await ServiceOrderOccurrenceException.findOne({
+              where: {
+                tenantId,
+                attendantId: data.attendantId,
+                status: { [Op.in]: relevantStatuses },
+                scheduledStart: { [Op.lt]: scheduledEnd },
+                scheduledEnd: { [Op.gt]: scheduledStart },
+                [Op.or]: [
+                  { serviceOrderId: { [Op.ne]: serviceOrder.id } },
+                  {
+                    occurrenceStart: { [Op.ne]: occurrenceStart.toISOString() }
+                  }
+                ]
+              },
+              transaction,
+              lock: transaction.LOCK.UPDATE
+            })
+          : null;
+        if (exceptionConflict) {
+          throw new AppError("ERR_SERVICE_ORDER_SCHEDULE_CONFLICT", 409);
+        }
+      }
+
+      const existing = await ServiceOrderOccurrenceException.findOne({
+        where: { tenantId, serviceOrderId: serviceOrder.id, occurrenceStart },
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      });
+      const previousValue = existing ? existing.toJSON() : null;
+      const payload = {
+        tenantId: Number(tenantId),
+        serviceOrderId: serviceOrder.id,
+        occurrenceStart,
+        scheduledStart,
+        scheduledEnd,
+        attendantId: data.attendantId || null,
+        status: data.status,
+        createdByUserId: Number(userId)
+      };
+      const saved = existing
+        ? await existing.update(payload, { transaction })
+        : await ServiceOrderOccurrenceException.create(payload, {
+            transaction
+          });
+      await logOrder(
+        serviceOrder.id,
+        userId,
+        "occurrence_updated",
+        "Ocorrencia recorrente atualizada",
+        previousValue,
+        payload,
+        transaction
+      );
+      return saved;
+    }
+  );
+
+  const loadedException = await ServiceOrderOccurrenceException.findOne({
+    where: { id: exception.id, tenantId },
+    include: [{ model: ServiceAttendant }]
+  });
+  const serviceOrder = await loadOrder(tenantId, serviceOrderId);
+  if (!loadedException) {
+    throw new AppError("ERR_SERVICE_ORDER_OCCURRENCE_NOT_FOUND", 404);
+  }
+  const baseStart = normalizeDate(serviceOrder.scheduledStart);
+  const baseEnd = normalizeDate(serviceOrder.scheduledEnd);
+  if (!baseStart || !baseEnd) {
+    throw new AppError("ERR_SERVICE_ORDER_OCCURRENCE_INVALID");
+  }
+  emitServiceOrderEvent(
+    tenantId,
+    "service_order_occurrence_updated",
+    serviceOrder
+  );
+  return applyOccurrenceException(
+    buildOccurrence(
+      serviceOrder.toJSON() as Record<string, unknown>,
+      occurrenceStart,
+      baseStart,
+      baseEnd.getTime() - baseStart.getTime()
+    ),
+    loadedException
+  );
 };
 
 export const updateOrder = async (

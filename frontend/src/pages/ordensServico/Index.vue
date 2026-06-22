@@ -1240,8 +1240,10 @@ import {
   BaixarRelatorioFinanceiroOrdensServico,
   FechamentoMensalOrdensServico,
   BaixarFechamentoMensalOrdensServico,
+  ObterOrdemServico,
   CriarOrdemServico,
   AlterarOrdemServico,
+  AlterarOcorrenciaOrdemServico,
   DocumentoOrdemServico,
   DocumentoInternoOrdemServico,
   NotificarOrdemServico,
@@ -1987,6 +1989,26 @@ export default {
       ].filter(Boolean).join(' - ')
     },
     abrirOrdem (ordem) {
+      if (ordem?.recurringOccurrence) {
+        this.$q.dialog({
+          title: 'Editar ordem recorrente',
+          message: 'Esta é uma ocorrência da série. As ações rápidas alteram somente esta ocorrência. Deseja editar toda a série?',
+          ok: { label: 'Editar série inteira', color: 'primary' },
+          cancel: true,
+          persistent: true
+        }).onOk(async () => {
+          try {
+            const { data } = await ObterOrdemServico(ordem.originalServiceOrderId || ordem.id)
+            this.prepararFormularioOrdem(data)
+          } catch (error) {
+            this.$notificarErro('Não foi possível carregar a série recorrente', error)
+          }
+        })
+        return
+      }
+      this.prepararFormularioOrdem(ordem)
+    },
+    prepararFormularioOrdem (ordem) {
       this.form = ordem
         ? {
           ...emptyForm(),
@@ -2750,7 +2772,17 @@ export default {
     },
     async salvarStatus (payload) {
       try {
-        const { data } = await AlterarOrdemServico(this.normalizarDatasPayload(payload))
+        const normalizedPayload = this.normalizarDatasPayload(payload)
+        const response = payload.recurringOccurrence
+          ? await AlterarOcorrenciaOrdemServico(payload.originalServiceOrderId || payload.id, {
+            occurrenceStart: payload.originalOccurrenceStart,
+            scheduledStart: normalizedPayload.scheduledStart,
+            scheduledEnd: normalizedPayload.scheduledEnd,
+            attendantId: normalizedPayload.attendantId,
+            status: normalizedPayload.status
+          })
+          : await AlterarOrdemServico(normalizedPayload)
+        const { data } = response
         this.ordemSelecionada = data
         await this.carregarOrdens()
         await this.carregarEstoque()

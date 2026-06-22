@@ -209,6 +209,14 @@ const orderSchema = Yup.object().shape({
   items: Yup.array().of(orderItemSchema).default([])
 });
 
+const orderOccurrenceSchema = Yup.object().shape({
+  occurrenceStart: Yup.date().required(),
+  scheduledStart: Yup.date().required(),
+  scheduledEnd: Yup.date().required(),
+  attendantId: Yup.number().integer().positive().nullable(),
+  status: Yup.string().oneOf(ServiceOrder.SERVICE_ORDER_STATUSES).required()
+});
+
 const notificationSchema = Yup.object().shape({
   channels: Yup.array()
     .of(Yup.string().oneOf(["internal", "email", "whatsapp"]))
@@ -1012,6 +1020,25 @@ export const updateOrder = async (
     }
     throw error;
   }
+};
+
+export const updateOrderOccurrence = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  ensureCanOperateServiceOrders(req.user.profile);
+  const data = await validate<ServiceOrder.ServiceOrderOccurrenceData>(
+    orderOccurrenceSchema,
+    req.body
+  );
+  return res.json(
+    await ServiceOrder.updateOrderOccurrence(
+      req.user.tenantId,
+      req.user.id,
+      req.params.serviceOrderId,
+      data
+    )
+  );
 };
 
 export const publicDocument = async (

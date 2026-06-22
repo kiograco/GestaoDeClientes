@@ -69,6 +69,7 @@ import ServiceInventoryPestRecommendation from "../models/ServiceInventoryPestRe
 import ServiceOrder from "../models/ServiceOrder";
 import ServiceOrderItem from "../models/ServiceOrderItem";
 import ServiceOrderLog from "../models/ServiceOrderLog";
+import ServiceOrderOccurrenceException from "../models/ServiceOrderOccurrenceException";
 import ServiceEnvironment from "../models/ServiceEnvironment";
 import ServiceMethod from "../models/ServiceMethod";
 import ServicePest from "../models/ServicePest";
@@ -165,6 +166,7 @@ const models = [
   ServiceOrder,
   ServiceOrderItem,
   ServiceOrderLog,
+  ServiceOrderOccurrenceException,
   ServiceEnvironment,
   ServiceMethod,
   ServicePest,

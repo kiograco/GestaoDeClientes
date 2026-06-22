@@ -203,6 +203,111 @@ describe("service orders inventory API", () => {
       .expect(201);
   });
 
+  it("altera uma ocorrencia recorrente sem deslocar a serie base", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    const contact = await createContact({ tenantId: user.tenantId });
+    const attendant = await ServiceAttendant.create({
+      tenantId: user.tenantId,
+      name: "Tecnico Excecao",
+      email: "tecnico-excecao@example.test",
+      active: true
+    });
+    const replacementAttendant = await ServiceAttendant.create({
+      tenantId: user.tenantId,
+      name: "Tecnico Excecao B",
+      email: "tecnico-excecao-b@example.test",
+      active: true
+    });
+    const { body: recurringOrder } = await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        contactId: contact.id,
+        attendantId: attendant.id,
+        title: "Manutencao recorrente",
+        serviceType: "Manutencao",
+        priority: "media",
+        status: "agendada",
+        scheduledStart: "2026-06-01T09:00:00.000Z",
+        scheduledEnd: "2026-06-01T10:00:00.000Z",
+        recurrenceType: "custom_interval",
+        recurrenceActive: true,
+        recurrenceIntervalDays: 30,
+        items: []
+      })
+      .expect(201);
+
+    await request(app)
+      .patch(`/service/orders/${recurringOrder.id}/occurrence`)
+      .set("Authorization", authorization)
+      .send({
+        occurrenceStart: "2026-07-01T09:00:00.000Z",
+        scheduledStart: "2026-07-01T14:00:00.000Z",
+        scheduledEnd: "2026-07-01T15:00:00.000Z",
+        attendantId: replacementAttendant.id,
+        status: "reagendada"
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          id: recurringOrder.id,
+          recurringOccurrence: true,
+          originalOccurrenceStart: "2026-07-01T09:00:00.000Z",
+          scheduledStart: "2026-07-01T14:00:00.000Z",
+          scheduledEnd: "2026-07-01T15:00:00.000Z",
+          status: "reagendada"
+        });
+        expect(body.occurrenceExceptionId).toBeTruthy();
+      });
+
+    await request(app)
+      .get("/service/orders")
+      .query({
+        start: "2026-07-01T00:00:00.000Z",
+        end: "2026-07-02T00:00:00.000Z"
+      })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual([
+          expect.objectContaining({
+            id: recurringOrder.id,
+            originalOccurrenceStart: "2026-07-01T09:00:00.000Z",
+            scheduledStart: "2026-07-01T14:00:00.000Z",
+            scheduledEnd: "2026-07-01T15:00:00.000Z"
+          })
+        ]);
+      });
+
+    await request(app)
+      .get("/service/orders")
+      .query({
+        start: "2026-07-01T00:00:00.000Z",
+        end: "2026-07-02T00:00:00.000Z",
+        attendantId: replacementAttendant.id
+      })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => expect(body).toHaveLength(1));
+    await request(app)
+      .get("/service/orders")
+      .query({
+        start: "2026-07-01T00:00:00.000Z",
+        end: "2026-07-02T00:00:00.000Z",
+        attendantId: attendant.id
+      })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => expect(body).toHaveLength(0));
+
+    const persistedOrder = await ServiceOrder.findByPk(recurringOrder.id);
+    expect(persistedOrder?.scheduledStart.toISOString()).toBe(
+      "2026-06-01T09:00:00.000Z"
+    );
+  });
+
   it("gerencia pragas centralizadas com busca, duplicidade e isolamento por tenant", async () => {
     const app = await makeTestApp();
     const user = await createAdminUser();
