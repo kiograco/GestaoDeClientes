@@ -4,7 +4,7 @@
   "description": "NCProgrammers CRM - sistema de atendimentos multicanal",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node scripts/copy-email-templates.js",
     "lint": "eslint --ext .ts src --max-warnings 0",
     "lint:fix": "eslint --ext .ts src --fix",
     "watch": "tsc -w",

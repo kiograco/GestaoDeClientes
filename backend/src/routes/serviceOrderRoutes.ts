@@ -1,8 +1,10 @@
 import express from "express";
 import isAuth from "../middleware/isAuth";
 import * as ServiceOrderController from "../controllers/ServiceOrderController";
+import rateLimit from "../middleware/rateLimit";
 
 const serviceOrderRoutes = express.Router();
+const serviceEmailRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 30 });
 
 serviceOrderRoutes.get(
   "/service/attendants",
@@ -182,11 +184,13 @@ serviceOrderRoutes.get(
 serviceOrderRoutes.post(
   "/service/orders/:serviceOrderId/notify",
   isAuth,
+  serviceEmailRateLimit,
   ServiceOrderController.notifyOrder
 );
 serviceOrderRoutes.post(
   "/service/orders/:serviceOrderId/billing-reminder",
   isAuth,
+  serviceEmailRateLimit,
   ServiceOrderController.sendBillingReminder
 );
 

@@ -594,6 +594,7 @@
                       <q-btn dense flat color="primary" icon="mdi-file-pdf-box" label="PDF cliente" v-close-popup @click="abrirPdfOrdem(ordem, false)" />
                       <q-btn v-if="podeVerObservacaoInterna" dense flat color="primary" icon="mdi-file-document-alert-outline" label="PDF interno" v-close-popup @click="abrirPdfOrdem(ordem, true)" />
                       <q-btn v-if="podeOperarOrdens" dense flat color="primary" icon="mdi-send" label="Notificar" v-close-popup @click="abrirNotificacao(ordem)" />
+                      <q-btn v-if="podeOperarOrdens" dense flat color="primary" icon="mdi-email-sync-outline" label="Reenviar E-mail" v-close-popup @click="abrirNotificacao(ordem, true)" />
                     </div>
                     <q-separator class="q-my-sm" />
                     <div v-if="podeOperarOrdens" class="text-caption text-grey-7 q-mb-xs">Trocar técnico</div>
@@ -710,6 +711,7 @@
                           <q-btn dense flat color="primary" icon="mdi-file-pdf-box" label="PDF cliente" v-close-popup @click="abrirPdfOrdem(ordem, false)" />
                           <q-btn v-if="podeVerObservacaoInterna" dense flat color="primary" icon="mdi-file-document-alert-outline" label="PDF interno" v-close-popup @click="abrirPdfOrdem(ordem, true)" />
                           <q-btn v-if="podeOperarOrdens" dense flat color="primary" icon="mdi-send" label="Notificar" v-close-popup @click="abrirNotificacao(ordem)" />
+                          <q-btn v-if="podeOperarOrdens" dense flat color="primary" icon="mdi-email-sync-outline" label="Reenviar E-mail" v-close-popup @click="abrirNotificacao(ordem, true)" />
                         </div>
                         <q-separator class="q-my-sm" />
                         <div v-if="podeOperarOrdens" class="text-caption text-grey-7 q-mb-xs">Trocar tecnico</div>
@@ -2775,8 +2777,12 @@ export default {
         this.$notificarErro('Não foi possível gerar o PDF', error)
       }
     },
-    abrirNotificacao (ordem) {
+    abrirNotificacao (ordem, somenteEmail = false) {
       this.ordemSelecionada = ordem
+      this.notificacao = {
+        channels: somenteEmail ? ['email'] : ['internal'],
+        message: ''
+      }
       this.modalNotificacao = true
     },
     async enviarNotificacao () {

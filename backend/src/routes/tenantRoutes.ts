@@ -7,8 +7,10 @@ import isAuth from "../middleware/isAuth";
 import uploadConfig from "../config/upload";
 
 import * as TenantController from "../controllers/TenantController";
+import rateLimit from "../middleware/rateLimit";
 
 const tenantRoutes = express.Router();
+const emailRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
 const logoDirectory = path.resolve(uploadConfig.directory, "logos");
 mkdirSync(logoDirectory, { recursive: true });
 const uploadLogo = multer({
@@ -36,6 +38,23 @@ tenantRoutes.put(
   isAuth,
   TenantController.updateBusinessHours
 );
+tenantRoutes.get(
+  "/tenants/email-settings",
+  isAuth,
+  TenantController.showMailSettings
+);
+tenantRoutes.put(
+  "/tenants/email-settings",
+  isAuth,
+  TenantController.updateMailSettings
+);
+tenantRoutes.post(
+  "/tenants/email-settings/test",
+  isAuth,
+  emailRateLimit,
+  TenantController.sendTestEmail
+);
+tenantRoutes.get("/tenants/email-logs", isAuth, TenantController.listEmailLogs);
 tenantRoutes.put(
   "/tenants/message-business-hours/",
   isAuth,

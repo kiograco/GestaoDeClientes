@@ -37,7 +37,7 @@ export const RequestPasswordResetService = async (
   });
 
   try {
-    await SendPasswordResetEmail(user.email, token);
+    await SendPasswordResetEmail(user.tenantId, user.email, token);
   } catch (error) {
     logger.error(
       `Password reset email failed: ${

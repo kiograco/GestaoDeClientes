@@ -49,6 +49,13 @@ class Tenant extends Model<Tenant> {
   @Column(DataType.JSONB)
   registrationData: Record<string, unknown>;
 
+  @Column(DataType.JSONB)
+  mailSettings: {
+    senderName?: string;
+    replyTo?: string;
+    footerSignature?: string;
+  };
+
   @ForeignKey(() => User)
   @Column
   ownerId: number;

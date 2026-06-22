@@ -6,7 +6,6 @@ import {
   where as sequelizeWhere
 } from "sequelize";
 import PDFDocument from "pdfkit";
-import { Resend } from "resend";
 import sequelize from "../../database";
 import AppError from "../../errors/AppError";
 import Client from "../../models/Client";
@@ -34,6 +33,10 @@ import Tenant from "../../models/Tenant";
 import { getIO } from "../../libs/socket";
 import Ticket from "../../models/Ticket";
 import SendMessageSystemProxy from "../../helpers/SendMessageSystemProxy";
+import {
+  sendFinancialNotification,
+  sendOrderService
+} from "../EmailServices/EmailService";
 
 export const SERVICE_ORDER_PRIORITIES = ["baixa", "media", "alta", "urgente"];
 
@@ -942,7 +945,8 @@ const sendServiceOrderMessage = async (
   channels: Array<"internal" | "email" | "whatsapp">,
   message: string,
   subject: string,
-  internalEvent: string
+  internalEvent: string,
+  emailPdfFactory?: () => Promise<Buffer>
 ): Promise<{ sent: string[]; failed: Record<string, string> }> => {
   const sent: string[] = [];
   const failed: Record<string, string> = {};
@@ -954,20 +958,52 @@ const sendServiceOrderMessage = async (
 
   if (channels.includes("email")) {
     try {
-      if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
-        throw new Error(
-          "RESEND_API_KEY and RESEND_FROM_EMAIL must be configured"
-        );
-      }
       if (!serviceOrder.contact?.email) throw new Error("Cliente sem e-mail");
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      const { error } = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL,
-        to: serviceOrder.contact.email,
-        subject,
-        html: `<pre>${escapePublicText(message)}</pre>`
-      });
-      if (error) throw new Error(error.message);
+      if (internalEvent === "service_order_billing_reminder") {
+        await sendFinancialNotification({
+          tenantId,
+          to: serviceOrder.contact.email,
+          subject,
+          variables: {
+            client_name: serviceOrder.contact.name,
+            message,
+            reference: `OS #${serviceOrder.id}`,
+            due_date: formatDateTime(serviceOrder.paymentDueDate)
+          }
+        });
+      } else {
+        if (!emailPdfFactory) throw new Error("PDF da ordem nao foi gerado");
+        const emailPdf = await emailPdfFactory();
+        await sendOrderService({
+          tenantId,
+          to: serviceOrder.contact.email,
+          subject,
+          variables: {
+            client_name: serviceOrder.contact.name,
+            order_number: serviceOrder.id,
+            service_date: formatDateTime(serviceOrder.scheduledStart),
+            technician_name: serviceOrder.attendant?.name || "A definir",
+            address: [
+              serviceOrder.address,
+              serviceOrder.city,
+              serviceOrder.state
+            ]
+              .filter(Boolean)
+              .join(", "),
+            services: serviceOrder.items
+              .map(item => item.description)
+              .filter(Boolean)
+              .join(", ")
+          },
+          attachments: [
+            {
+              filename: `ordem-servico-${serviceOrder.id}.pdf`,
+              content: emailPdf,
+              contentType: "application/pdf"
+            }
+          ]
+        });
+      }
       sent.push("email");
     } catch (error) {
       failed.email = error instanceof Error ? error.message : "Falha no e-mail";
@@ -3390,10 +3426,10 @@ function buildServiceOrderPdf({
   });
 }
 
-export const generatePublicDocument = async (
+export async function generatePublicDocument(
   tenantId: string | number,
   serviceOrderId: string
-): Promise<Buffer> => {
+): Promise<Buffer> {
   const serviceOrder = await loadOrder(tenantId, serviceOrderId);
   const tenant = await Tenant.findByPk(tenantId);
   return buildServiceOrderPdf({
@@ -3401,7 +3437,7 @@ export const generatePublicDocument = async (
     serviceOrder,
     includeInternalObservation: false
   });
-};
+}
 
 export const generateInternalDocument = async (
   tenantId: string | number,
@@ -3431,6 +3467,9 @@ export const notifyOrder = async (
     serviceOrder,
     cleanText(data.message)
   );
+  const emailPdfFactory = data.channels.includes("email")
+    ? () => generatePublicDocument(tenantId, serviceOrderId)
+    : undefined;
   const { sent, failed } = await sendServiceOrderMessage(
     tenantId,
     userId,
@@ -3438,7 +3477,8 @@ export const notifyOrder = async (
     data.channels,
     message,
     `Ordem de Servico #${serviceOrder.id}`,
-    "service_order_notification"
+    "service_order_notification",
+    emailPdfFactory
   );
 
   await logOrder(

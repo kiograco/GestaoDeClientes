@@ -1054,17 +1054,33 @@ export const notifyOrder = async (
   res: Response
 ): Promise<Response> => {
   ensureCanOperateServiceOrders(req.user.profile);
-  return res.json(
-    await ServiceOrder.notifyOrder(
-      req.user.tenantId,
-      req.params.serviceOrderId,
-      req.user.id,
-      await validate<ServiceOrder.ServiceOrderNotificationData>(
-        notificationSchema,
-        req.body
-      )
-    )
+  const data = await validate<ServiceOrder.ServiceOrderNotificationData>(
+    notificationSchema,
+    req.body
   );
+  const result = await ServiceOrder.notifyOrder(
+    req.user.tenantId,
+    req.params.serviceOrderId,
+    req.user.id,
+    data
+  );
+  await createAuditLog({
+    tenantId: req.user.tenantId,
+    userId: req.user.id,
+    action: "service_order_notification_processed",
+    resource: "service_order",
+    resourceId: req.params.serviceOrderId,
+    ip: req.ip,
+    userAgent: req.get("user-agent"),
+    metadata: {
+      channels: data.channels,
+      sent: result.sent,
+      failedChannels: Object.keys(
+        (result.failed as Record<string, unknown>) || {}
+      )
+    }
+  });
+  return res.json(result);
 };
 
 export const sendBillingReminder = async (
