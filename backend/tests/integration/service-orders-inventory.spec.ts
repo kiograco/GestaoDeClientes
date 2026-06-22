@@ -2,6 +2,7 @@ import request from "supertest";
 import AuditLog from "../../src/models/AuditLog";
 import Pest from "../../src/models/Pest";
 import ProductPest from "../../src/models/ProductPest";
+import ServiceAttendant from "../../src/models/ServiceAttendant";
 import ServiceInventoryBatch from "../../src/models/ServiceInventoryBatch";
 import ServiceInventoryItem from "../../src/models/ServiceInventoryItem";
 import ServiceInventoryMovement from "../../src/models/ServiceInventoryMovement";
@@ -70,6 +71,67 @@ const countPdfPages = (pdf: Buffer): number =>
   (pdf.toString("latin1").match(/\/Type\s*\/Page\b/g) || []).length;
 
 describe("service orders inventory API", () => {
+  it("rejeita conflito com ocorrencia futura de ordem recorrente", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    const contact = await createContact({ tenantId: user.tenantId });
+    const attendant = await ServiceAttendant.create({
+      tenantId: user.tenantId,
+      name: "Tecnico Recorrencia",
+      email: "tecnico-recorrencia@example.test",
+      active: true
+    });
+    const basePayload = {
+      contactId: contact.id,
+      attendantId: attendant.id,
+      title: "Manutencao recorrente",
+      serviceType: "Manutencao",
+      priority: "media",
+      status: "agendada",
+      scheduledStart: "2026-06-01T09:00:00.000Z",
+      scheduledEnd: "2026-06-01T10:00:00.000Z",
+      recurrenceType: "custom_interval",
+      recurrenceActive: true,
+      recurrenceIntervalDays: 30,
+      items: []
+    };
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send(basePayload)
+      .expect(201);
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        ...basePayload,
+        title: "Visita conflitante",
+        recurrenceType: "single",
+        recurrenceActive: false,
+        recurrenceIntervalDays: null,
+        scheduledStart: "2026-07-01T09:30:00.000Z",
+        scheduledEnd: "2026-07-01T10:30:00.000Z"
+      })
+      .expect(409);
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        ...basePayload,
+        title: "Visita adjacente",
+        recurrenceType: "single",
+        recurrenceActive: false,
+        recurrenceIntervalDays: null,
+        scheduledStart: "2026-07-01T10:00:00.000Z",
+        scheduledEnd: "2026-07-01T11:00:00.000Z"
+      })
+      .expect(201);
+  });
+
   it("gerencia pragas centralizadas com busca, duplicidade e isolamento por tenant", async () => {
     const app = await makeTestApp();
     const user = await createAdminUser();

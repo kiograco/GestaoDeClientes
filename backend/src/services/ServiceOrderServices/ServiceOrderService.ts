@@ -756,18 +756,34 @@ const ensureNoScheduleConflict = async (
   transaction?: Transaction
 ): Promise<void> => {
   if (!attendantId || !scheduledStart || !scheduledEnd) return;
-  const conflict = await ServiceOrder.findOne({
+  const candidates = await ServiceOrder.findAll({
     where: {
       tenantId,
       attendantId,
       status: { [Op.in]: relevantStatuses },
-      scheduledStart: { [Op.lt]: scheduledEnd },
-      scheduledEnd: { [Op.gt]: scheduledStart },
+      [Op.or]: [
+        {
+          scheduledStart: { [Op.lt]: scheduledEnd },
+          scheduledEnd: { [Op.gt]: scheduledStart }
+        },
+        {
+          recurrenceActive: true,
+          scheduledStart: { [Op.lt]: scheduledEnd }
+        }
+      ],
       ...(ignoreOrderId ? { id: { [Op.ne]: ignoreOrderId } } : {})
     },
     transaction,
     lock: transaction?.LOCK.UPDATE
   });
+  const conflict = candidates.some(
+    order =>
+      expandServiceOrderOccurrences(
+        [order.toJSON() as Record<string, unknown>],
+        scheduledStart,
+        scheduledEnd
+      ).length > 0
+  );
   if (conflict) throw new AppError("ERR_SERVICE_ORDER_SCHEDULE_CONFLICT", 409);
 };
 
