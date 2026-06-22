@@ -235,6 +235,34 @@ const ensureCanManageStock = (profile: string): void => {
   }
 };
 
+const SERVICE_ORDER_VIEW_PROFILES = [
+  ...STOCK_MANAGER_PROFILES,
+  "atendente",
+  "tecnico"
+];
+const SERVICE_ORDER_OPERATOR_PROFILES = [
+  ...STOCK_MANAGER_PROFILES,
+  "atendente"
+];
+
+const ensureCanViewServiceOrders = (profile: string): void => {
+  if (!SERVICE_ORDER_VIEW_PROFILES.includes(profile)) {
+    throw new AppError("ERR_SERVICE_ORDER_PERMISSION_DENIED", 403);
+  }
+};
+
+const ensureCanOperateServiceOrders = (profile: string): void => {
+  if (!SERVICE_ORDER_OPERATOR_PROFILES.includes(profile)) {
+    throw new AppError("ERR_SERVICE_ORDER_PERMISSION_DENIED", 403);
+  }
+};
+
+const ensureCanManageServiceOrders = (profile: string): void => {
+  if (!STOCK_MANAGER_PROFILES.includes(profile)) {
+    throw new AppError("ERR_SERVICE_ORDER_PERMISSION_DENIED", 403);
+  }
+};
+
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   if (error && typeof error === "object" && "message" in error) {
@@ -452,14 +480,17 @@ const startOfCurrentDay = (): Date => {
 export const listAttendants = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res.json(await ServiceOrder.listAttendants(req.user.tenantId));
+): Promise<Response> => {
+  ensureCanViewServiceOrders(req.user.profile);
+  return res.json(await ServiceOrder.listAttendants(req.user.tenantId));
+};
 
 export const createAttendant = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res
+): Promise<Response> => {
+  ensureCanManageServiceOrders(req.user.profile);
+  return res
     .status(201)
     .json(
       await ServiceOrder.createAttendant(
@@ -470,12 +501,14 @@ export const createAttendant = async (
         )
       )
     );
+};
 
 export const updateAttendant = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res.json(
+): Promise<Response> => {
+  ensureCanManageServiceOrders(req.user.profile);
+  return res.json(
     await ServiceOrder.updateAttendant(
       req.user.tenantId,
       req.params.attendantId,
@@ -485,6 +518,7 @@ export const updateAttendant = async (
       )
     )
   );
+};
 
 export const listInventoryItems = async (
   req: Request,
@@ -726,13 +760,18 @@ export const deletePest = async (
 export const listServiceTypes = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res.json(await ServiceOrder.listServiceTypes(req.user.tenantId, req.query));
+): Promise<Response> => {
+  ensureCanViewServiceOrders(req.user.profile);
+  return res.json(
+    await ServiceOrder.listServiceTypes(req.user.tenantId, req.query)
+  );
+};
 
 export const createServiceType = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
+  ensureCanManageServiceOrders(req.user.profile);
   const data = await validate<ServiceOrder.ServiceTypeData>(
     serviceTypeSchema,
     req.body
@@ -752,6 +791,7 @@ export const updateServiceType = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
+  ensureCanManageServiceOrders(req.user.profile);
   const data = await validate<ServiceOrder.ServiceTypeData>(
     serviceTypeSchema,
     req.body
@@ -772,6 +812,7 @@ export const deleteServiceType = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
+  ensureCanManageServiceOrders(req.user.profile);
   await ServiceOrder.deleteServiceType(
     req.user.tenantId,
     req.params.serviceTypeId
@@ -788,6 +829,7 @@ export const duplicateServiceType = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
+  ensureCanManageServiceOrders(req.user.profile);
   const serviceType = await ServiceOrder.duplicateServiceType(
     req.user.tenantId,
     req.params.serviceTypeId
@@ -803,25 +845,32 @@ export const duplicateServiceType = async (
 export const listOrders = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res.json(
+): Promise<Response> => {
+  ensureCanViewServiceOrders(req.user.profile);
+  return res.json(
     await ServiceOrder.listOrders(
       req.user.tenantId,
       req.user.profile,
       req.query
     )
   );
+};
 
 export const dashboard = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res.json(await ServiceOrder.getDashboard(req.user.tenantId, req.query));
+): Promise<Response> => {
+  ensureCanManageServiceOrders(req.user.profile);
+  return res.json(
+    await ServiceOrder.getDashboard(req.user.tenantId, req.query)
+  );
+};
 
 export const financialReport = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
+  ensureCanManageServiceOrders(req.user.profile);
   const report = await ServiceOrder.getFinancialReport(
     req.user.tenantId,
     req.query
@@ -841,6 +890,7 @@ export const monthlyFinancialClosing = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
+  ensureCanManageServiceOrders(req.user.profile);
   const report = await ServiceOrder.getMonthlyFinancialClosing(
     req.user.tenantId,
     req.query
@@ -859,31 +909,36 @@ export const monthlyFinancialClosing = async (
 export const billingReminderCandidates = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res.json(
+): Promise<Response> => {
+  ensureCanManageServiceOrders(req.user.profile);
+  return res.json(
     await ServiceOrder.listOrders(req.user.tenantId, req.user.profile, {
       ...req.query,
       financialView: req.query.financialView || "overdue"
     })
   );
+};
 
 export const showOrder = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res.json(
+): Promise<Response> => {
+  ensureCanViewServiceOrders(req.user.profile);
+  return res.json(
     await ServiceOrder.showOrder(
       req.user.tenantId,
       req.user.profile,
       req.params.serviceOrderId
     )
   );
+};
 
 export const createOrder = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res
+): Promise<Response> => {
+  ensureCanOperateServiceOrders(req.user.profile);
+  return res
     .status(201)
     .json(
       await ServiceOrder.createOrder(
@@ -892,11 +947,13 @@ export const createOrder = async (
         await validate<ServiceOrder.ServiceOrderData>(orderSchema, req.body)
       )
     );
+};
 
 export const updateOrder = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
+  ensureCanOperateServiceOrders(req.user.profile);
   try {
     const previous = await ServiceOrder.showOrder(
       req.user.tenantId,
@@ -961,6 +1018,7 @@ export const publicDocument = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
+  ensureCanViewServiceOrders(req.user.profile);
   const pdf = await ServiceOrder.generatePublicDocument(
     req.user.tenantId,
     req.params.serviceOrderId
@@ -977,6 +1035,7 @@ export const internalDocument = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
+  ensureCanViewServiceOrders(req.user.profile);
   const pdf = await ServiceOrder.generateInternalDocument(
     req.user.tenantId,
     req.user.profile,
@@ -993,8 +1052,9 @@ export const internalDocument = async (
 export const notifyOrder = async (
   req: Request,
   res: Response
-): Promise<Response> =>
-  res.json(
+): Promise<Response> => {
+  ensureCanOperateServiceOrders(req.user.profile);
+  return res.json(
     await ServiceOrder.notifyOrder(
       req.user.tenantId,
       req.params.serviceOrderId,
@@ -1005,11 +1065,13 @@ export const notifyOrder = async (
       )
     )
   );
+};
 
 export const sendBillingReminder = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
+  ensureCanManageServiceOrders(req.user.profile);
   const data = await validate<ServiceOrder.ServiceOrderBillingReminderData>(
     billingReminderSchema,
     req.body

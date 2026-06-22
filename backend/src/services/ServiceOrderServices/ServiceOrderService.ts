@@ -233,6 +233,7 @@ export interface PestData {
 
 const relevantStatuses = ["agendada", "em_atendimento", "reagendada"];
 const managerProfiles = ["admin", "superadmin", "supervisor"];
+const operatorProfiles = [...managerProfiles, "atendente"];
 const internalProfiles = [...managerProfiles, "atendente", "tecnico"];
 
 const cleanText = (value?: string | null): string | null => {
@@ -266,7 +267,7 @@ const canSeeInternalObservation = (profile: string): boolean =>
   internalProfiles.includes(profile);
 
 const canManageServiceOrders = (profile: string): boolean =>
-  managerProfiles.includes(profile);
+  operatorProfiles.includes(profile);
 
 const applyServiceOrderFinancialFilters = (
   where: LegacyAny,

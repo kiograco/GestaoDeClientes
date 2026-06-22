@@ -6,10 +6,10 @@
         <div class="text-caption text-grey-7">Agenda de visitas, técnicos e histórico operacional</div>
       </div>
       <div class="col-12 col-md-auto row q-gutter-sm">
-        <q-btn unelevated color="primary" icon="mdi-package-variant-closed" label="Produto" @click="abrirEstoque()" />
-        <q-btn unelevated color="primary" icon="mdi-format-list-bulleted-type" label="Tipo" @click="abrirTipoServico()" />
-        <q-btn unelevated color="primary" icon="mdi-account-hard-hat-outline" label="Técnico" @click="abrirAtendente()" />
-        <q-btn unelevated color="primary" icon="mdi-calendar-plus" label="Nova ordem" @click="abrirOrdem()" />
+        <q-btn v-if="podeGerenciarEstoque" unelevated color="primary" icon="mdi-package-variant-closed" label="Produto" @click="abrirEstoque()" />
+        <q-btn v-if="podeGerenciarAgenda" unelevated color="primary" icon="mdi-format-list-bulleted-type" label="Tipo" @click="abrirTipoServico()" />
+        <q-btn v-if="podeGerenciarAgenda" unelevated color="primary" icon="mdi-account-hard-hat-outline" label="Técnico" @click="abrirAtendente()" />
+        <q-btn v-if="podeOperarOrdens" unelevated color="primary" icon="mdi-calendar-plus" label="Nova ordem" @click="abrirOrdem()" />
       </div>
     </div>
 
@@ -17,9 +17,9 @@
       <q-card-section class="row q-col-gutter-sm">
         <q-select dense outlined emit-value map-options clearable class="col-12 col-md-3" label="Técnico" v-model="filtros.attendantId" :options="opcoesAtendentes" @input="carregarOrdens" />
         <q-select dense outlined clearable class="col-12 col-md-2" label="Status" v-model="filtros.status" :options="statusOptions" @input="carregarOrdens" />
-        <q-select dense outlined emit-value map-options clearable class="col-12 col-md-2" label="Financeiro" v-model="filtros.financialStatus" :options="financialStatusOptions" @input="carregarOrdens" />
-        <q-select dense outlined emit-value map-options clearable class="col-12 col-md-2" label="Forma pagto." v-model="filtros.paymentMethod" :options="paymentMethodOptions" @input="carregarOrdens" />
-        <q-select dense outlined emit-value map-options clearable class="col-12 col-md-2" label="Visão financeira" v-model="filtros.financialView" :options="financialViewOptions" @input="carregarOrdens" />
+        <q-select v-if="podeVerFinanceiro" dense outlined emit-value map-options clearable class="col-12 col-md-2" label="Financeiro" v-model="filtros.financialStatus" :options="financialStatusOptions" @input="carregarOrdens" />
+        <q-select v-if="podeVerFinanceiro" dense outlined emit-value map-options clearable class="col-12 col-md-2" label="Forma pagto." v-model="filtros.paymentMethod" :options="paymentMethodOptions" @input="carregarOrdens" />
+        <q-select v-if="podeVerFinanceiro" dense outlined emit-value map-options clearable class="col-12 col-md-2" label="Visão financeira" v-model="filtros.financialView" :options="financialViewOptions" @input="carregarOrdens" />
         <q-select dense outlined clearable class="col-12 col-md-2" label="Prioridade" v-model="filtros.priority" :options="priorityOptions" @input="carregarOrdens" />
         <q-input dense outlined clearable class="col-12 col-md-3" label="Tipo de serviço" v-model="filtros.serviceType" @keyup.enter="carregarOrdens" />
         <q-btn flat color="primary" icon="mdi-refresh" class="col-12 col-md-auto" label="Atualizar" @click="carregarTudo" />
@@ -28,12 +28,12 @@
 
     <q-tabs v-model="aba" dense align="left" active-color="primary" indicator-color="primary" class="q-mb-md">
       <q-tab name="agenda" icon="mdi-calendar-clock" label="Agenda" />
-      <q-tab name="dashboard" icon="mdi-chart-box-outline" label="Dashboard" />
-      <q-tab name="financeiro" icon="mdi-cash-multiple" label="Financeiro" />
+      <q-tab v-if="podeVerFinanceiro" name="dashboard" icon="mdi-chart-box-outline" label="Dashboard" />
+      <q-tab v-if="podeVerFinanceiro" name="financeiro" icon="mdi-cash-multiple" label="Financeiro" />
       <q-tab name="estoque" icon="mdi-package-variant-closed" label="Estoque" />
       <q-tab name="pragas" icon="mdi-bug-outline" label="Pragas" />
       <q-tab v-if="podeGerenciarEstoque" name="auditoria" icon="mdi-shield-search" label="Auditoria" />
-      <q-tab name="tipos" icon="mdi-format-list-bulleted-type" label="Tipos de serviço" />
+      <q-tab v-if="podeGerenciarAgenda" name="tipos" icon="mdi-format-list-bulleted-type" label="Tipos de serviço" />
     </q-tabs>
 
     <div v-if="aba === 'dashboard'" class="dashboard-grid q-mb-md">
@@ -526,12 +526,12 @@
                 class="hour-cell"
                 role="button"
                 :aria-label="`Reservar ${linha.name} ${hourLabel(hour)}`"
-                @contextmenu="prepararMenuHorario(linha, hour)"
-                @dblclick="reservarHorario(linha, hour)"
+                @contextmenu="podeOperarOrdens && prepararMenuHorario(linha, hour)"
+                @dblclick="podeOperarOrdens && reservarHorario(linha, hour)"
                 @dragover.prevent
-                @drop="soltarOrdem(linha, hour)"
+                @drop="podeOperarOrdens && soltarOrdem(linha, hour)"
               >
-                <q-menu context-menu>
+                <q-menu v-if="podeOperarOrdens" context-menu>
                   <q-list dense style="min-width: 220px">
                     <q-item clickable v-close-popup @click="reservarHorario(linha, hour)">
                       <q-item-section avatar><q-icon name="mdi-calendar-plus" /></q-item-section>
@@ -551,7 +551,7 @@
                 :aria-label="`#${ordem.id} ${ordem.title}`"
                 :class="[`status-${ordem.status}`, { urgente: ordem.priority === 'urgente' }]"
                 :style="estiloOrdemAgenda(ordem)"
-                draggable="true"
+                :draggable="podeOperarOrdens"
                 @dragstart="arrastarOrdem(ordem)"
                 @click="selecionarOrdem(ordem)"
                 @contextmenu="prepararMenuOrdem(ordem)"
@@ -587,17 +587,17 @@
                     </div>
                     <q-separator class="q-my-sm" />
                     <div class="order-popover-actions">
-                      <q-btn dense flat color="primary" icon="mdi-pencil" label="Editar" v-close-popup @click="abrirOrdem(ordem)" />
-                      <q-btn dense flat color="amber-9" icon="mdi-play" label="Iniciar" v-close-popup @click="alterarStatusOrdem(ordem, 'em_atendimento')" />
-                      <q-btn dense flat color="positive" icon="mdi-check" label="Concluir" v-close-popup @click="alterarStatusOrdem(ordem, 'concluida')" />
-                      <q-btn dense flat color="negative" icon="mdi-cancel" label="Cancelar" v-close-popup @click="cancelarOrdem(ordem)" />
+                      <q-btn v-if="podeOperarOrdens" dense flat color="primary" icon="mdi-pencil" label="Editar" v-close-popup @click="abrirOrdem(ordem)" />
+                      <q-btn v-if="podeOperarOrdens" dense flat color="amber-9" icon="mdi-play" label="Iniciar" v-close-popup @click="alterarStatusOrdem(ordem, 'em_atendimento')" />
+                      <q-btn v-if="podeOperarOrdens" dense flat color="positive" icon="mdi-check" label="Concluir" v-close-popup @click="alterarStatusOrdem(ordem, 'concluida')" />
+                      <q-btn v-if="podeOperarOrdens" dense flat color="negative" icon="mdi-cancel" label="Cancelar" v-close-popup @click="cancelarOrdem(ordem)" />
                       <q-btn dense flat color="primary" icon="mdi-file-pdf-box" label="PDF cliente" v-close-popup @click="abrirPdfOrdem(ordem, false)" />
                       <q-btn v-if="podeVerObservacaoInterna" dense flat color="primary" icon="mdi-file-document-alert-outline" label="PDF interno" v-close-popup @click="abrirPdfOrdem(ordem, true)" />
-                      <q-btn dense flat color="primary" icon="mdi-send" label="Notificar" v-close-popup @click="abrirNotificacao(ordem)" />
+                      <q-btn v-if="podeOperarOrdens" dense flat color="primary" icon="mdi-send" label="Notificar" v-close-popup @click="abrirNotificacao(ordem)" />
                     </div>
                     <q-separator class="q-my-sm" />
-                    <div class="text-caption text-grey-7 q-mb-xs">Trocar técnico</div>
-                    <div class="order-popover-actions">
+                    <div v-if="podeOperarOrdens" class="text-caption text-grey-7 q-mb-xs">Trocar técnico</div>
+                    <div v-if="podeOperarOrdens" class="order-popover-actions">
                       <q-btn
                         v-for="tecnico in atendentes"
                         :key="tecnico.id"
@@ -613,7 +613,7 @@
                     </div>
                   </div>
                 </q-menu>
-                <q-menu context-menu>
+                <q-menu v-if="podeOperarOrdens" context-menu>
                   <q-list dense style="min-width: 260px">
                     <q-item-label header>Ordem #{{ ordem.id }}</q-item-label>
                     <q-item clickable v-close-popup @click="abrirOrdem(ordem)">
@@ -703,17 +703,17 @@
                         </div>
                         <q-separator class="q-my-sm" />
                         <div class="order-popover-actions">
-                          <q-btn dense flat color="primary" icon="mdi-pencil" label="Editar" v-close-popup @click="abrirOrdem(ordem)" />
-                          <q-btn dense flat color="amber-9" icon="mdi-play" label="Iniciar" v-close-popup @click="alterarStatusOrdem(ordem, 'em_atendimento')" />
-                          <q-btn dense flat color="positive" icon="mdi-check" label="Concluir" v-close-popup @click="alterarStatusOrdem(ordem, 'concluida')" />
-                          <q-btn dense flat color="negative" icon="mdi-cancel" label="Cancelar" v-close-popup @click="cancelarOrdem(ordem)" />
+                          <q-btn v-if="podeOperarOrdens" dense flat color="primary" icon="mdi-pencil" label="Editar" v-close-popup @click="abrirOrdem(ordem)" />
+                          <q-btn v-if="podeOperarOrdens" dense flat color="amber-9" icon="mdi-play" label="Iniciar" v-close-popup @click="alterarStatusOrdem(ordem, 'em_atendimento')" />
+                          <q-btn v-if="podeOperarOrdens" dense flat color="positive" icon="mdi-check" label="Concluir" v-close-popup @click="alterarStatusOrdem(ordem, 'concluida')" />
+                          <q-btn v-if="podeOperarOrdens" dense flat color="negative" icon="mdi-cancel" label="Cancelar" v-close-popup @click="cancelarOrdem(ordem)" />
                           <q-btn dense flat color="primary" icon="mdi-file-pdf-box" label="PDF cliente" v-close-popup @click="abrirPdfOrdem(ordem, false)" />
                           <q-btn v-if="podeVerObservacaoInterna" dense flat color="primary" icon="mdi-file-document-alert-outline" label="PDF interno" v-close-popup @click="abrirPdfOrdem(ordem, true)" />
-                          <q-btn dense flat color="primary" icon="mdi-send" label="Notificar" v-close-popup @click="abrirNotificacao(ordem)" />
+                          <q-btn v-if="podeOperarOrdens" dense flat color="primary" icon="mdi-send" label="Notificar" v-close-popup @click="abrirNotificacao(ordem)" />
                         </div>
                         <q-separator class="q-my-sm" />
-                        <div class="text-caption text-grey-7 q-mb-xs">Trocar tecnico</div>
-                        <div class="order-popover-actions">
+                        <div v-if="podeOperarOrdens" class="text-caption text-grey-7 q-mb-xs">Trocar tecnico</div>
+                        <div v-if="podeOperarOrdens" class="order-popover-actions">
                           <q-btn
                             v-for="tecnico in atendentes"
                             :key="tecnico.id"
@@ -1761,11 +1761,23 @@ export default {
     dashboardProfitabilityList () {
       return this.dashboard.ordersProfitability || []
     },
+    perfilAtual () {
+      return localStorage.getItem('profile')
+    },
+    podeOperarOrdens () {
+      return ['admin', 'superadmin', 'supervisor', 'atendente'].includes(this.perfilAtual)
+    },
+    podeGerenciarAgenda () {
+      return ['admin', 'superadmin', 'supervisor'].includes(this.perfilAtual)
+    },
+    podeVerFinanceiro () {
+      return this.podeGerenciarAgenda
+    },
     podeVerObservacaoInterna () {
-      return ['admin', 'superadmin', 'supervisor', 'atendente', 'tecnico'].includes(localStorage.getItem('profile'))
+      return ['admin', 'superadmin', 'supervisor', 'atendente', 'tecnico'].includes(this.perfilAtual)
     },
     podeGerenciarEstoque () {
-      return ['admin', 'superadmin', 'supervisor'].includes(localStorage.getItem('profile'))
+      return this.podeGerenciarAgenda
     }
   },
   methods: {
@@ -1854,10 +1866,18 @@ export default {
       await this.carregarDashboard()
     },
     async carregarDashboard () {
+      if (!this.podeVerFinanceiro) {
+        this.dashboard = {}
+        return
+      }
       const { data } = await DashboardOrdensServico(this.filtros)
       this.dashboard = data
     },
     async carregarFechamentoMensal () {
+      if (!this.podeVerFinanceiro) {
+        this.fechamentoMensal = { summary: {}, rows: [] }
+        return
+      }
       const { data } = await FechamentoMensalOrdensServico({ month: this.mesFechamento })
       this.fechamentoMensal = data
     },

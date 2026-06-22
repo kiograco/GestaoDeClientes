@@ -71,6 +71,77 @@ const countPdfPages = (pdf: Buffer): number =>
   (pdf.toString("latin1").match(/\/Type\s*\/Page\b/g) || []).length;
 
 describe("service orders inventory API", () => {
+  it("aplica permissoes por perfil nas operacoes da agenda", async () => {
+    const app = await makeTestApp();
+    const admin = await createAdminUser();
+    const contact = await createContact({ tenantId: admin.tenantId });
+    const attendant = await createAgentUser({
+      tenantId: admin.tenantId,
+      profile: "atendente"
+    });
+    const technician = await createAgentUser({
+      tenantId: admin.tenantId,
+      profile: "tecnico"
+    });
+    const basicUser = await createAgentUser({ tenantId: admin.tenantId });
+    const attendantAuthorization = bearerTokenFor(attendant);
+    const technicianAuthorization = bearerTokenFor(technician);
+    const order = {
+      contactId: contact.id,
+      title: "Visita operacional",
+      serviceType: "Manutencao",
+      priority: "media",
+      status: "agendada",
+      scheduledStart: "2026-09-10T13:00:00.000Z",
+      scheduledEnd: "2026-09-10T14:00:00.000Z",
+      items: []
+    };
+
+    const created = await request(app)
+      .post("/service/orders")
+      .set("Authorization", attendantAuthorization)
+      .send(order)
+      .expect(201);
+
+    await request(app)
+      .put(`/service/orders/${created.body.id}`)
+      .set("Authorization", attendantAuthorization)
+      .send({ ...order, status: "em_atendimento" })
+      .expect(200);
+
+    await request(app)
+      .get("/service/orders")
+      .set("Authorization", technicianAuthorization)
+      .expect(200);
+    await request(app)
+      .get("/service/orders-dashboard")
+      .set("Authorization", attendantAuthorization)
+      .expect(403);
+    await request(app)
+      .get("/service/orders-financial-report")
+      .set("Authorization", technicianAuthorization)
+      .expect(403);
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", technicianAuthorization)
+      .send({ ...order, title: "Criacao indevida" })
+      .expect(403);
+    await request(app)
+      .put(`/service/orders/${created.body.id}`)
+      .set("Authorization", technicianAuthorization)
+      .send({ ...order, status: "concluida" })
+      .expect(403);
+    await request(app)
+      .post("/service/attendants")
+      .set("Authorization", technicianAuthorization)
+      .send({ name: "Tecnico indevido", active: true })
+      .expect(403);
+    await request(app)
+      .get("/service/orders")
+      .set("Authorization", bearerTokenFor(basicUser))
+      .expect(403);
+  });
+
   it("rejeita conflito com ocorrencia futura de ordem recorrente", async () => {
     const app = await makeTestApp();
     const user = await createAdminUser();
