@@ -308,6 +308,96 @@ describe("service orders inventory API", () => {
     );
   });
 
+  it("atualiza acoes rapidas sem sobrescrever campos nao enviados", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    const contact = await createContact({ tenantId: user.tenantId });
+    const attendant = await ServiceAttendant.create({
+      tenantId: user.tenantId,
+      name: "Tecnico Patch",
+      email: "tecnico-patch@example.test",
+      active: true
+    });
+    const replacementAttendant = await ServiceAttendant.create({
+      tenantId: user.tenantId,
+      name: "Tecnico Patch B",
+      email: "tecnico-patch-b@example.test",
+      active: true
+    });
+    const inventoryItem = await ServiceInventoryItem.create({
+      tenantId: user.tenantId,
+      name: "Produto preservado no patch",
+      unit: "unidade",
+      quantity: 5,
+      minQuantity: 1,
+      costPrice: 12.5,
+      salePrice: 35.9,
+      active: true
+    });
+
+    const { body: created } = await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        ...orderPayload(contact.id, inventoryItem.id, 1, "agendada"),
+        attendantId: attendant.id,
+        financialStatus: "cobrado",
+        paymentMethod: "pix",
+        chargedAmount: 150,
+        paidAmount: 50,
+        paymentDueDate: "2099-06-20T00:00:00.000Z",
+        financialObservation: "Pagamento parcial combinado"
+      })
+      .expect(201);
+
+    await request(app)
+      .patch(`/service/orders/${created.id}`)
+      .set("Authorization", authorization)
+      .send({
+        attendantId: replacementAttendant.id,
+        status: "reagendada",
+        expectedUpdatedAt: created.updatedAt
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          id: created.id,
+          title: "Instalacao com produto",
+          serviceType: "Instalacao",
+          status: "reagendada",
+          attendantId: replacementAttendant.id,
+          financialStatus: "cobrado",
+          paymentMethod: "pix",
+          chargedAmount: "150.00",
+          paidAmount: "50.00",
+          financialObservation: "Pagamento parcial combinado"
+        });
+        expect(body.items).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ itemType: "service" }),
+            expect.objectContaining({
+              itemType: "product",
+              inventoryItemId: inventoryItem.id,
+              quantity: 1
+            })
+          ])
+        );
+      });
+
+    await request(app)
+      .patch(`/service/orders/${created.id}`)
+      .set("Authorization", authorization)
+      .send({
+        status: "em_atendimento",
+        expectedUpdatedAt: created.updatedAt
+      })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.error).toBe("ERR_SERVICE_ORDER_STALE_VERSION");
+      });
+  });
+
   it("gerencia pragas centralizadas com busca, duplicidade e isolamento por tenant", async () => {
     const app = await makeTestApp();
     const user = await createAdminUser();
@@ -789,6 +879,9 @@ describe("service orders inventory API", () => {
     const user = await createAdminUser();
     const authorization = bearerTokenFor(user);
     const contact = await createContact({ tenantId: user.tenantId });
+    const dueSoonPaymentDueDate = new Date(
+      Date.now() + 3 * 24 * 60 * 60 * 1000
+    ).toISOString();
     const inventoryItem = await ServiceInventoryItem.create({
       tenantId: user.tenantId,
       name: "Filtro de agua",
@@ -809,7 +902,7 @@ describe("service orders inventory API", () => {
         paymentMethod: "pix",
         chargedAmount: 150,
         paidAmount: 50,
-        paymentDueDate: "2026-06-20T00:00:00.000Z",
+        paymentDueDate: dueSoonPaymentDueDate,
         financialObservation: "Pagamento parcial combinado"
       })
       .expect(201)

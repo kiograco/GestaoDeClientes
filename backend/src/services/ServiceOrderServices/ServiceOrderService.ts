@@ -3239,7 +3239,9 @@ export const patchOrder = async (
       if (data.paymentDueDate !== undefined) {
         payload.paymentDueDate = normalizeDate(data.paymentDueDate);
       }
-      if (data.paidAt !== undefined) payload.paidAt = normalizeDate(data.paidAt);
+      if (data.paidAt !== undefined) {
+        payload.paidAt = normalizeDate(data.paidAt);
+      }
       if (data.financialObservation !== undefined) {
         payload.financialObservation = cleanText(data.financialObservation);
       }
