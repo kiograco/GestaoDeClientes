@@ -308,6 +308,84 @@ describe("service orders inventory API", () => {
     );
   });
 
+  it("rejeita conflito com ocorrencia recorrente reagendada por excecao", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    const contact = await createContact({ tenantId: user.tenantId });
+    const attendant = await ServiceAttendant.create({
+      tenantId: user.tenantId,
+      name: "Tecnico Excecao Conflito",
+      email: "tecnico-excecao-conflito@example.test",
+      active: true
+    });
+    const { body: recurringOrder } = await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        contactId: contact.id,
+        attendantId: attendant.id,
+        title: "Manutencao recorrente com excecao",
+        serviceType: "Manutencao",
+        priority: "media",
+        status: "agendada",
+        scheduledStart: "2026-06-01T09:00:00.000Z",
+        scheduledEnd: "2026-06-01T10:00:00.000Z",
+        recurrenceType: "custom_interval",
+        recurrenceActive: true,
+        recurrenceIntervalDays: 30,
+        items: []
+      })
+      .expect(201);
+
+    await request(app)
+      .patch(`/service/orders/${recurringOrder.id}/occurrence`)
+      .set("Authorization", authorization)
+      .send({
+        occurrenceStart: "2026-07-01T09:00:00.000Z",
+        scheduledStart: "2026-07-01T14:00:00.000Z",
+        scheduledEnd: "2026-07-01T15:00:00.000Z",
+        attendantId: attendant.id,
+        status: "reagendada"
+      })
+      .expect(200);
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        contactId: contact.id,
+        attendantId: attendant.id,
+        title: "Visita conflitante com excecao",
+        serviceType: "Manutencao",
+        priority: "media",
+        status: "agendada",
+        scheduledStart: "2026-07-01T14:30:00.000Z",
+        scheduledEnd: "2026-07-01T15:30:00.000Z",
+        items: []
+      })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.error).toBe("ERR_SERVICE_ORDER_SCHEDULE_CONFLICT");
+      });
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        contactId: contact.id,
+        attendantId: attendant.id,
+        title: "Visita adjacente a excecao",
+        serviceType: "Manutencao",
+        priority: "media",
+        status: "agendada",
+        scheduledStart: "2026-07-01T15:00:00.000Z",
+        scheduledEnd: "2026-07-01T16:00:00.000Z",
+        items: []
+      })
+      .expect(201);
+  });
+
   it("atualiza acoes rapidas sem sobrescrever campos nao enviados", async () => {
     const app = await makeTestApp();
     const user = await createAdminUser();

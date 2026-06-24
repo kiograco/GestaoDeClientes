@@ -903,6 +903,22 @@ const ensureNoScheduleConflict = async (
       ).length > 0
   );
   if (conflict) throw new AppError("ERR_SERVICE_ORDER_SCHEDULE_CONFLICT", 409);
+
+  const exceptionConflict = await ServiceOrderOccurrenceException.findOne({
+    where: {
+      tenantId,
+      attendantId,
+      status: { [Op.in]: relevantStatuses },
+      scheduledStart: { [Op.lt]: scheduledEnd },
+      scheduledEnd: { [Op.gt]: scheduledStart },
+      ...(ignoreOrderId ? { serviceOrderId: { [Op.ne]: ignoreOrderId } } : {})
+    },
+    transaction,
+    lock: transaction?.LOCK.UPDATE
+  });
+  if (exceptionConflict) {
+    throw new AppError("ERR_SERVICE_ORDER_SCHEDULE_CONFLICT", 409);
+  }
 };
 
 const logOrder = async (
