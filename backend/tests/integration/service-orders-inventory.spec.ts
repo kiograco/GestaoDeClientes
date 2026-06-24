@@ -398,6 +398,121 @@ describe("service orders inventory API", () => {
       });
   });
 
+  it("audita baixa automatica de estoque ao concluir por acao rapida", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    const contact = await createContact({ tenantId: user.tenantId });
+    const inventoryItem = await ServiceInventoryItem.create({
+      tenantId: user.tenantId,
+      name: "Produto auditado no patch",
+      unit: "unidade",
+      quantity: 5,
+      minQuantity: 1,
+      costPrice: 10,
+      salePrice: 30,
+      active: true
+    });
+
+    const { body: created } = await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send(orderPayload(contact.id, inventoryItem.id, 2, "agendada"))
+      .expect(201);
+
+    await request(app)
+      .patch(`/service/orders/${created.id}`)
+      .set("Authorization", authorization)
+      .send({
+        status: "concluida",
+        expectedUpdatedAt: created.updatedAt
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.status).toBe("concluida");
+        expect(body.inventoryDeductedAt).toBeTruthy();
+      });
+
+    await inventoryItem.reload();
+    expect(inventoryItem.quantity).toBe(3);
+    expect(await ServiceInventoryMovement.count()).toBe(1);
+    const auditLog = await AuditLog.findOne({
+      where: {
+        action: "service_inventory_auto_deducted",
+        resource: "service_inventory",
+        resourceId: String(created.id)
+      }
+    });
+
+    expect(auditLog).toMatchObject({
+      tenantId: user.tenantId,
+      userId: user.id
+    });
+    expect(auditLog?.metadata).toMatchObject({
+      serviceOrderId: created.id,
+      productItems: 1
+    });
+  });
+
+  it("audita falha de baixa de estoque ao concluir por acao rapida", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    const contact = await createContact({ tenantId: user.tenantId });
+    const inventoryItem = await ServiceInventoryItem.create({
+      tenantId: user.tenantId,
+      name: "Produto sem saldo no patch",
+      unit: "unidade",
+      quantity: 1,
+      minQuantity: 1,
+      costPrice: 10,
+      salePrice: 30,
+      active: true
+    });
+
+    const { body: created } = await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send(orderPayload(contact.id, inventoryItem.id, 2, "agendada"))
+      .expect(201);
+
+    await request(app)
+      .patch(`/service/orders/${created.id}`)
+      .set("Authorization", authorization)
+      .send({
+        status: "concluida",
+        expectedUpdatedAt: created.updatedAt
+      })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.error).toContain(
+          "Estoque insuficiente para Produto sem saldo no patch"
+        );
+      });
+
+    await inventoryItem.reload();
+    expect(inventoryItem.quantity).toBe(1);
+    expect(await ServiceInventoryMovement.count()).toBe(0);
+    const auditLog = await AuditLog.findOne({
+      where: {
+        action: "service_inventory_auto_deduct_failed",
+        resource: "service_inventory",
+        resourceId: String(created.id)
+      }
+    });
+
+    expect(auditLog).toMatchObject({
+      tenantId: user.tenantId,
+      userId: user.id
+    });
+    expect(auditLog?.metadata).toMatchObject({
+      serviceOrderId: String(created.id)
+    });
+    expect(String(auditLog?.metadata.reason)).toContain(
+      "Estoque insuficiente para Produto sem saldo no patch"
+    );
+  });
+
   it("gerencia pragas centralizadas com busca, duplicidade e isolamento por tenant", async () => {
     const app = await makeTestApp();
     const user = await createAdminUser();

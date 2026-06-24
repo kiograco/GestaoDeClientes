@@ -1066,39 +1066,67 @@ export const patchOrder = async (
   res: Response
 ): Promise<Response> => {
   ensureCanOperateServiceOrders(req.user.profile);
-  const hasFinancialChanges = financialAuditFields.some(
-    field => field in req.body
-  );
-  if (hasFinancialChanges) ensureCanManageServiceOrders(req.user.profile);
-  const previous = await ServiceOrder.showOrder(
-    req.user.tenantId,
-    req.user.profile,
-    req.params.serviceOrderId
-  );
-  const data = await validate<ServiceOrder.ServiceOrderPatchData>(
-    orderPatchSchema,
-    req.body
-  );
-  const serviceOrder = await ServiceOrder.patchOrder(
-    req.user.tenantId,
-    req.user.id,
-    req.params.serviceOrderId,
-    data
-  );
-  const changes = financialChanges(previous, serviceOrder, req.body);
-  if (Object.keys(changes).length) {
-    await auditFinancialAction(
-      req,
-      "service_order_financial_updated",
-      serviceOrder.id,
-      {
-        serviceOrderId: serviceOrder.id,
-        changedFields: Object.keys(changes),
-        changes
-      }
+  try {
+    const hasFinancialChanges = financialAuditFields.some(
+      field => field in req.body
     );
+    if (hasFinancialChanges) ensureCanManageServiceOrders(req.user.profile);
+    const previous = await ServiceOrder.showOrder(
+      req.user.tenantId,
+      req.user.profile,
+      req.params.serviceOrderId
+    );
+    const data = await validate<ServiceOrder.ServiceOrderPatchData>(
+      orderPatchSchema,
+      req.body
+    );
+    const serviceOrder = await ServiceOrder.patchOrder(
+      req.user.tenantId,
+      req.user.id,
+      req.params.serviceOrderId,
+      data
+    );
+    const changes = financialChanges(previous, serviceOrder, req.body);
+    if (Object.keys(changes).length) {
+      await auditFinancialAction(
+        req,
+        "service_order_financial_updated",
+        serviceOrder.id,
+        {
+          serviceOrderId: serviceOrder.id,
+          changedFields: Object.keys(changes),
+          changes
+        }
+      );
+    }
+    if (req.body.status === "concluida" && serviceOrder.inventoryDeductedAt) {
+      await auditStockAction(
+        req,
+        "service_inventory_auto_deducted",
+        serviceOrder.id,
+        {
+          serviceOrderId: serviceOrder.id,
+          productItems: (serviceOrder.items || []).filter(
+            item => item.itemType === "product"
+          ).length
+        }
+      );
+    }
+    return res.json(serviceOrder);
+  } catch (error) {
+    if (req.body.status === "concluida") {
+      await auditStockAction(
+        req,
+        "service_inventory_auto_deduct_failed",
+        req.params.serviceOrderId,
+        {
+          serviceOrderId: req.params.serviceOrderId,
+          reason: getErrorMessage(error)
+        }
+      );
+    }
+    throw error;
   }
-  return res.json(serviceOrder);
 };
 
 export const publicDocument = async (
