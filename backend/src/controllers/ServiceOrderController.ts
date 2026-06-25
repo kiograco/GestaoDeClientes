@@ -63,18 +63,7 @@ const inventoryItemSchema = Yup.object().shape({
       "outro"
     ])
   ),
-  applicationMethods: Yup.array().of(
-    Yup.string().oneOf([
-      "pulverizacao",
-      "termonebulizacao",
-      "atomizacao",
-      "iscagem",
-      "polvilhamento",
-      "gel",
-      "espuma",
-      "outro"
-    ])
-  ),
+  applicationMethods: Yup.array().of(Yup.string().trim()),
   showApplicationMethodOnOrder: Yup.boolean(),
   printSettings: Yup.object().nullable(),
   batches: Yup.array().of(
@@ -177,10 +166,7 @@ const orderSchema = Yup.object().shape({
   financialStatus: Yup.string().oneOf(
     ServiceOrder.SERVICE_ORDER_FINANCIAL_STATUSES
   ),
-  paymentMethod: nullableString.oneOf([
-    ...ServiceOrder.SERVICE_ORDER_PAYMENT_METHODS,
-    null
-  ]),
+  paymentMethod: nullableString,
   chargedAmount: Yup.number().min(0).nullable(),
   paidAmount: Yup.number().min(0).nullable(),
   paymentDueDate: Yup.date().nullable(),
@@ -226,10 +212,7 @@ const orderPatchSchema = Yup.object().shape({
   financialStatus: Yup.string().oneOf(
     ServiceOrder.SERVICE_ORDER_FINANCIAL_STATUSES
   ),
-  paymentMethod: nullableString.oneOf([
-    ...ServiceOrder.SERVICE_ORDER_PAYMENT_METHODS,
-    null
-  ]),
+  paymentMethod: nullableString,
   chargedAmount: Yup.number().min(0).nullable(),
   paidAmount: Yup.number().min(0).nullable(),
   paymentDueDate: Yup.date().nullable(),

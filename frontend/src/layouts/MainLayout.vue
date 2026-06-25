@@ -816,11 +816,11 @@ const menuTreeCatalog = [
         title: 'Comercial',
         icon: 'mdi-storefront-outline',
         children: [
-          devItem('Serviços', 'cad-servicos', 'mdi-format-list-bulleted-type'),
-          devItem('Produtos', 'cad-produtos', 'mdi-package-variant-closed'),
-          devItem('Pragas', 'cad-pragas', 'mdi-bug-outline'),
-          devItem('Métodos', 'metodos', 'mdi-spray'),
-          devItem('Tipos de Atendimento', 'tipos-atendimento', 'mdi-format-list-checks'),
+          { key: 'cad-servicos', title: 'Serviços', icon: 'mdi-format-list-bulleted-type', routeName: 'cadastros-operacionais', query: { aba: 'servicos' } },
+          { key: 'cad-produtos', title: 'Produtos', icon: 'mdi-package-variant-closed', routeName: 'cadastros-operacionais', query: { aba: 'produtos' } },
+          { key: 'cad-pragas', title: 'Pragas', icon: 'mdi-bug-outline', routeName: 'cadastros-operacionais', query: { aba: 'pragas' } },
+          { key: 'cad-metodos', title: 'Métodos', icon: 'mdi-spray', routeName: 'cadastros-base', query: { modulo: 'methods' } },
+          { key: 'cad-tipos-atendimento', title: 'Tipos de Atendimento', icon: 'mdi-format-list-checks', routeName: 'cadastros-base', query: { modulo: 'attendance-types' } },
           devItem('Informações para Orçamentos', 'cad-informacoes-orcamentos', 'mdi-information-outline')
         ]
       },
@@ -830,10 +830,11 @@ const menuTreeCatalog = [
         icon: 'mdi-factory',
         children: [
           devItem('Armadilhas', 'cad-armadilhas', 'mdi-crosshairs-gps'),
-          devItem('Ferramentas', 'ferramentas', 'mdi-hammer-wrench'),
-          devItem('Equipamentos', 'equipamentos', 'mdi-toolbox-outline'),
-          devItem('Veículos', 'veiculos', 'mdi-truck-outline'),
-          devItem('Não Conformidades', 'nao-conformidades', 'mdi-alert-octagon-outline')
+          { key: 'cad-unidades', title: 'Unidades', icon: 'mdi-domain', routeName: 'cadastros-base', query: { modulo: 'unidades' } },
+          { key: 'cad-ferramentas', title: 'Ferramentas', icon: 'mdi-hammer-wrench', routeName: 'cadastros-base', query: { modulo: 'tools' } },
+          { key: 'cad-equipamentos', title: 'Equipamentos', icon: 'mdi-toolbox-outline', routeName: 'cadastros-base', query: { modulo: 'equipment' } },
+          { key: 'cad-veiculos', title: 'Veículos', icon: 'mdi-truck-outline', routeName: 'cadastros-base', query: { modulo: 'vehicles' } },
+          { key: 'cad-nao-conformidades', title: 'Não Conformidades', icon: 'mdi-alert-octagon-outline', routeName: 'cadastros-base', query: { modulo: 'non-conformities' } }
         ]
       },
       {
@@ -842,7 +843,7 @@ const menuTreeCatalog = [
         icon: 'mdi-account-multiple-outline',
         roles: ['admin'],
         children: [
-          devItem('Funcionários', 'funcionarios', 'mdi-account-tie-outline'),
+          { key: 'cad-funcionarios', title: 'Funcionários', icon: 'mdi-account-tie-outline', routeName: 'cadastros-operacionais', query: { aba: 'funcionarios' } },
           { key: 'cad-usuarios', title: 'Usuários', icon: 'mdi-account-group', routeName: 'usuarios' },
           { key: 'cad-departamentos', title: 'Departamentos', icon: 'mdi-office-building-outline', routeName: 'filas' },
           { key: 'cad-perfis-acesso', title: 'Perfis de Acesso', icon: 'mdi-account-key-outline', routeName: 'usuarios', query: { view: 'permissoes' } }
@@ -854,9 +855,9 @@ const menuTreeCatalog = [
         icon: 'mdi-cash-multiple',
         roles: ['admin'],
         children: [
-          devItem('Plano de Contas', 'plano-contas', 'mdi-format-list-numbered'),
-          devItem('Formas de Pagamento', 'formas-pagamento', 'mdi-credit-card-outline'),
-          devItem('Tipos de Fechamento', 'tipos-fechamento', 'mdi-calendar-end'),
+          { key: 'cad-plano-contas', title: 'Plano de Contas', icon: 'mdi-format-list-numbered', routeName: 'cadastros-base', query: { modulo: 'chart-of-accounts' } },
+          { key: 'cad-formas-pagamento', title: 'Formas de Pagamento', icon: 'mdi-credit-card-outline', routeName: 'cadastros-base', query: { modulo: 'payment-methods' } },
+          { key: 'cad-tipos-fechamento', title: 'Tipos de Fechamento', icon: 'mdi-calendar-end', routeName: 'cadastros-base', query: { modulo: 'closing-types' } },
           devItem('Condições de Pagamento', 'condicoes-pagamento', 'mdi-calendar-clock')
         ]
       },
@@ -866,11 +867,11 @@ const menuTreeCatalog = [
         icon: 'mdi-database-cog-outline',
         roles: ['admin'],
         children: [
-          devItem('Fornecedores', 'fornecedores', 'mdi-truck-delivery-outline'),
-          devItem('Cidades', 'cidades', 'mdi-city-variant-outline'),
-          devItem('Estados', 'estados', 'mdi-map-outline'),
+          { key: 'cad-fornecedores', title: 'Fornecedores', icon: 'mdi-truck-delivery-outline', routeName: 'cadastros-base', query: { modulo: 'suppliers' } },
+          { key: 'cad-estados', title: 'Estados', icon: 'mdi-map-outline', routeName: 'cadastros-base', query: { modulo: 'states' } },
+          { key: 'cad-cidades', title: 'Cidades', icon: 'mdi-city-variant-outline', routeName: 'cadastros-base', query: { modulo: 'cities' } },
           devItem('Empresas/Filiais', 'empresas-filiais', 'mdi-domain'),
-          { key: 'parametros-gerais', title: 'Parâmetros Gerais', icon: 'mdi-cog-outline', routeName: 'configuracoes' }
+          { key: 'parametros-gerais', title: 'Parâmetros Gerais', icon: 'mdi-cog-outline', routeName: 'cadastros-base', query: { modulo: 'general-parameters' } }
         ]
       }
     ]

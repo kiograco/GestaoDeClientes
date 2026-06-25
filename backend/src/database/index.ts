@@ -81,6 +81,10 @@ import SalesOpportunityLog from "../models/SalesOpportunityLog";
 import SalesProposal from "../models/SalesProposal";
 import PerformanceGoal from "../models/PerformanceGoal";
 import EmailLog from "../models/EmailLog";
+import BaseRegister from "../models/BaseRegister";
+import ClientUnit from "../models/ClientUnit";
+import State from "../models/State";
+import City from "../models/City";
 import * as QueueJobs from "../libs/Queue";
 import { logger } from "../utils/logger";
 
@@ -177,7 +181,11 @@ const models = [
   SalesOpportunityLog,
   SalesProposal,
   PerformanceGoal,
-  EmailLog
+  EmailLog,
+  BaseRegister,
+  ClientUnit,
+  State,
+  City
 ];
 
 sequelize.addModels(models);

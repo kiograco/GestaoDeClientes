@@ -1191,6 +1191,7 @@
 <script>
 import { socketIO } from 'src/utils/socket'
 import { ListarClientes, ObterCliente } from 'src/service/clientes'
+import { ListarCadastroBase } from 'src/service/cadastrosBase'
 import ClienteModal from 'src/pages/clientes/ClienteModal'
 import {
   ListarAtendentesServico,
@@ -1405,13 +1406,7 @@ export default {
         { label: 'Parcial', value: 'parcial' },
         { label: 'Cancelado', value: 'cancelado' }
       ],
-      paymentMethodOptions: [
-        { label: 'Pix', value: 'pix' },
-        { label: 'Dinheiro', value: 'dinheiro' },
-        { label: 'Cartão', value: 'cartao' },
-        { label: 'Boleto', value: 'boleto' },
-        { label: 'Transferência', value: 'transferencia' }
-      ],
+      paymentMethodOptions: [],
       financialViewOptions: [
         { label: 'Em aberto', value: 'open' },
         { label: 'Pagas', value: 'paid' },
@@ -1458,28 +1453,8 @@ export default {
         { label: 'Pronto Uso', value: 'pronto_uso' },
         { label: 'Outro', value: 'outro' }
       ],
-      applicationMethodOptions: [
-        { label: 'Pulverizacao', value: 'pulverizacao' },
-        { label: 'Termonebulizacao', value: 'termonebulizacao' },
-        { label: 'Atomizacao', value: 'atomizacao' },
-        { label: 'Iscagem', value: 'iscagem' },
-        { label: 'Polvilhamento', value: 'polvilhamento' },
-        { label: 'Gel', value: 'gel' },
-        { label: 'Espuma', value: 'espuma' },
-        { label: 'Outro', value: 'outro' }
-      ],
-      serviceMethodOptions: [
-        { label: 'Pulverização', value: 'pulverizacao' },
-        { label: 'Termonebulização', value: 'termonebulizacao' },
-        { label: 'Atomização', value: 'atomizacao' },
-        { label: 'Polvilhamento', value: 'polvilhamento' },
-        { label: 'Iscagem', value: 'iscagem' },
-        { label: 'Gel', value: 'gel' },
-        { label: 'Armadilhas', value: 'armadilhas' },
-        { label: 'Barreiras Químicas', value: 'barreiras_quimicas' },
-        { label: 'Aplicação Manual', value: 'aplicacao_manual' },
-        { label: 'Outros', value: 'outros' }
-      ],
+      applicationMethodOptions: [],
+      serviceMethodOptions: [],
       serviceCategoryOptions: [
         { label: 'Controle de Insetos', value: 'controle_insetos' },
         { label: 'Controle de Roedores', value: 'controle_roedores' },
@@ -1781,12 +1756,36 @@ export default {
     },
     async carregarTudo () {
       await Promise.all([
+        this.carregarCadastrosBaseOrdem(),
         this.carregarAtendentes(),
         this.carregarEstoque(),
         this.carregarPragas(),
         this.carregarTiposServico(),
         this.carregarOrdens()
       ])
+    },
+    async carregarCadastrosBaseOrdem () {
+      try {
+        const [formasPagamento, metodos] = await Promise.all([
+          ListarCadastroBase('payment-methods', { status: 'active', rowsPerPage: 100 }),
+          ListarCadastroBase('methods', { status: 'active', rowsPerPage: 100 })
+        ])
+        this.paymentMethodOptions = (formasPagamento.data.rows || []).map(item => ({
+          label: item.name,
+          value: item.code || item.name
+        }))
+        const methodOptions = (metodos.data.rows || []).map(item => ({
+          label: item.name,
+          value: item.code || item.name
+        }))
+        this.applicationMethodOptions = methodOptions
+        this.serviceMethodOptions = methodOptions
+      } catch (error) {
+        this.paymentMethodOptions = []
+        this.applicationMethodOptions = []
+        this.serviceMethodOptions = []
+        this.$notificarErro('Não foi possível carregar cadastros de métodos e pagamentos', error)
+      }
     },
     async carregarAtendentes () {
       const { data } = await ListarAtendentesServico()
