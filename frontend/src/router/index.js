@@ -4,6 +4,7 @@ import axios from 'axios'
 import { Notify } from 'quasar'
 import { getAccessToken, setAccessToken } from 'src/utils/authToken'
 import { persistSessionData } from 'src/utils/session'
+import { canAccessRoute, defaultRouteByProfile, routeAccessRules, routeDisplayNames } from './access'
 
 import routes from './routes'
 
@@ -16,9 +17,15 @@ const Router = new VueRouter({
   base: process.env.VUE_ROUTER_BASE
 })
 
-const whiteListName = [
-  'login'
-]
+const publicRouteNames = Object.keys(routeAccessRules).filter(name => routeAccessRules[name].public)
+
+const getEnabledModules = () => {
+  try {
+    return JSON.parse(localStorage.getItem('usuario') || '{}').enabledModules || {}
+  } catch (error) {
+    return {}
+  }
+}
 
 const tryRefreshToken = async () => {
   try {
@@ -41,22 +48,30 @@ const tryRefreshToken = async () => {
 Router.beforeEach(async (to, from, next) => {
   const token = getAccessToken()
 
-  if (token || whiteListName.indexOf(to.name) !== -1) {
+  if (publicRouteNames.includes(to.name)) {
     next()
     return
   }
 
   const refreshed = await tryRefreshToken()
-  if (refreshed || to.fullPath === '/login' || to.query.tokenSetup) {
-    next()
+  if (!token && !refreshed && !to.query.tokenSetup) {
+    Notify.create({ message: 'Necessario realizar login', position: 'top' })
+    next({ name: 'login' })
     return
   }
 
-  Notify.create({ message: 'Necessario realizar login', position: 'top' })
-  next({ name: 'login' })
+  const profile = localStorage.getItem('profile')
+  if (!canAccessRoute(to.name, profile, getEnabledModules())) {
+    Notify.create({ type: 'warning', message: 'Voce nao tem permissao para acessar esta pagina.', position: 'top' })
+    next(defaultRouteByProfile(profile))
+    return
+  }
+
+  next()
 })
 
 Router.afterEach(to => {
+  document.title = `${routeDisplayNames[to.name] || 'CRM'} | NCProgrammers CRM`
   window.scrollTo(0, 0)
 })
 

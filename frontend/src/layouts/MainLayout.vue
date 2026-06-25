@@ -35,6 +35,18 @@
           />
         </q-btn>
 
+        <q-breadcrumbs
+          v-if="$q.screen.gt.sm"
+          class="app-breadcrumbs q-ml-md"
+          active-color="primary"
+        >
+          <q-breadcrumbs-el
+            icon="mdi-home-outline"
+            :to="{ name: userProfile === 'superadmin' ? 'superadmin-empresas' : userProfile === 'admin' ? 'home-dashboard' : 'atendimento' }"
+          />
+          <q-breadcrumbs-el :label="currentRouteTitle" />
+        </q-breadcrumbs>
+
         <q-input
           v-if="$q.screen.gt.sm"
           v-model="globalSearch"
@@ -415,6 +427,7 @@ import { ConsultarTickets } from 'src/service/tickets'
 import OnboardingAdmin from 'src/components/OnboardingAdmin'
 import { resolveTenantLogoUrl } from 'src/utils/tenantLogo'
 import { clearAccessToken } from 'src/utils/authToken'
+import { canAccessRoute, routeDisplayNames } from 'src/router/access'
 
 const socket = socketIO()
 
@@ -682,9 +695,7 @@ const devItem = (title, slug, icon = 'mdi-progress-wrench', extra = {}) => ({
   key: `dev:${slug}`,
   title,
   icon,
-  routeName: 'em-desenvolvimento',
-  params: { slug },
-  query: { title },
+  available: false,
   ...extra
 })
 
@@ -1005,6 +1016,9 @@ export default {
     cUsersApp () {
       return this.$store.state.usersApp
     },
+    currentRouteTitle () {
+      return routeDisplayNames[this.$route.name] || 'CRM'
+    },
     cObjMenu () {
       if (this.cProblemaConexao) {
         return objMenu.map(menu => {
@@ -1020,8 +1034,10 @@ export default {
   methods: {
     montarMenu () {
       this.menuData = filterMenuByAccess(menuTreeCatalog, item => {
+        if (item.available === false) return false
         const roles = item.roles || (item.disabled ? ['admin'] : null)
         if (roles && !roles.includes(this.userProfile)) return false
+        if (item.routeName && !canAccessRoute(item.routeName, this.userProfile, this.usuario.enabledModules || {})) return false
         return this.exibirMenuBeta(item)
       })
     },
