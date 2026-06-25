@@ -592,12 +592,24 @@ export default {
       if (!this.opcoesSetoresMovimento.some(setor => setor.value === this.movimento.sectorId)) {
         this.movimento.sectorId = null
       }
+    },
+    '$route.query.aba' () {
+      this.aplicarAbaDaRota()
     }
   },
   mounted () {
+    this.aplicarAbaDaRota()
     this.carregarTudo()
   },
   methods: {
+    aplicarAbaDaRota () {
+      const aliases = { armadilhas: 'tipos' }
+      const tab = aliases[this.$route.query.aba] || this.$route.query.aba
+      const tabsPermitidas = ['tipos', 'catalogos', 'pontos', 'inspecao', 'mapa']
+      if (tabsPermitidas.includes(tab)) {
+        this.tab = tab
+      }
+    },
     async carregarTudo () {
       this.loading = true
       try {

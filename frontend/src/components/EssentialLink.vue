@@ -2,9 +2,10 @@
   <q-item
     clickable
     v-ripple
-    :active="routeName == cRouterName"
+    :disable="disabled"
+    :active="isActive"
     active-class="app-menu-link-active"
-    @click=" () => !(routeName == cRouterName) ? $router.push({ name: routeName }) : ''"
+    @click="navigate"
     class="app-menu-link"
     :class="{'text-negative text-bolder': color === 'negative'}"
     :aria-label="title"
@@ -25,9 +26,19 @@
         {{ caption }}
       </q-item-label>
     </q-item-section>
+    <q-item-section
+      v-if="disabled"
+      side
+    >
+      <q-badge
+        outline
+        color="grey-7"
+        label="Em breve"
+      />
+    </q-item-section>
     <q-tooltip anchor="center right" self="center left">
       <div class="text-weight-medium">{{ title }}</div>
-      <div v-if="caption" class="text-caption">{{ caption }}</div>
+      <div v-if="caption || disabled" class="text-caption">{{ disabled ? 'Em breve' : caption }}</div>
     </q-tooltip>
   </q-item>
 </template>
@@ -64,11 +75,31 @@ export default {
     icon: {
       type: String,
       default: ''
+    },
+
+    query: {
+      type: Object,
+      default: () => ({})
+    },
+
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   computed: {
     cRouterName () {
       return this.$route.name
+    },
+    isActive () {
+      if (this.routeName !== this.cRouterName) return false
+      return Object.keys(this.query).every(key => this.$route.query[key] === this.query[key])
+    }
+  },
+  methods: {
+    navigate () {
+      if (this.disabled || this.isActive) return
+      this.$router.push({ name: this.routeName, query: this.query })
     }
   }
 }

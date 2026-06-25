@@ -300,27 +300,6 @@
               />
             </div>
           </template>
-          <div v-if="userProfile === 'admin'">
-            <q-separator spaced />
-            <template v-for="group in menuDataAdmin">
-              <div :key="group.title">
-                <q-item-label
-                  v-show="!miniState"
-                  header
-                  class="app-nav-group"
-                >
-                  {{ group.title }}
-                </q-item-label>
-                <EssentialLink
-                  v-for="item in group.items"
-                  v-if="exibirMenuBeta(item)"
-                  :key="item.title"
-                  v-bind="item"
-                />
-                <q-separator spaced />
-              </div>
-            </template>
-          </div>
 
         </q-list>
       </q-scroll-area>
@@ -652,6 +631,74 @@ const objMenuAdminGroups = [
   items: group.routes.map(routeName => objMenuAdmin.find(item => item.routeName === routeName)).filter(Boolean)
 }))
 
+const menuCatalog = [
+  { group: 'Visao Geral', title: 'Dashboard', icon: 'mdi-home', routeName: 'home-dashboard', roles: ['admin'] },
+  { group: 'Visao Geral', title: 'Painel de Atendimentos', icon: 'mdi-view-dashboard-variant', routeName: 'painel-atendimentos', roles: ['admin'] },
+  { group: 'Visao Geral', title: 'Relatorios', icon: 'mdi-file-chart', routeName: 'relatorios', roles: ['admin'] },
+  { group: 'Atendimento', title: 'Atendimentos', icon: 'mdi-forum-outline', routeName: 'atendimento' },
+  { group: 'Atendimento', title: 'Canais', icon: 'mdi-cellphone-wireless', routeName: 'sessoes', roles: ['admin'] },
+  { group: 'Atendimento', title: 'Filas', icon: 'mdi-arrow-decision-outline', routeName: 'filas', roles: ['admin'] },
+  { group: 'Atendimento', title: 'Horario de Atendimento', icon: 'mdi-calendar-clock', routeName: 'horarioAtendimento', roles: ['admin'] },
+  { group: 'Atendimento', title: 'Mensagens Rapidas', icon: 'mdi-reply-all-outline', routeName: 'mensagens-rapidas', roles: ['admin'] },
+  { group: 'CRM e Vendas', title: 'Clientes', icon: 'mdi-account-cash-outline', routeName: 'clientes' },
+  { group: 'CRM e Vendas', title: 'Contatos', icon: 'mdi-card-account-mail', routeName: 'contatos' },
+  { group: 'CRM e Vendas', title: 'Pipeline', icon: 'mdi-chart-timeline-variant', routeName: 'pipeline-vendas' },
+  { group: 'CRM e Vendas', title: 'Propostas', icon: 'mdi-file-sign', routeName: 'pipeline-vendas', query: { view: 'propostas' }, disabled: true },
+  { group: 'CRM e Vendas', title: 'Contratos', icon: 'mdi-file-document-edit-outline', routeName: 'pipeline-vendas', query: { view: 'contratos' }, disabled: true },
+  { group: 'Servicos Tecnicos', title: 'Ordens de Servico', icon: 'mdi-calendar-check-outline', routeName: 'ordens-servico', query: { aba: 'agenda' } },
+  { group: 'Servicos Tecnicos', title: 'Servicos', icon: 'mdi-format-list-bulleted-type', routeName: 'ordens-servico', query: { aba: 'tipos' }, roles: ['admin', 'supervisor'] },
+  { group: 'Servicos Tecnicos', title: 'Produtos', icon: 'mdi-package-variant-closed', routeName: 'ordens-servico', query: { aba: 'estoque' }, roles: ['admin', 'supervisor'] },
+  { group: 'Servicos Tecnicos', title: 'Estoque', icon: 'mdi-warehouse', routeName: 'ordens-servico', query: { aba: 'estoque' }, roles: ['admin', 'supervisor'] },
+  { group: 'Servicos Tecnicos', title: 'Pragas', icon: 'mdi-bug-outline', routeName: 'ordens-servico', query: { aba: 'pragas' } },
+  { group: 'Servicos Tecnicos', title: 'Monitoramento', icon: 'mdi-map-marker-radius-outline', routeName: 'monitoramento' },
+  { group: 'Servicos Tecnicos', title: 'Armadilhas', icon: 'mdi-crosshairs-gps', routeName: 'monitoramento', query: { aba: 'armadilhas' } },
+  { group: 'Servicos Tecnicos', title: 'Auditoria Tecnica', icon: 'mdi-shield-search', routeName: 'ordens-servico', query: { aba: 'auditoria' }, roles: ['admin', 'supervisor'] },
+  { group: 'Financeiro', title: 'Visao Financeira', icon: 'mdi-chart-box-outline', routeName: 'ordens-servico', query: { aba: 'financeiro' }, roles: ['admin', 'supervisor'] },
+  { group: 'Financeiro', title: 'Contas a Receber', icon: 'mdi-cash-plus', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'receber' }, disabled: true },
+  { group: 'Financeiro', title: 'Contas a Pagar', icon: 'mdi-cash-minus', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'pagar' }, disabled: true },
+  { group: 'Financeiro', title: 'Cobrancas', icon: 'mdi-bell-ring-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'cobrancas' }, disabled: true },
+  { group: 'Financeiro', title: 'Faturas', icon: 'mdi-file-document-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'faturas' }, disabled: true },
+  { group: 'Financeiro', title: 'Pagamentos', icon: 'mdi-credit-card-check-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'pagamentos' }, disabled: true },
+  { group: 'Financeiro', title: 'Inadimplencia', icon: 'mdi-alert-circle-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'inadimplencia' }, disabled: true },
+  { group: 'Financeiro', title: 'Fluxo de Caixa', icon: 'mdi-swap-horizontal', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'fluxo-caixa' }, disabled: true },
+  { group: 'Financeiro', title: 'Comissoes', icon: 'mdi-account-cash-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'comissoes' }, disabled: true },
+  { group: 'Financeiro', title: 'Centros de Custo', icon: 'mdi-sitemap-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'centros-custo' }, disabled: true },
+  { group: 'Financeiro', title: 'Formas de Pagamento', icon: 'mdi-credit-card-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'formas-pagamento' }, disabled: true },
+  { group: 'Financeiro', title: 'Relatorios Financeiros', icon: 'mdi-file-chart-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'relatorios' }, disabled: true },
+  { group: 'Marketing e Automacao', title: 'Campanhas', icon: 'mdi-message-bookmark-outline', routeName: 'campanhas', roles: ['admin'] },
+  { group: 'Marketing e Automacao', title: 'Chatbot', icon: 'mdi-robot', routeName: 'chat-flow', roles: ['admin'] },
+  { group: 'Marketing e Automacao', title: 'Etiquetas', icon: 'mdi-tag-text', routeName: 'etiquetas', roles: ['admin'] },
+  { group: 'Marketing e Automacao', title: 'Automacoes', icon: 'mdi-lightning-bolt-outline', routeName: 'auto-resposta', roles: ['admin'], disabled: true },
+  { group: 'Delivery', title: 'Pedidos', icon: 'mdi-clipboard-list-outline', routeName: 'delivery-pedidos', requiredModule: 'delivery', roles: ['admin'] },
+  { group: 'Delivery', title: 'Cardapio', icon: 'mdi-silverware-fork-knife', routeName: 'delivery-catalogo', requiredModule: 'delivery', roles: ['admin'] },
+  { group: 'Delivery', title: 'Areas de Entrega', icon: 'mdi-map-marker-radius', routeName: 'delivery-zonas', requiredModule: 'delivery', roles: ['admin'] },
+  { group: 'Administracao', title: 'Usuarios', icon: 'mdi-account-group', routeName: 'usuarios', roles: ['admin'] },
+  { group: 'Administracao', title: 'Permissoes', icon: 'mdi-account-key-outline', routeName: 'usuarios', query: { view: 'permissoes' }, disabled: true },
+  { group: 'Administracao', title: 'Configuracoes', icon: 'mdi-cog', routeName: 'configuracoes', roles: ['admin'] },
+  { group: 'Administracao', title: 'API', icon: 'mdi-call-split', routeName: 'api-service', roles: ['admin'] },
+  { group: 'Administracao', title: 'Auditoria', icon: 'mdi-shield-account-outline', routeName: 'configuracoes', query: { view: 'auditoria' }, disabled: true },
+  { group: 'Conta', title: 'Minha Assinatura', icon: 'mdi-credit-card-outline', routeName: 'minha-assinatura' }
+]
+
+const menuGroupOrder = [
+  'Visao Geral',
+  'Atendimento',
+  'CRM e Vendas',
+  'Servicos Tecnicos',
+  'Financeiro',
+  'Marketing e Automacao',
+  'Delivery',
+  'Administracao',
+  'Conta'
+]
+
+const buildMenuGroups = items => menuGroupOrder
+  .map(title => ({
+    title,
+    items: items.filter(item => item.group === title)
+  }))
+  .filter(group => group.items.length)
+
 export default {
   name: 'MainLayout',
   mixins: [socketInitial],
@@ -720,6 +767,14 @@ export default {
     }
   },
   methods: {
+    montarMenu () {
+      const items = menuCatalog.filter(item => {
+        const roles = item.roles || (item.disabled ? ['admin'] : null)
+        if (roles && !roles.includes(this.userProfile)) return false
+        return this.exibirMenuBeta(item)
+      })
+      this.menuData = buildMenuGroups(items)
+    },
     executarBuscaGlobal () {
       const searchParam = (this.globalSearch || '').trim()
       if (!searchParam) return
@@ -926,6 +981,7 @@ export default {
     }
     this.usuario = JSON.parse(localStorage.getItem('usuario'))
     this.userProfile = localStorage.getItem('profile')
+    this.montarMenu()
     if (this.userProfile === 'admin') {
       const onboardingKey = `onboardingAdmin:${this.usuario.tenantId || 'default'}`
       const onboarding = JSON.parse(localStorage.getItem(onboardingKey) || '{}')

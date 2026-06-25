@@ -1787,7 +1787,19 @@ export default {
       return this.podeGerenciarAgenda
     }
   },
+  watch: {
+    '$route.query.aba' () {
+      this.aplicarAbaDaRota()
+    }
+  },
   methods: {
+    aplicarAbaDaRota () {
+      const aba = this.$route.query.aba
+      const abasPermitidas = ['agenda', 'dashboard', 'financeiro', 'estoque', 'pragas', 'auditoria', 'tipos']
+      if (abasPermitidas.includes(aba)) {
+        this.aba = aba
+      }
+    },
     async carregarTudo () {
       await Promise.all([
         this.carregarAtendentes(),
@@ -3239,6 +3251,7 @@ export default {
     }
   },
   async mounted () {
+    this.aplicarAbaDaRota()
     await this.carregarTudo()
     this.conectarSocket()
   },
