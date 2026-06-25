@@ -214,12 +214,8 @@
             no-caps
             class="app-user-button q-ml-sm q-px-sm"
           >
-            <q-avatar size="26px">
-              {{ $iniciaisString(username) }}
-            </q-avatar>
             <span
               v-if="$q.screen.gt.sm"
-              class="q-ml-sm"
             >
               {{ username }}
             </span>
@@ -270,39 +266,22 @@
     </q-header>
 
     <q-drawer
+      ref="sidebarDrawer"
       v-model="leftDrawerOpen"
       show-if-above
       bordered
-      :mini="miniState"
-      @mouseover="miniState = false"
-      @mouseout="miniState = true"
+      :mini="sidebarCollapsed"
+      :width="292"
+      :mini-width="72"
       mini-to-overlay
       content-class="app-sidebar"
+      @mouseenter="sidebarCollapsed = false"
     >
-      <q-scroll-area class="fit">
-        <q-list
-          padding
-          :key="userProfile"
-        >
-          <template v-for="group in menuData">
-            <div :key="group.title">
-              <q-item-label
-                v-show="!miniState"
-                header
-                class="app-nav-group"
-              >
-                {{ group.title }}
-              </q-item-label>
-              <EssentialLink
-                v-for="item in group.items"
-                :key="item.title"
-                v-bind="item"
-              />
-            </div>
-          </template>
-
-        </q-list>
-      </q-scroll-area>
+      <SidebarMenu
+        :menu="menuData"
+        :profile="userProfile"
+        :collapsed.sync="sidebarCollapsed"
+      />
     </q-drawer>
 
     <q-page-container>
@@ -421,7 +400,7 @@
 <script>
 import cSystemVersion from '../components/cSystemVersion.vue'
 import { ListarWhatsapps } from 'src/service/sessoesWhatsapp'
-import EssentialLink from 'components/EssentialLink.vue'
+import SidebarMenu from 'components/sidebar/SidebarMenu.vue'
 import socketInitial from './socketInitial'
 import alertSound from 'src/assets/sound.mp3'
 import { format } from 'date-fns'
@@ -529,7 +508,7 @@ const objMenuAdmin = [
     routeName: 'relatorios'
   },
   {
-    title: 'Usuarios',
+    title: 'Usuários',
     caption: 'Admin de usuários',
     icon: 'mdi-account-group',
     routeName: 'usuarios'
@@ -559,7 +538,7 @@ const objMenuAdmin = [
     routeName: 'etiquetas'
   },
   {
-    title: 'Cardapio',
+    title: 'Cardápio',
     caption: 'Produtos e categorias',
     icon: 'mdi-silverware-fork-knife',
     routeName: 'delivery-catalogo',
@@ -573,7 +552,7 @@ const objMenuAdmin = [
     requiredModule: 'delivery'
   },
   {
-    title: 'Areas de entrega',
+    title: 'Áreas de entrega',
     caption: 'Taxas e prazos',
     icon: 'mdi-map-marker-radius',
     routeName: 'delivery-zonas',
@@ -634,7 +613,7 @@ const objMenuAdminGroups = [
 const menuCatalog = [
   { group: 'Visao Geral', title: 'Dashboard', icon: 'mdi-home', routeName: 'home-dashboard', roles: ['admin'] },
   { group: 'Visao Geral', title: 'Painel de Atendimentos', icon: 'mdi-view-dashboard-variant', routeName: 'painel-atendimentos', roles: ['admin'] },
-  { group: 'Visao Geral', title: 'Relatorios', icon: 'mdi-file-chart', routeName: 'relatorios', roles: ['admin'] },
+  { group: 'Visao Geral', title: 'Relatórios', icon: 'mdi-file-chart', routeName: 'relatorios', roles: ['admin'] },
   { group: 'Atendimento', title: 'Atendimentos', icon: 'mdi-forum-outline', routeName: 'atendimento' },
   { group: 'Atendimento', title: 'Canais', icon: 'mdi-cellphone-wireless', routeName: 'sessoes', roles: ['admin'] },
   { group: 'Atendimento', title: 'Filas', icon: 'mdi-arrow-decision-outline', routeName: 'filas', roles: ['admin'] },
@@ -645,14 +624,14 @@ const menuCatalog = [
   { group: 'CRM e Vendas', title: 'Pipeline', icon: 'mdi-chart-timeline-variant', routeName: 'pipeline-vendas' },
   { group: 'CRM e Vendas', title: 'Propostas', icon: 'mdi-file-sign', routeName: 'pipeline-vendas', query: { view: 'propostas' }, disabled: true },
   { group: 'CRM e Vendas', title: 'Contratos', icon: 'mdi-file-document-edit-outline', routeName: 'pipeline-vendas', query: { view: 'contratos' }, disabled: true },
-  { group: 'Servicos Tecnicos', title: 'Ordens de Servico', icon: 'mdi-calendar-check-outline', routeName: 'ordens-servico', query: { aba: 'agenda' } },
-  { group: 'Servicos Tecnicos', title: 'Servicos', icon: 'mdi-format-list-bulleted-type', routeName: 'ordens-servico', query: { aba: 'tipos' }, roles: ['admin', 'supervisor'] },
-  { group: 'Servicos Tecnicos', title: 'Produtos', icon: 'mdi-package-variant-closed', routeName: 'ordens-servico', query: { aba: 'estoque' }, roles: ['admin', 'supervisor'] },
-  { group: 'Servicos Tecnicos', title: 'Estoque', icon: 'mdi-warehouse', routeName: 'ordens-servico', query: { aba: 'estoque' }, roles: ['admin', 'supervisor'] },
-  { group: 'Servicos Tecnicos', title: 'Pragas', icon: 'mdi-bug-outline', routeName: 'ordens-servico', query: { aba: 'pragas' } },
-  { group: 'Servicos Tecnicos', title: 'Monitoramento', icon: 'mdi-map-marker-radius-outline', routeName: 'monitoramento' },
-  { group: 'Servicos Tecnicos', title: 'Armadilhas', icon: 'mdi-crosshairs-gps', routeName: 'monitoramento', query: { aba: 'armadilhas' } },
-  { group: 'Servicos Tecnicos', title: 'Auditoria Tecnica', icon: 'mdi-shield-search', routeName: 'ordens-servico', query: { aba: 'auditoria' }, roles: ['admin', 'supervisor'] },
+  { group: 'Serviços Técnicos', title: 'Ordens de Serviço', icon: 'mdi-calendar-check-outline', routeName: 'ordens-servico', query: { aba: 'agenda' } },
+  { group: 'Serviços Técnicos', title: 'Serviços', icon: 'mdi-format-list-bulleted-type', routeName: 'ordens-servico', query: { aba: 'tipos' }, roles: ['admin', 'supervisor'] },
+  { group: 'Serviços Técnicos', title: 'Produtos', icon: 'mdi-package-variant-closed', routeName: 'ordens-servico', query: { aba: 'estoque' }, roles: ['admin', 'supervisor'] },
+  { group: 'Serviços Técnicos', title: 'Estoque', icon: 'mdi-warehouse', routeName: 'ordens-servico', query: { aba: 'estoque' }, roles: ['admin', 'supervisor'] },
+  { group: 'Serviços Técnicos', title: 'Pragas', icon: 'mdi-bug-outline', routeName: 'ordens-servico', query: { aba: 'pragas' } },
+  { group: 'Serviços Técnicos', title: 'Monitoramento', icon: 'mdi-map-marker-radius-outline', routeName: 'monitoramento' },
+  { group: 'Serviços Técnicos', title: 'Armadilhas', icon: 'mdi-crosshairs-gps', routeName: 'monitoramento', query: { aba: 'armadilhas' } },
+  { group: 'Serviços Técnicos', title: 'Auditoria Técnica', icon: 'mdi-shield-search', routeName: 'ordens-servico', query: { aba: 'auditoria' }, roles: ['admin', 'supervisor'] },
   { group: 'Financeiro', title: 'Visao Financeira', icon: 'mdi-chart-box-outline', routeName: 'ordens-servico', query: { aba: 'financeiro' }, roles: ['admin', 'supervisor'] },
   { group: 'Financeiro', title: 'Contas a Receber', icon: 'mdi-cash-plus', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'receber' }, disabled: true },
   { group: 'Financeiro', title: 'Contas a Pagar', icon: 'mdi-cash-minus', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'pagar' }, disabled: true },
@@ -664,17 +643,17 @@ const menuCatalog = [
   { group: 'Financeiro', title: 'Comissoes', icon: 'mdi-account-cash-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'comissoes' }, disabled: true },
   { group: 'Financeiro', title: 'Centros de Custo', icon: 'mdi-sitemap-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'centros-custo' }, disabled: true },
   { group: 'Financeiro', title: 'Formas de Pagamento', icon: 'mdi-credit-card-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'formas-pagamento' }, disabled: true },
-  { group: 'Financeiro', title: 'Relatorios Financeiros', icon: 'mdi-file-chart-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'relatorios' }, disabled: true },
+  { group: 'Financeiro', title: 'Relatórios Financeiros', icon: 'mdi-file-chart-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'relatorios' }, disabled: true },
   { group: 'Marketing e Automacao', title: 'Campanhas', icon: 'mdi-message-bookmark-outline', routeName: 'campanhas', roles: ['admin'] },
   { group: 'Marketing e Automacao', title: 'Chatbot', icon: 'mdi-robot', routeName: 'chat-flow', roles: ['admin'] },
   { group: 'Marketing e Automacao', title: 'Etiquetas', icon: 'mdi-tag-text', routeName: 'etiquetas', roles: ['admin'] },
   { group: 'Marketing e Automacao', title: 'Automacoes', icon: 'mdi-lightning-bolt-outline', routeName: 'auto-resposta', roles: ['admin'], disabled: true },
   { group: 'Delivery', title: 'Pedidos', icon: 'mdi-clipboard-list-outline', routeName: 'delivery-pedidos', requiredModule: 'delivery', roles: ['admin'] },
-  { group: 'Delivery', title: 'Cardapio', icon: 'mdi-silverware-fork-knife', routeName: 'delivery-catalogo', requiredModule: 'delivery', roles: ['admin'] },
-  { group: 'Delivery', title: 'Areas de Entrega', icon: 'mdi-map-marker-radius', routeName: 'delivery-zonas', requiredModule: 'delivery', roles: ['admin'] },
-  { group: 'Administracao', title: 'Usuarios', icon: 'mdi-account-group', routeName: 'usuarios', roles: ['admin'] },
-  { group: 'Administracao', title: 'Permissoes', icon: 'mdi-account-key-outline', routeName: 'usuarios', query: { view: 'permissoes' }, disabled: true },
-  { group: 'Administracao', title: 'Configuracoes', icon: 'mdi-cog', routeName: 'configuracoes', roles: ['admin'] },
+  { group: 'Delivery', title: 'Cardápio', icon: 'mdi-silverware-fork-knife', routeName: 'delivery-catalogo', requiredModule: 'delivery', roles: ['admin'] },
+  { group: 'Delivery', title: 'Áreas de Entrega', icon: 'mdi-map-marker-radius', routeName: 'delivery-zonas', requiredModule: 'delivery', roles: ['admin'] },
+  { group: 'Administracao', title: 'Usuários', icon: 'mdi-account-group', routeName: 'usuarios', roles: ['admin'] },
+  { group: 'Administracao', title: 'Permissões', icon: 'mdi-account-key-outline', routeName: 'usuarios', query: { view: 'permissoes' }, disabled: true },
+  { group: 'Administracao', title: 'Configurações', icon: 'mdi-cog', routeName: 'configuracoes', roles: ['admin'] },
   { group: 'Administracao', title: 'API', icon: 'mdi-call-split', routeName: 'api-service', roles: ['admin'] },
   { group: 'Administracao', title: 'Auditoria', icon: 'mdi-shield-account-outline', routeName: 'configuracoes', query: { view: 'auditoria' }, disabled: true },
   { group: 'Conta', title: 'Minha Assinatura', icon: 'mdi-credit-card-outline', routeName: 'minha-assinatura' }
@@ -684,11 +663,11 @@ const menuGroupOrder = [
   'Visao Geral',
   'Atendimento',
   'CRM e Vendas',
-  'Servicos Tecnicos',
+  'Serviços Técnicos',
   'Financeiro',
   'Marketing e Automacao',
   'Delivery',
-  'Administracao',
+  'Administração',
   'Conta'
 ]
 
@@ -699,16 +678,282 @@ const buildMenuGroups = items => menuGroupOrder
   }))
   .filter(group => group.items.length)
 
+const devItem = (title, slug, icon = 'mdi-progress-wrench', extra = {}) => ({
+  key: `dev:${slug}`,
+  title,
+  icon,
+  routeName: 'em-desenvolvimento',
+  params: { slug },
+  query: { title },
+  ...extra
+})
+
+const menuTreeCatalog = [
+  {
+    key: 'dashboard',
+    title: 'Dashboard',
+    icon: 'mdi-view-dashboard-outline',
+    roles: ['admin'],
+    children: [
+      { key: 'dashboard-geral', title: 'Dashboard Geral', icon: 'mdi-home', routeName: 'home-dashboard' },
+      { key: 'indicadores', title: 'Indicadores', icon: 'mdi-chart-box-outline', routeName: 'painel-atendimentos' },
+      devItem('Agenda do Dia', 'agenda-do-dia', 'mdi-calendar-today'),
+      devItem('Atividades Recentes', 'atividades-recentes', 'mdi-history')
+    ]
+  },
+  {
+    key: 'clientes',
+    title: 'Clientes',
+    icon: 'mdi-account-group-outline',
+    children: [
+      { key: 'clientes-consultar', title: 'Consultar Clientes', icon: 'mdi-account-search-outline', routeName: 'clientes' },
+      { key: 'clientes-novo', title: 'Novo Cliente', icon: 'mdi-account-plus-outline', routeName: 'clientes', query: { acao: 'novo' } },
+      { key: 'clientes-relatorios', title: 'Relatórios', icon: 'mdi-file-chart-outline', routeName: 'relatorios', roles: ['admin'] }
+    ]
+  },
+  {
+    key: 'orcamentos',
+    title: 'Orçamentos',
+    icon: 'mdi-file-document-edit-outline',
+    children: [
+      { key: 'orcamentos-novo', title: 'Novo Orçamento', icon: 'mdi-file-plus-outline', routeName: 'pipeline-vendas', query: { view: 'propostas' } },
+      { key: 'orcamentos-consultar', title: 'Consultar Orçamentos', icon: 'mdi-file-search-outline', routeName: 'pipeline-vendas', query: { view: 'propostas' } },
+      devItem('Informações para Orçamento', 'informacoes-para-orcamento', 'mdi-information-outline', { roles: ['admin'] }),
+      { key: 'orcamentos-relatorios', title: 'Relatórios', icon: 'mdi-file-chart-outline', routeName: 'relatorios', roles: ['admin'] }
+    ]
+  },
+  {
+    key: 'vendas',
+    title: 'Vendas',
+    icon: 'mdi-cash-register',
+    children: [
+      { key: 'vendas-nova', title: 'Nova Venda', icon: 'mdi-cart-plus', routeName: 'pipeline-vendas' },
+      { key: 'vendas-consultar', title: 'Consultar Vendas', icon: 'mdi-text-search', routeName: 'pipeline-vendas' },
+      { key: 'vendas-relatorios', title: 'Relatórios', icon: 'mdi-file-chart-outline', routeName: 'relatorios', roles: ['admin'] }
+    ]
+  },
+  {
+    key: 'programacao',
+    title: 'Programação',
+    icon: 'mdi-calendar-month-outline',
+    children: [
+      { key: 'programacao-agenda-servicos', title: 'Agenda de Serviços', icon: 'mdi-calendar-check-outline', routeName: 'ordens-servico', query: { aba: 'agenda' } },
+      { key: 'programacao-servico-avulso', title: 'Novo Serviço Avulso', icon: 'mdi-briefcase-plus-outline', routeName: 'ordens-servico', query: { acao: 'novo', tipo: 'avulso' } },
+      { key: 'programacao-servico-ra', title: 'Novo Serviço RA', icon: 'mdi-clipboard-plus-outline', routeName: 'ordens-servico', query: { acao: 'novo', tipo: 'ra' } },
+      devItem('Nova Vistoria para Relatório', 'nova-vistoria-relatorio', 'mdi-clipboard-text-search-outline'),
+      devItem('Nova Vistoria para Orçamento', 'nova-vistoria-orcamento', 'mdi-clipboard-search-outline')
+    ]
+  },
+  {
+    key: 'atendimentos',
+    title: 'Atendimentos',
+    icon: 'mdi-face-agent',
+    children: [
+      { key: 'atendimentos-novo', title: 'Novo Atendimento', icon: 'mdi-plus-circle-outline', routeName: 'atendimento' },
+      { key: 'atendimentos-consultar', title: 'Consultar Atendimentos', icon: 'mdi-forum-outline', routeName: 'atendimento' },
+      {
+        key: 'ordem-servico',
+        title: 'Ordem de Serviço',
+        icon: 'mdi-clipboard-list-outline',
+        children: [
+          { key: 'ordem-servico-agenda', title: 'Agenda e Ordens', icon: 'mdi-calendar-check-outline', routeName: 'ordens-servico', query: { aba: 'agenda' } },
+          devItem('Informações de Segurança e Prevenção', 'informacoes-seguranca-prevencao', 'mdi-shield-check-outline'),
+          devItem('Modelos de Ordem de Serviço', 'modelos-ordem-servico', 'mdi-file-cog-outline', { roles: ['admin', 'supervisor'] })
+        ]
+      },
+      { key: 'atendimentos-relatorios', title: 'Relatórios', icon: 'mdi-file-chart-outline', routeName: 'relatorios', roles: ['admin'] }
+    ]
+  },
+  {
+    key: 'setor-tecnico',
+    title: 'Setor Técnico',
+    icon: 'mdi-tools',
+    children: [
+      { key: 'vistorias-consultar', title: 'Consultar Vistorias', icon: 'mdi-clipboard-search-outline', routeName: 'monitoramento' },
+      { key: 'relatorios-tecnicos', title: 'Relatórios Técnicos', icon: 'mdi-file-chart-outline', routeName: 'relatorios', roles: ['admin', 'supervisor'] }
+    ]
+  },
+  {
+    key: 'crm-comercial',
+    title: 'CRM Comercial',
+    icon: 'mdi-phone-in-talk-outline',
+    children: [
+      { key: 'crm-conversas', title: 'Conversas', icon: 'mdi-message-text-outline', routeName: 'atendimento' },
+      { key: 'crm-pipelines', title: 'Pipelines', icon: 'mdi-chart-timeline-variant', routeName: 'pipeline-vendas' },
+      { key: 'crm-campanhas', title: 'Campanhas', icon: 'mdi-message-bookmark-outline', routeName: 'campanhas', roles: ['admin'] },
+      {
+        key: 'gestao-crm',
+        title: 'Gestão CRM',
+        icon: 'mdi-account-tie-outline',
+        roles: ['admin'],
+        children: [
+          { key: 'gestao-crm-dashboard', title: 'Dashboard', icon: 'mdi-view-dashboard-variant', routeName: 'painel-atendimentos' },
+          devItem('Ao Vivo', 'crm-ao-vivo', 'mdi-access-point'),
+          { key: 'gestao-crm-consulta-conversas', title: 'Consulta de Conversas', icon: 'mdi-text-search', routeName: 'relatorios' }
+        ]
+      }
+    ]
+  },
+  {
+    key: 'cadastros',
+    title: 'Cadastros',
+    icon: 'mdi-archive-cog-outline',
+    roles: ['admin', 'supervisor'],
+    children: [
+      {
+        key: 'cadastros-comercial',
+        title: 'Comercial',
+        icon: 'mdi-storefront-outline',
+        children: [
+          devItem('Serviços', 'cad-servicos', 'mdi-format-list-bulleted-type'),
+          devItem('Produtos', 'cad-produtos', 'mdi-package-variant-closed'),
+          devItem('Pragas', 'cad-pragas', 'mdi-bug-outline'),
+          devItem('Métodos', 'metodos', 'mdi-spray'),
+          devItem('Tipos de Atendimento', 'tipos-atendimento', 'mdi-format-list-checks'),
+          devItem('Informações para Orçamentos', 'cad-informacoes-orcamentos', 'mdi-information-outline')
+        ]
+      },
+      {
+        key: 'cadastros-operacional',
+        title: 'Operacional',
+        icon: 'mdi-factory',
+        children: [
+          devItem('Armadilhas', 'cad-armadilhas', 'mdi-crosshairs-gps'),
+          devItem('Ferramentas', 'ferramentas', 'mdi-hammer-wrench'),
+          devItem('Equipamentos', 'equipamentos', 'mdi-toolbox-outline'),
+          devItem('Veículos', 'veiculos', 'mdi-truck-outline'),
+          devItem('Não Conformidades', 'nao-conformidades', 'mdi-alert-octagon-outline')
+        ]
+      },
+      {
+        key: 'cadastros-pessoas',
+        title: 'Pessoas',
+        icon: 'mdi-account-multiple-outline',
+        roles: ['admin'],
+        children: [
+          devItem('Funcionários', 'funcionarios', 'mdi-account-tie-outline'),
+          { key: 'cad-usuarios', title: 'Usuários', icon: 'mdi-account-group', routeName: 'usuarios' },
+          { key: 'cad-departamentos', title: 'Departamentos', icon: 'mdi-office-building-outline', routeName: 'filas' },
+          { key: 'cad-perfis-acesso', title: 'Perfis de Acesso', icon: 'mdi-account-key-outline', routeName: 'usuarios', query: { view: 'permissoes' } }
+        ]
+      },
+      {
+        key: 'cadastros-financeiro',
+        title: 'Financeiro',
+        icon: 'mdi-cash-multiple',
+        roles: ['admin'],
+        children: [
+          devItem('Plano de Contas', 'plano-contas', 'mdi-format-list-numbered'),
+          devItem('Formas de Pagamento', 'formas-pagamento', 'mdi-credit-card-outline'),
+          devItem('Tipos de Fechamento', 'tipos-fechamento', 'mdi-calendar-end'),
+          devItem('Condições de Pagamento', 'condicoes-pagamento', 'mdi-calendar-clock')
+        ]
+      },
+      {
+        key: 'cadastros-gerais',
+        title: 'Cadastros Gerais',
+        icon: 'mdi-database-cog-outline',
+        roles: ['admin'],
+        children: [
+          devItem('Fornecedores', 'fornecedores', 'mdi-truck-delivery-outline'),
+          devItem('Cidades', 'cidades', 'mdi-city-variant-outline'),
+          devItem('Estados', 'estados', 'mdi-map-outline'),
+          devItem('Empresas/Filiais', 'empresas-filiais', 'mdi-domain'),
+          { key: 'parametros-gerais', title: 'Parâmetros Gerais', icon: 'mdi-cog-outline', routeName: 'configuracoes' }
+        ]
+      }
+    ]
+  },
+  {
+    key: 'financeiro',
+    title: 'Financeiro',
+    icon: 'mdi-currency-usd',
+    roles: ['admin', 'supervisor'],
+    children: [
+      devItem('Contas a Receber', 'contas-a-receber', 'mdi-cash-plus'),
+      devItem('Contas a Pagar', 'contas-a-pagar', 'mdi-cash-minus'),
+      devItem('Fluxo de Caixa', 'fluxo-de-caixa', 'mdi-swap-horizontal'),
+      devItem('Conciliação Financeira', 'conciliacao-financeira', 'mdi-bank-check'),
+      devItem('Relatórios Financeiros', 'relatorios-financeiros', 'mdi-file-chart-outline')
+    ]
+  },
+  {
+    key: 'relatorios',
+    title: 'Relatórios',
+    icon: 'mdi-chart-bar',
+    roles: ['admin'],
+    children: [
+      { key: 'rel-clientes', title: 'Clientes', icon: 'mdi-account-box-outline', routeName: 'relatorios' },
+      { key: 'rel-orcamentos', title: 'Orçamentos', icon: 'mdi-file-document-edit-outline', routeName: 'relatorios' },
+      { key: 'rel-vendas', title: 'Vendas', icon: 'mdi-cash-register', routeName: 'relatorios' },
+      { key: 'rel-atendimentos', title: 'Atendimentos', icon: 'mdi-face-agent', routeName: 'relatorios' },
+      { key: 'rel-programacao', title: 'Programação', icon: 'mdi-calendar-month-outline', routeName: 'relatorios' },
+      { key: 'rel-setor-tecnico', title: 'Setor Técnico', icon: 'mdi-tools', routeName: 'relatorios' },
+      { key: 'rel-crm-comercial', title: 'CRM Comercial', icon: 'mdi-phone-in-talk-outline', routeName: 'relatorios' },
+      { key: 'rel-financeiro', title: 'Financeiro', icon: 'mdi-currency-usd', routeName: 'relatorios' }
+    ]
+  },
+  {
+    key: 'configuracoes-crm',
+    title: 'Configurações CRM',
+    icon: 'mdi-cog-sync-outline',
+    roles: ['admin'],
+    children: [
+      devItem('Status de Leads', 'status-leads', 'mdi-list-status'),
+      devItem('Origens dos Leads', 'origens-leads', 'mdi-source-branch'),
+      devItem('Origem de Chegada', 'origem-chegada', 'mdi-map-marker-path'),
+      { key: 'gerenciar-pipelines', title: 'Gerenciar Pipelines', icon: 'mdi-chart-timeline-variant-shimmer', routeName: 'pipeline-vendas' },
+      devItem('Produtos de Venda', 'produtos-venda', 'mdi-package-variant'),
+      devItem('Metas de Venda', 'metas-venda', 'mdi-target'),
+      devItem('Motivos de Perda', 'motivos-perda', 'mdi-close-octagon-outline'),
+      devItem('Campos Customizados', 'campos-customizados', 'mdi-form-textbox')
+    ]
+  },
+  {
+    key: 'administracao',
+    title: 'Administração do Sistema',
+    icon: 'mdi-shield-account-outline',
+    roles: ['admin'],
+    children: [
+      { key: 'admin-usuarios', title: 'Usuários', icon: 'mdi-account-group', routeName: 'usuarios' },
+      { key: 'admin-perfis', title: 'Perfis de Acesso', icon: 'mdi-account-key-outline', routeName: 'usuarios', query: { view: 'permissoes' } },
+      { key: 'admin-departamentos', title: 'Departamentos', icon: 'mdi-office-building-outline', routeName: 'filas' },
+      { key: 'admin-api-webhooks', title: 'API / Webhooks', icon: 'mdi-call-split', routeName: 'api-service' },
+      { key: 'admin-prompts', title: 'Prompts', icon: 'mdi-message-cog-outline', routeName: 'chat-flow' },
+      devItem('AI Prompts', 'ai-prompts', 'mdi-robot-outline'),
+      devItem('Controle de Acesso por IP', 'controle-acesso-ip', 'mdi-ip-network-outline'),
+      devItem('Logs do Sistema', 'logs-sistema', 'mdi-text-box-search-outline'),
+      { key: 'admin-config-gerais', title: 'Configurações Gerais', icon: 'mdi-cog-outline', routeName: 'configuracoes' },
+      devItem('Configurações Avançadas', 'configuracoes-avancadas', 'mdi-cog-transfer-outline')
+    ]
+  },
+  { key: 'minha-assinatura', title: 'Minha Assinatura', icon: 'mdi-credit-card-outline', routeName: 'minha-assinatura' },
+  { key: 'delivery-pedidos', title: 'Delivery', icon: 'mdi-food-fork-drink', routeName: 'delivery-pedidos', requiredModule: 'delivery', roles: ['admin'] },
+  { key: 'delivery-cardapio', title: 'Cardápio', icon: 'mdi-silverware-fork-knife', routeName: 'delivery-catalogo', requiredModule: 'delivery', roles: ['admin'] },
+  { key: 'delivery-zonas', title: 'Áreas de Entrega', icon: 'mdi-map-marker-radius', routeName: 'delivery-zonas', requiredModule: 'delivery', roles: ['admin'] }
+]
+
+const filterMenuByAccess = (nodes, canShow) => nodes.reduce((acc, node) => {
+  if (!canShow(node)) return acc
+  const children = Array.isArray(node.children) ? filterMenuByAccess(node.children, canShow) : []
+  if (!node.children || children.length) {
+    acc.push({ ...node, children })
+  }
+  return acc
+}, [])
+
+const legacyMenuState = { objMenuGroups, menuCatalog, buildMenuGroups }
+
 export default {
   name: 'MainLayout',
   mixins: [socketInitial],
-  components: { EssentialLink, ModalUsuario, cStatusUsuario, cSystemVersion, OnboardingAdmin },
+  components: { SidebarMenu, ModalUsuario, cStatusUsuario, cSystemVersion, OnboardingAdmin },
   data () {
     return {
       username,
       tenantLogoUrl: resolveTenantLogoUrl(localStorage.getItem('tenantLogoUrl')),
       domainExperimentalsMenus: ['@'],
-      miniState: true,
+      sidebarCollapsed: localStorage.getItem('crmSidebarCollapsed') === 'true',
       userProfile: 'user',
       modalUsuario: false,
       onboardingOpen: false,
@@ -719,10 +964,16 @@ export default {
       usuario: {},
       alertSound,
       leftDrawerOpen: false,
-      menuData: objMenuGroups,
+      menuData: [],
       menuDataAdmin: objMenuAdminGroups,
+      legacyMenuState,
       countTickets: 0,
       ticketsList: []
+    }
+  },
+  watch: {
+    sidebarCollapsed (value) {
+      localStorage.setItem('crmSidebarCollapsed', value ? 'true' : 'false')
     }
   },
   computed: {
@@ -768,12 +1019,11 @@ export default {
   },
   methods: {
     montarMenu () {
-      const items = menuCatalog.filter(item => {
+      this.menuData = filterMenuByAccess(menuTreeCatalog, item => {
         const roles = item.roles || (item.disabled ? ['admin'] : null)
         if (roles && !roles.includes(this.userProfile)) return false
         return this.exibirMenuBeta(item)
       })
-      this.menuData = buildMenuGroups(items)
     },
     executarBuscaGlobal () {
       const searchParam = (this.globalSearch || '').trim()
@@ -783,6 +1033,11 @@ export default {
     },
     atualizarLogoCabecalho (event) {
       this.tenantLogoUrl = resolveTenantLogoUrl(event.detail)
+    },
+    recolherSidebarAoClicarFora (event) {
+      const sidebar = this.$refs.sidebarDrawer?.$el
+      if (!sidebar || sidebar.contains(event.target)) return
+      this.sidebarCollapsed = true
     },
     exibirMenuBeta (itemMenu) {
       if (itemMenu?.requiredModule && !this.usuario.enabledModules?.[itemMenu.requiredModule]) return false
@@ -968,6 +1223,7 @@ export default {
   },
   async mounted () {
     window.addEventListener('tenant-logo-updated', this.atualizarLogoCabecalho)
+    document.addEventListener('click', this.recolherSidebarAoClicarFora)
     this.atualizarUsuario()
     await this.listarWhatsapps()
     await this.listarConfiguracoes()
@@ -991,6 +1247,7 @@ export default {
   },
   destroyed () {
     window.removeEventListener('tenant-logo-updated', this.atualizarLogoCabecalho)
+    document.removeEventListener('click', this.recolherSidebarAoClicarFora)
     socket.disconnect()
   }
 }

@@ -82,6 +82,11 @@ export default {
       default: () => ({})
     },
 
+    params: {
+      type: Object,
+      default: () => ({})
+    },
+
     disabled: {
       type: Boolean,
       default: false
@@ -99,7 +104,7 @@ export default {
   methods: {
     navigate () {
       if (this.disabled || this.isActive) return
-      this.$router.push({ name: this.routeName, query: this.query })
+      this.$router.push({ name: this.routeName, params: this.params, query: this.query })
     }
   }
 }

@@ -6,9 +6,6 @@
         <div class="text-caption text-grey-7">Agenda de visitas, técnicos e histórico operacional</div>
       </div>
       <div class="col-12 col-md-auto row q-gutter-sm">
-        <q-btn v-if="podeGerenciarEstoque" unelevated color="primary" icon="mdi-package-variant-closed" label="Produto" @click="abrirEstoque()" />
-        <q-btn v-if="podeGerenciarAgenda" unelevated color="primary" icon="mdi-format-list-bulleted-type" label="Tipo" @click="abrirTipoServico()" />
-        <q-btn v-if="podeGerenciarAgenda" unelevated color="primary" icon="mdi-account-hard-hat-outline" label="Técnico" @click="abrirAtendente()" />
         <q-btn v-if="podeOperarOrdens" unelevated color="primary" icon="mdi-calendar-plus" label="Nova ordem" @click="abrirOrdem()" />
       </div>
     </div>
@@ -17,26 +14,12 @@
       <q-card-section class="row q-col-gutter-sm">
         <q-select dense outlined emit-value map-options clearable class="col-12 col-md-3" label="Técnico" v-model="filtros.attendantId" :options="opcoesAtendentes" @input="carregarOrdens" />
         <q-select dense outlined clearable class="col-12 col-md-2" label="Status" v-model="filtros.status" :options="statusOptions" @input="carregarOrdens" />
-        <q-select v-if="podeVerFinanceiro" dense outlined emit-value map-options clearable class="col-12 col-md-2" label="Financeiro" v-model="filtros.financialStatus" :options="financialStatusOptions" @input="carregarOrdens" />
-        <q-select v-if="podeVerFinanceiro" dense outlined emit-value map-options clearable class="col-12 col-md-2" label="Forma pagto." v-model="filtros.paymentMethod" :options="paymentMethodOptions" @input="carregarOrdens" />
-        <q-select v-if="podeVerFinanceiro" dense outlined emit-value map-options clearable class="col-12 col-md-2" label="Visão financeira" v-model="filtros.financialView" :options="financialViewOptions" @input="carregarOrdens" />
         <q-select dense outlined clearable class="col-12 col-md-2" label="Prioridade" v-model="filtros.priority" :options="priorityOptions" @input="carregarOrdens" />
-        <q-input dense outlined clearable class="col-12 col-md-3" label="Tipo de serviço" v-model="filtros.serviceType" @keyup.enter="carregarOrdens" />
         <q-btn flat color="primary" icon="mdi-refresh" class="col-12 col-md-auto" label="Atualizar" @click="carregarTudo" />
       </q-card-section>
     </q-card>
 
-    <q-tabs v-model="aba" dense align="left" active-color="primary" indicator-color="primary" class="q-mb-md">
-      <q-tab name="agenda" icon="mdi-calendar-clock" label="Agenda" />
-      <q-tab v-if="podeVerFinanceiro" name="dashboard" icon="mdi-chart-box-outline" label="Dashboard" />
-      <q-tab v-if="podeVerFinanceiro" name="financeiro" icon="mdi-cash-multiple" label="Financeiro" />
-      <q-tab name="estoque" icon="mdi-package-variant-closed" label="Estoque" />
-      <q-tab name="pragas" icon="mdi-bug-outline" label="Pragas" />
-      <q-tab v-if="podeGerenciarEstoque" name="auditoria" icon="mdi-shield-search" label="Auditoria" />
-      <q-tab v-if="podeGerenciarAgenda" name="tipos" icon="mdi-format-list-bulleted-type" label="Tipos de serviço" />
-    </q-tabs>
-
-    <div v-if="aba === 'dashboard'" class="dashboard-grid q-mb-md">
+    <div v-if="false && aba === 'dashboard'" class="dashboard-grid q-mb-md">
       <q-card v-for="card in dashboardCards" :key="card.label" flat bordered>
         <q-card-section>
           <div class="text-caption text-grey-7">{{ card.label }}</div>
@@ -1794,27 +1777,15 @@ export default {
   },
   methods: {
     aplicarAbaDaRota () {
-      const aba = this.$route.query.aba
-      const abasPermitidas = ['agenda', 'dashboard', 'financeiro', 'estoque', 'pragas', 'auditoria', 'tipos']
-      if (abasPermitidas.includes(aba)) {
-        this.aba = aba
-      }
+      this.aba = 'agenda'
     },
     async carregarTudo () {
       await Promise.all([
         this.carregarAtendentes(),
         this.carregarEstoque(),
-        this.carregarEstoqueBaixo(),
-        this.carregarMovimentacoesEstoque(),
-        this.carregarRelatoriosEstoque(),
-        this.carregarAuditoriaEstoque(),
-        this.carregarAuditoriaFinanceira(),
-        this.carregarAuditoriaServicos(),
         this.carregarPragas(),
         this.carregarTiposServico(),
-        this.carregarOrdens(),
-        this.carregarDashboard(),
-        this.carregarFechamentoMensal()
+        this.carregarOrdens()
       ])
     },
     async carregarAtendentes () {

@@ -285,6 +285,86 @@ h4, .text-h4
   letter-spacing: .08em
   text-transform: uppercase
 
+.app-sidebar-shell
+  height: 100%
+  display: flex
+  flex-direction: column
+  overflow: hidden
+
+.app-sidebar-toolbar
+  display: flex
+  align-items: center
+  gap: 8px
+  padding: 12px 10px 8px
+  border-bottom: 1px solid var(--border)
+
+.app-sidebar-search
+  flex: 1
+  min-width: 0
+
+.app-sidebar-search .q-field__control
+  min-height: 38px
+  border-radius: var(--radius-md) !important
+  background: var(--surface-muted) !important
+
+.app-sidebar-collapse
+  flex: 0 0 36px
+
+.app-sidebar-scroll
+  flex: 1
+  min-height: 0
+
+.app-sidebar-list
+  padding-top: 8px
+  padding-bottom: 16px
+
+.app-menu-group
+  margin: 2px 8px
+  border-radius: var(--radius-md)
+  color: var(--text-secondary)
+  overflow: hidden
+  transition: background-color var(--transition-fast), color var(--transition-fast)
+
+.app-menu-group > .q-expansion-item__container > .q-item
+  min-height: 44px
+  border-radius: var(--radius-md)
+  font-weight: 700
+
+.app-menu-group > .q-expansion-item__container > .q-item:hover
+  background: var(--surface-muted)
+  color: var(--text-primary)
+
+.app-menu-group--active > .q-expansion-item__container > .q-item
+  background: var(--color-primary-50)
+  color: var(--color-primary-700)
+
+.body--dark .app-menu-group--active > .q-expansion-item__container > .q-item
+  background: rgba(22, 163, 74, .16)
+  color: var(--color-primary-300)
+
+.app-menu-group .q-item__section--avatar
+  min-width: 38px
+
+.app-menu-children
+  margin-left: 10px
+  padding-left: 8px
+  border-left: 1px solid var(--border)
+
+.app-menu-group--collapsed
+  margin-left: 8px
+  margin-right: 8px
+
+.app-menu-group--collapsed > .q-expansion-item__container > .q-item
+  justify-content: center
+  padding-left: 14px
+  padding-right: 14px
+
+.app-menu-empty
+  margin: 8px
+  border-radius: var(--radius-md)
+  color: var(--text-muted)
+  background: var(--surface-muted)
+
 .app-menu-link
   margin: 2px 8px
   min-height: 44px
