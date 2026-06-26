@@ -14,6 +14,7 @@ const routes = [
       { path: '/sessoes', name: 'sessoes', component: () => import('pages/sessaoWhatsapp/Index.vue') },
       { path: '/contatos', name: 'contatos', component: () => import('pages/contatos/Index.vue') },
       { path: '/clientes', name: 'clientes', component: () => import('pages/clientes/Index.vue') },
+      { path: '/tipos-atendimento', name: 'tipos-atendimento', component: () => import('pages/tiposAtendimento/Index.vue') },
       { path: '/cadastros/operacionais', name: 'cadastros-operacionais', component: () => import('pages/cadastros/Operacionais.vue') },
       { path: '/cadastros/base', name: 'cadastros-base', component: () => import('pages/cadastros/Base.vue') },
       { path: '/pipeline-vendas', name: 'pipeline-vendas', component: () => import('pages/pipelineVendas/Index.vue') },

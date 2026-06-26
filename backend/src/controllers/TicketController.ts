@@ -35,6 +35,7 @@ interface TicketData {
   tenantId: string | number;
   channel: string;
   channelId?: number;
+  attendanceTypeId?: number | null;
 }
 
 export const index = async (req: Request, res: Response): Promise<Response> => {
@@ -73,8 +74,14 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const { tenantId } = req.user;
-  const { contactId, status, userId, channel, channelId }: TicketData =
-    req.body;
+  const {
+    contactId,
+    status,
+    userId,
+    channel,
+    channelId,
+    attendanceTypeId
+  }: TicketData = req.body;
 
   const ticket = await CreateTicketService({
     contactId,
@@ -82,7 +89,8 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     userId,
     tenantId,
     channel,
-    channelId
+    channelId,
+    attendanceTypeId
   });
 
   // se ticket criado pelo próprio usuário, não emitir socket.

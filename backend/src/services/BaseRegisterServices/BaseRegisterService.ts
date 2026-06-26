@@ -4,7 +4,6 @@ import BaseRegister from "../../models/BaseRegister";
 
 export const BASE_REGISTER_MODULES = [
   "methods",
-  "attendance-types",
   "non-conformities",
   "tools",
   "equipment",

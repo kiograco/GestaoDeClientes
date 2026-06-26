@@ -32,6 +32,7 @@ import salesPipelineRoutes from "./salesPipelineRoutes";
 import serviceOrderRoutes from "./serviceOrderRoutes";
 import monitoringRoutes from "./monitoringRoutes";
 import baseRegisterRoutes from "./baseRegisterRoutes";
+import attendanceTypeRoutes from "./attendanceTypeRoutes";
 
 const routes = Router();
 
@@ -68,5 +69,6 @@ routes.use(salesPipelineRoutes);
 routes.use(serviceOrderRoutes);
 routes.use(monitoringRoutes);
 routes.use(baseRegisterRoutes);
+routes.use(attendanceTypeRoutes);
 
 export default routes;

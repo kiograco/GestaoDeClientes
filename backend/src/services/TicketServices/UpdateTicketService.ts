@@ -4,6 +4,7 @@ import SetTicketMessagesAsRead from "../../helpers/SetTicketMessagesAsRead";
 import Contact from "../../models/Contact";
 import Ticket from "../../models/Ticket";
 import User from "../../models/User";
+import AttendanceType from "../../models/AttendanceType";
 import socketEmit from "../../helpers/socketEmit";
 import CreateLogTicketService from "./CreateLogTicketService";
 
@@ -14,6 +15,7 @@ interface TicketData {
   queueId?: number | null;
   autoReplyId?: number | string | null;
   stepAutoReplyId?: number | string | null;
+  attendanceTypeId?: number | null;
 }
 
 interface Request {
@@ -35,7 +37,7 @@ const UpdateTicketService = async ({
   isTransference,
   userIdRequest
 }: Request): Promise<Response> => {
-  const { status, userId, tenantId, queueId } = ticketData;
+  const { status, userId, tenantId, queueId, attendanceTypeId } = ticketData;
 
   const ticket = await Ticket.findOne({
     where: { id: ticketId, tenantId },
@@ -87,8 +89,17 @@ const UpdateTicketService = async ({
   const data: LegacyAny = {
     status: statusData,
     queueId,
-    userId
+    userId,
+    attendanceTypeId
   };
+
+  if (attendanceTypeId) {
+    const attendanceType = await AttendanceType.findOne({
+      where: { id: attendanceTypeId, tenantId }
+    });
+    if (!attendanceType)
+      throw new AppError("ERR_ATTENDANCE_TYPE_NOT_FOUND", 404);
+  }
 
   // se atendimento for encerrado, informar data da finalização
   if (statusData === "closed") {

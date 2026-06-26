@@ -770,14 +770,12 @@
           <q-select dense outlined emit-value map-options class="col-12 col-md-6" label="Técnico" v-model="form.attendantId" :options="opcoesAtendentes" />
           <q-input dense outlined class="col-12 col-md-6" label="Título" v-model="form.title" />
           <q-select
-            dense outlined use-input fill-input hide-selected input-debounce="0"
+            dense outlined emit-value map-options
             class="col-12 col-md-6"
             label="Tipo de serviço"
-            v-model="form.serviceType"
-            :input-value="form.serviceType"
-            :options="opcoesTiposServico"
-            @input-value="atualizarTipoServicoDigitado"
-            @new-value="criarValorTipoServico"
+            v-model="form.attendanceTypeId"
+            :options="opcoesTiposAtendimento"
+            @input="selecionarTipoAtendimentoOrdem"
           />
           <q-select dense outlined class="col-12 col-md-3" label="Prioridade" v-model="form.priority" :options="priorityOptions" />
           <q-select dense outlined class="col-12 col-md-3" label="Status" v-model="form.status" :options="statusOptions" />
@@ -1192,6 +1190,7 @@
 import { socketIO } from 'src/utils/socket'
 import { ListarClientes, ObterCliente } from 'src/service/clientes'
 import { ListarCadastroBase } from 'src/service/cadastrosBase'
+import { ListarTiposAtendimento } from 'src/service/tiposAtendimento'
 import ClienteModal from 'src/pages/clientes/ClienteModal'
 import {
   ListarAtendentesServico,
@@ -1248,6 +1247,7 @@ const emptyForm = () => ({
   attendantId: null,
   title: '',
   description: '',
+  attendanceTypeId: null,
   serviceType: '',
   pestTarget: '',
   priority: 'baixa',
@@ -1390,6 +1390,7 @@ export default {
       auditoriaFinanceira: [],
       auditoriaServicos: [],
       tiposServico: [],
+      tiposAtendimento: [],
       clientes: [],
       ordemSelecionada: null,
       ordemArrastada: null,
@@ -1572,6 +1573,11 @@ export default {
       return this.tiposServico
         .filter(item => item.active)
         .map(item => item.name)
+    },
+    opcoesTiposAtendimento () {
+      return this.tiposAtendimento
+        .filter(item => item.isActive)
+        .map(item => ({ label: item.name, value: item.id, name: item.name }))
     },
     opcoesTiposServicoOrdem () {
       return this.tiposServico
@@ -1760,6 +1766,7 @@ export default {
         this.carregarAtendentes(),
         this.carregarEstoque(),
         this.carregarPragas(),
+        this.carregarTiposAtendimento(),
         this.carregarTiposServico(),
         this.carregarOrdens()
       ])
@@ -1802,6 +1809,10 @@ export default {
     async carregarPragas () {
       const { data } = await ListarPragasServico({ search: this.filtroPragas })
       this.pragas = data
+    },
+    async carregarTiposAtendimento () {
+      const { data } = await ListarTiposAtendimento({ isActive: true, rowsPerPage: 100 })
+      this.tiposAtendimento = data.rows || []
     },
     async carregarMovimentacoesEstoque () {
       const { data } = await ListarMovimentacoesEstoqueServico()
@@ -2012,6 +2023,7 @@ export default {
           items: this.normalizarItensOrdemParaFormulario(ordem.items || [])
         }
         : emptyForm()
+      this.sincronizarTipoAtendimentoLegado()
       this.servicoOrdemSelecionado = null
       this.produtoOrdemSelecionado = null
       this.registrarOpcaoContatoOrdem(ordem?.contact)
@@ -2294,13 +2306,6 @@ export default {
     detalheProdutoServico (inventoryItemId, field) {
       const product = this.estoque.find(item => item.id === inventoryItemId)
       return product ? product[field] : ''
-    },
-    criarValorTipoServico (value, done) {
-      this.form.serviceType = value
-      done(value, 'add-unique')
-    },
-    atualizarTipoServicoDigitado (value) {
-      this.form.serviceType = value
     },
     rotuloStatusFinanceiro (status) {
       const option = this.financialStatusOptions.find(item => item.value === status)
@@ -2705,9 +2710,19 @@ export default {
           unitPrice: this.parseMoeda(item.unitPrice) || 0
         }))
     },
+    selecionarTipoAtendimentoOrdem (attendanceTypeId) {
+      const attendanceType = this.tiposAtendimento.find(item => item.id === attendanceTypeId)
+      if (attendanceType) this.form.serviceType = attendanceType.name
+    },
+    sincronizarTipoAtendimentoLegado () {
+      if (this.form.attendanceTypeId || !this.form.serviceType) return
+      const attendanceType = this.tiposAtendimento.find(item => String(item.name).toLowerCase() === String(this.form.serviceType).toLowerCase())
+      if (attendanceType) this.form.attendanceTypeId = attendanceType.id
+    },
     async salvarOrdem (status) {
       this.salvando = true
       try {
+        this.selecionarTipoAtendimentoOrdem(this.form.attendanceTypeId)
         const payload = this.normalizarDatasPayload({ ...this.form, status })
         const response = payload.id ? await AlterarOrdemServico(payload) : await CriarOrdemServico(payload)
         this.$q.notify({ type: 'positive', message: 'Ordem de serviço salva.' })
@@ -2850,9 +2865,11 @@ export default {
       this.ordemSelecionada = ordem
     },
     reservarHorario (linha, hour) {
+      const attendanceType = this.tiposAtendimento.find(item => item.isActive)
       this.abrirOrdemNoHorario(linha, hour, {
         title: 'Reserva de horário',
-        serviceType: 'Reserva',
+        attendanceTypeId: attendanceType?.id || null,
+        serviceType: attendanceType?.name || '',
         status: 'rascunho'
       })
     },

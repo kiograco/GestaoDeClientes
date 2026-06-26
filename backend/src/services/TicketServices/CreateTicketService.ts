@@ -3,6 +3,7 @@ import CheckContactOpenTickets from "../../helpers/CheckContactOpenTickets";
 import GetDefaultWhatsApp from "../../helpers/GetDefaultWhatsApp";
 import socketEmit from "../../helpers/socketEmit";
 import Ticket from "../../models/Ticket";
+import AttendanceType from "../../models/AttendanceType";
 import ShowContactService from "../ContactServices/ShowContactService";
 import CreateLogTicketService from "./CreateLogTicketService";
 import ShowTicketService from "./ShowTicketService";
@@ -14,6 +15,7 @@ interface Request {
   tenantId: string | number;
   channel: string;
   channelId?: number;
+  attendanceTypeId?: number | null;
 }
 
 const CreateTicketService = async ({
@@ -22,7 +24,8 @@ const CreateTicketService = async ({
   userId,
   tenantId,
   channel,
-  channelId = undefined
+  channelId = undefined,
+  attendanceTypeId = null
 }: Request): Promise<Ticket> => {
   const defaultWhatsapp = await GetDefaultWhatsApp(tenantId, channelId);
 
@@ -33,6 +36,13 @@ const CreateTicketService = async ({
   await CheckContactOpenTickets(contactId);
 
   const { isGroup } = await ShowContactService({ id: contactId, tenantId });
+  if (attendanceTypeId) {
+    const attendanceType = await AttendanceType.findOne({
+      where: { id: attendanceTypeId, tenantId }
+    });
+    if (!attendanceType)
+      throw new AppError("ERR_ATTENDANCE_TYPE_NOT_FOUND", 404);
+  }
 
   const { id }: Ticket = await defaultWhatsapp.$create("ticket", {
     contactId,
@@ -41,7 +51,8 @@ const CreateTicketService = async ({
     userId,
     isActiveDemand: true,
     channel,
-    tenantId
+    tenantId,
+    attendanceTypeId
   });
 
   const ticket = await ShowTicketService({ id, tenantId });

@@ -17,6 +17,7 @@ import User from "./User";
 import ServiceAttendant from "./ServiceAttendant";
 import ServiceOrderItem from "./ServiceOrderItem";
 import ServiceOrderLog from "./ServiceOrderLog";
+import AttendanceType from "./AttendanceType";
 
 @Table
 class ServiceOrder extends Model<ServiceOrder> {
@@ -61,6 +62,13 @@ class ServiceOrder extends Model<ServiceOrder> {
 
   @Column
   serviceType: string;
+
+  @ForeignKey(() => AttendanceType)
+  @Column
+  attendanceTypeId: number;
+
+  @BelongsTo(() => AttendanceType)
+  attendanceType: AttendanceType;
 
   @Column
   priority: string;

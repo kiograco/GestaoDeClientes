@@ -21,6 +21,7 @@ const opportunitySchema = Yup.object().shape({
 });
 
 const convertSchema = Yup.object().shape({
+  attendanceTypeId: Yup.number().integer().positive().nullable(),
   serviceType: nullableString,
   scheduledStart: Yup.date().nullable(),
   scheduledEnd: Yup.date().nullable(),
@@ -38,6 +39,7 @@ const proposalItemSchema = Yup.object().shape({
 });
 
 const proposalSchema = Yup.object().shape({
+  attendanceTypeId: Yup.number().integer().positive().nullable(),
   title: Yup.string().trim().required().min(2),
   introduction: nullableString,
   status: Yup.string().oneOf(SalesPipeline.SALES_PROPOSAL_STATUSES),

@@ -28,6 +28,7 @@ import Tenant from "./Tenant";
 import MessagesOffLine from "./MessageOffLine";
 import ChatFlow from "./ChatFlow";
 import Order from "./Order";
+import AttendanceType from "./AttendanceType";
 
 @Table
 class Ticket extends Model<Ticket> {
@@ -147,6 +148,13 @@ class Ticket extends Model<Ticket> {
   @ForeignKey(() => Tenant)
   @Column
   tenantId: number;
+
+  @ForeignKey(() => AttendanceType)
+  @Column
+  attendanceTypeId: number;
+
+  @BelongsTo(() => AttendanceType)
+  attendanceType: AttendanceType;
 
   @Default(null)
   @Column(DataType.VIRTUAL)

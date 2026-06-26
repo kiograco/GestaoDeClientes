@@ -208,7 +208,7 @@
           <div class="text-h6">Converter em ordem de servico</div>
         </q-card-section>
         <q-card-section class="row q-col-gutter-sm">
-          <q-input dense outlined class="col-12" label="Tipo de servico" v-model="conversao.serviceType" />
+          <q-select dense outlined emit-value map-options class="col-12" label="Tipo de atendimento" v-model="conversao.attendanceTypeId" :options="opcoesTiposAtendimento" @input="selecionarTipoAtendimentoConversao" />
           <q-input dense outlined type="datetime-local" class="col-12 col-md-6" label="Inicio" v-model="conversao.scheduledStart" />
           <q-input dense outlined type="datetime-local" class="col-12 col-md-6" label="Fim" v-model="conversao.scheduledEnd" />
           <q-input dense outlined class="col-12" label="Endereco" v-model="conversao.address" />
@@ -263,6 +263,7 @@ import {
 import { ListarClientes } from 'src/service/clientes'
 import { ListarUsuarios } from 'src/service/user'
 import { ListarAtendentesServico } from 'src/service/ordensServico'
+import { ListarTiposAtendimento } from 'src/service/tiposAtendimento'
 
 const emptyOpportunity = () => ({
   contactId: null,
@@ -305,6 +306,7 @@ export default {
       clientes: [],
       usuarios: [],
       atendentes: [],
+      tiposAtendimento: [],
       oportunidade: emptyOpportunity(),
       meta: {
         roleType: 'seller',
@@ -319,6 +321,7 @@ export default {
       propostaConversao: null,
       proposta: emptyProposal(),
       conversao: {
+        attendanceTypeId: null,
         serviceType: '',
         scheduledStart: '',
         scheduledEnd: '',
@@ -360,6 +363,11 @@ export default {
     clienteOptions () {
       return this.clientes.map(cliente => ({ label: `${cliente.name} - ${cliente.number || cliente.email || ''}`, value: cliente.id }))
     },
+    opcoesTiposAtendimento () {
+      return this.tiposAtendimento
+        .filter(item => item.isActive)
+        .map(item => ({ label: item.name, value: item.id, name: item.name }))
+    },
     dashboardCards () {
       return [
         { label: 'Total', value: this.dashboard.total || 0 },
@@ -387,6 +395,7 @@ export default {
       await Promise.all([
         this.carregarUsuarios(),
         this.carregarAtendentes(),
+        this.carregarTiposAtendimento(),
         this.carregarOportunidades(),
         this.carregarDashboard(),
         this.carregarMetas()
@@ -399,6 +408,10 @@ export default {
     async carregarAtendentes () {
       const { data } = await ListarAtendentesServico()
       this.atendentes = data
+    },
+    async carregarTiposAtendimento () {
+      const { data } = await ListarTiposAtendimento({ isActive: true, rowsPerPage: 100 })
+      this.tiposAtendimento = data.rows || []
     },
     async carregarOportunidades () {
       const { data } = await ListarOportunidades(this.filtros)
@@ -468,6 +481,7 @@ export default {
     abrirConversao (item) {
       this.oportunidadeConversao = item
       this.conversao = {
+        attendanceTypeId: null,
         serviceType: item.title,
         scheduledStart: '',
         scheduledEnd: '',
@@ -477,10 +491,15 @@ export default {
       }
       this.modalConversao = true
     },
+    selecionarTipoAtendimentoConversao (attendanceTypeId) {
+      const attendanceType = this.tiposAtendimento.find(item => item.id === attendanceTypeId)
+      if (attendanceType) this.conversao.serviceType = attendanceType.name
+    },
     async converterOportunidade () {
       if (!this.oportunidadeConversao) return
       this.salvando = true
       try {
+        this.selecionarTipoAtendimentoConversao(this.conversao.attendanceTypeId)
         const converter = this.propostaConversao
           ? ConverterPropostaOrdemServico
           : ConverterOportunidadeOrdemServico
@@ -591,7 +610,8 @@ export default {
       this.propostaConversao = proposal
       this.oportunidadeConversao = proposal
       this.conversao = {
-        serviceType: proposal.title,
+        attendanceTypeId: proposal.attendanceTypeId || null,
+        serviceType: proposal.attendanceType?.name || proposal.title,
         scheduledStart: '',
         scheduledEnd: '',
         address: '',

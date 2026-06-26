@@ -15,6 +15,7 @@ import Contact from "./Contact";
 import SalesOpportunity from "./SalesOpportunity";
 import ServiceOrder from "./ServiceOrder";
 import User from "./User";
+import AttendanceType from "./AttendanceType";
 
 @Table
 class SalesProposal extends Model<SalesProposal> {
@@ -53,6 +54,13 @@ class SalesProposal extends Model<SalesProposal> {
 
   @BelongsTo(() => ServiceOrder)
   convertedServiceOrder: ServiceOrder;
+
+  @ForeignKey(() => AttendanceType)
+  @Column
+  attendanceTypeId: number;
+
+  @BelongsTo(() => AttendanceType)
+  attendanceType: AttendanceType;
 
   @Column
   title: string;

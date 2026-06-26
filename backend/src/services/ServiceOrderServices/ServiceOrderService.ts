@@ -33,6 +33,7 @@ import User from "../../models/User";
 import Tenant from "../../models/Tenant";
 import { getIO } from "../../libs/socket";
 import Ticket from "../../models/Ticket";
+import AttendanceType from "../../models/AttendanceType";
 import SendMessageSystemProxy from "../../helpers/SendMessageSystemProxy";
 import {
   sendFinancialNotification,
@@ -100,7 +101,8 @@ export interface ServiceOrderData {
   attendantId?: number | null;
   title: string;
   description?: string | null;
-  serviceType: string;
+  attendanceTypeId?: number | null;
+  serviceType?: string | null;
   priority?: string;
   status?: string;
   financialStatus?: string;
@@ -296,6 +298,30 @@ const canSeeInternalObservation = (profile: string): boolean =>
 const canManageServiceOrders = (profile: string): boolean =>
   operatorProfiles.includes(profile);
 
+const resolveAttendanceType = async (
+  tenantId: string | number,
+  data: { attendanceTypeId?: number | null; serviceType?: string | null },
+  transaction?: Transaction
+): Promise<AttendanceType | null> => {
+  if (data.attendanceTypeId) {
+    const attendanceType = await AttendanceType.findOne({
+      where: { id: data.attendanceTypeId, tenantId },
+      transaction
+    });
+    if (!attendanceType)
+      throw new AppError("ERR_ATTENDANCE_TYPE_NOT_FOUND", 404);
+    return attendanceType;
+  }
+
+  const serviceType = cleanText(data.serviceType);
+  if (!serviceType) return null;
+
+  return AttendanceType.findOne({
+    where: { tenantId, name: { [Op.iLike]: serviceType } },
+    transaction
+  });
+};
+
 const applyServiceOrderFinancialFilters = (
   where: LegacyAny,
   filters: LegacyAny
@@ -347,6 +373,7 @@ const includeOrder = [
     ]
   },
   { model: ServiceAttendant },
+  { model: AttendanceType },
   { model: User, as: "createdBy", attributes: ["id", "name", "email"] },
   {
     model: ServiceOrderItem,
@@ -2094,6 +2121,8 @@ export const listOrders = async (
     where.status = filters.status;
   applyServiceOrderFinancialFilters(where, filters);
   if (filters.priority) where.priority = filters.priority;
+  if (filters.attendanceTypeId)
+    where.attendanceTypeId = filters.attendanceTypeId;
   if (filters.serviceType) where.serviceType = filters.serviceType;
   if (filters.attendantId && !(rangeStart && rangeEnd)) {
     where.attendantId = filters.attendantId;
@@ -2176,6 +2205,8 @@ export const getDashboard = async (
   if (filters.status) where.status = filters.status;
   applyServiceOrderFinancialFilters(where, filters);
   if (filters.priority) where.priority = filters.priority;
+  if (filters.attendanceTypeId)
+    where.attendanceTypeId = filters.attendanceTypeId;
   if (filters.serviceType) where.serviceType = filters.serviceType;
   if (filters.start && filters.end) {
     where.createdAt = {
@@ -2680,12 +2711,21 @@ export const showOrder = async (
 ): Promise<Record<string, unknown>> =>
   scrubOrder(await loadOrder(tenantId, serviceOrderId), profile);
 
-const buildOrderPayload = (
+const buildOrderPayload = async (
   tenantId: string | number,
   userId: string | number,
-  data: ServiceOrderData
-): LegacyAny => {
+  data: ServiceOrderData,
+  transaction?: Transaction
+): Promise<LegacyAny> => {
   const recurrence = normalizeRecurrence(data);
+  const attendanceType = await resolveAttendanceType(
+    tenantId,
+    data,
+    transaction
+  );
+  if (!attendanceType && !cleanText(data.serviceType)) {
+    throw new AppError("ERR_ATTENDANCE_TYPE_REQUIRED", 400);
+  }
   const payload: LegacyAny = {
     tenantId,
     contactId: data.contactId,
@@ -2693,7 +2733,8 @@ const buildOrderPayload = (
     createdByUserId: Number(userId),
     title: cleanText(data.title),
     description: cleanText(data.description),
-    serviceType: cleanText(data.serviceType),
+    serviceType: attendanceType?.name || cleanText(data.serviceType),
+    attendanceTypeId: attendanceType?.id || null,
     priority: data.priority || "baixa",
     status: data.status || "rascunho",
     financialStatus: data.financialStatus,
@@ -3015,7 +3056,12 @@ export const createOrder = async (
       );
       const normalizedData = { ...data, contactId: contact.id };
       await ensureAttendant(tenantId, data.attendantId, transaction);
-      const payload = buildOrderPayload(tenantId, userId, normalizedData);
+      const payload = await buildOrderPayload(
+        tenantId,
+        userId,
+        normalizedData,
+        transaction
+      );
       await ensureNoScheduleConflict(
         tenantId,
         payload.attendantId,
@@ -3374,7 +3420,12 @@ export const updateOrder = async (
         recurrenceIntervalDays: serviceOrder.recurrenceIntervalDays,
         inventoryDeductedAt: serviceOrder.inventoryDeductedAt
       };
-      const payload = buildOrderPayload(tenantId, userId, normalizedData);
+      const payload = await buildOrderPayload(
+        tenantId,
+        userId,
+        normalizedData,
+        transaction
+      );
       payload.createdByUserId = serviceOrder.createdByUserId;
       if (payload.status === "concluida" && !serviceOrder.completedAt) {
         payload.completedAt = new Date();

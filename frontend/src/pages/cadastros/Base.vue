@@ -159,7 +159,6 @@ import { ListarClientes } from 'src/service/clientes'
 const modules = {
   unidades: { title: 'Unidades', singular: 'unidade', subtitle: 'Unidades operacionais vinculadas aos clientes.', icon: 'mdi-domain' },
   methods: { title: 'Métodos', singular: 'método', subtitle: 'Métodos aplicáveis aos serviços técnicos.', fields: [{ name: 'applicationType', label: 'Tipo de aplicação' }] },
-  'attendance-types': { title: 'Tipos de Atendimento', singular: 'tipo de atendimento', subtitle: 'Classificação dos atendimentos comerciais e operacionais.', fields: [{ name: 'slaHours', label: 'SLA em horas', type: 'number' }] },
   'non-conformities': { title: 'Não Conformidades', singular: 'não conformidade', subtitle: 'Ocorrências padronizadas para auditoria operacional.', fields: [{ name: 'severity', label: 'Gravidade', type: 'select', options: [{ label: 'Baixa', value: 'low' }, { label: 'Média', value: 'medium' }, { label: 'Alta', value: 'high' }] }, { name: 'category', label: 'Categoria' }] },
   tools: { title: 'Ferramentas', singular: 'ferramenta', subtitle: 'Ferramentas utilizadas pela equipe técnica.', fields: [{ name: 'category', label: 'Categoria' }, { name: 'observations', label: 'Observações' }] },
   equipment: { title: 'Equipamentos', singular: 'equipamento', subtitle: 'Equipamentos operacionais e de campo.', fields: [{ name: 'model', label: 'Modelo' }, { name: 'manufacturer', label: 'Fabricante' }, { name: 'assetNumber', label: 'Número de patrimônio' }, { name: 'responsibleName', label: 'Responsável' }] },

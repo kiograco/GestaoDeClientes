@@ -13,6 +13,7 @@ import ServiceOrder from "../../models/ServiceOrder";
 import ServiceOrderItem from "../../models/ServiceOrderItem";
 import Tenant from "../../models/Tenant";
 import User from "../../models/User";
+import AttendanceType from "../../models/AttendanceType";
 
 export const SALES_PIPELINE_STAGES = [
   "novo",
@@ -45,6 +46,7 @@ export interface SalesOpportunityData {
 }
 
 export interface ConvertOpportunityData {
+  attendanceTypeId?: number | null;
   serviceType?: string | null;
   scheduledStart?: string | Date | null;
   scheduledEnd?: string | Date | null;
@@ -62,6 +64,7 @@ export interface SalesProposalItemData {
 }
 
 export interface SalesProposalData {
+  attendanceTypeId?: number | null;
   title: string;
   introduction?: string | null;
   status?: string;
@@ -269,7 +272,8 @@ const buildProposalPayload = (
   tenantId: string | number,
   opportunity: SalesOpportunity,
   userId: string | number,
-  data: SalesProposalData
+  data: SalesProposalData,
+  attendanceType: AttendanceType | null
 ): Record<string, unknown> => {
   const items = normalizeProposalItems(data.items);
   const subtotal = Number(
@@ -283,6 +287,7 @@ const buildProposalPayload = (
     salesOpportunityId: opportunity.id,
     contactId: opportunity.contactId,
     createdByUserId: Number(userId),
+    attendanceTypeId: attendanceType?.id || null,
     title: cleanText(data.title),
     introduction: cleanText(data.introduction),
     status: ensureProposalStatus(data.status),
@@ -293,6 +298,34 @@ const buildProposalPayload = (
     total: Number((subtotal - discount).toFixed(2)),
     observation: cleanText(data.observation)
   };
+};
+
+const resolveAttendanceType = async (
+  tenantId: string | number,
+  data: {
+    attendanceTypeId?: number | null;
+    serviceType?: string | null;
+    title?: string | null;
+  },
+  transaction?: Transaction
+): Promise<AttendanceType | null> => {
+  if (data.attendanceTypeId) {
+    const attendanceType = await AttendanceType.findOne({
+      where: { id: data.attendanceTypeId, tenantId },
+      transaction
+    });
+    if (!attendanceType)
+      throw new AppError("ERR_ATTENDANCE_TYPE_NOT_FOUND", 404);
+    return attendanceType;
+  }
+
+  const name = cleanText(data.serviceType || data.title);
+  if (!name) return null;
+
+  return AttendanceType.findOne({
+    where: { tenantId, name: { [Op.iLike]: name } },
+    transaction
+  });
 };
 
 const buildPerformanceGoalPayload = (
@@ -527,6 +560,7 @@ const loadProposal = async (
     include: [
       { model: Contact, attributes: ["id", "name", "number", "email"] },
       { model: SalesOpportunity },
+      { model: AttendanceType },
       { model: User, as: "createdBy", attributes: ["id", "name", "email"] },
       {
         model: ServiceOrder,
@@ -548,6 +582,7 @@ export const listProposals = async (
     where: { tenantId, salesOpportunityId: opportunityId },
     include: [
       { model: Contact, attributes: ["id", "name", "number", "email"] },
+      { model: AttendanceType },
       {
         model: ServiceOrder,
         attributes: ["id", "title", "status"],
@@ -572,9 +607,20 @@ export const createProposal = async (
     if (!opportunity) {
       throw new AppError("ERR_SALES_OPPORTUNITY_NOT_FOUND", 404);
     }
+    const attendanceType = await resolveAttendanceType(
+      tenantId,
+      data,
+      transaction
+    );
     const proposal = await SalesProposal.create(
       {
-        ...buildProposalPayload(tenantId, opportunity, userId, data),
+        ...buildProposalPayload(
+          tenantId,
+          opportunity,
+          userId,
+          data,
+          attendanceType
+        ),
         publicToken: publicToken()
       },
       { transaction }
@@ -613,13 +659,21 @@ export const updateProposal = async (
     if (proposal.convertedServiceOrderId) {
       throw new AppError("ERR_SALES_PROPOSAL_ALREADY_CONVERTED", 409);
     }
+    const attendanceType =
+      (await resolveAttendanceType(tenantId, data, transaction)) ||
+      (proposal.attendanceTypeId
+        ? await AttendanceType.findOne({
+            where: { id: proposal.attendanceTypeId, tenantId },
+            transaction
+          })
+        : null);
     const opportunity = proposal.salesOpportunity;
     const oldValue = {
       status: proposal.status,
       total: proposal.total
     };
     await proposal.update(
-      buildProposalPayload(tenantId, opportunity, userId, data),
+      buildProposalPayload(tenantId, opportunity, userId, data, attendanceType),
       { transaction }
     );
     await logOpportunity(
@@ -1092,6 +1146,14 @@ export const convertProposalToServiceOrder = async (
     if (proposal.convertedServiceOrderId) {
       throw new AppError("ERR_SALES_PROPOSAL_ALREADY_CONVERTED", 409);
     }
+    const attendanceType =
+      (await resolveAttendanceType(tenantId, data, transaction)) ||
+      (proposal.attendanceTypeId
+        ? await AttendanceType.findOne({
+            where: { id: proposal.attendanceTypeId, tenantId },
+            transaction
+          })
+        : null);
     const opportunity = proposal.salesOpportunity;
     const oldValue = {
       stage: opportunity.stage,
@@ -1105,7 +1167,9 @@ export const convertProposalToServiceOrder = async (
         createdByUserId: Number(userId),
         title: proposal.title,
         description: proposal.introduction || opportunity.description,
-        serviceType: cleanText(data.serviceType) || proposal.title,
+        attendanceTypeId: attendanceType?.id || null,
+        serviceType:
+          attendanceType?.name || cleanText(data.serviceType) || proposal.title,
         priority: "media",
         status: data.scheduledStart ? "agendada" : "rascunho",
         financialStatus: "nao_cobrado",
@@ -1185,6 +1249,11 @@ export const convertOpportunityToServiceOrder = async (
     if (opportunity.convertedServiceOrderId) {
       throw new AppError("ERR_SALES_OPPORTUNITY_ALREADY_CONVERTED", 409);
     }
+    const attendanceType = await resolveAttendanceType(
+      tenantId,
+      data,
+      transaction
+    );
     const order = await ServiceOrder.create(
       {
         tenantId,
@@ -1193,7 +1262,11 @@ export const convertOpportunityToServiceOrder = async (
         createdByUserId: Number(userId),
         title: opportunity.title,
         description: opportunity.description,
-        serviceType: cleanText(data.serviceType) || opportunity.title,
+        attendanceTypeId: attendanceType?.id || null,
+        serviceType:
+          attendanceType?.name ||
+          cleanText(data.serviceType) ||
+          opportunity.title,
         priority: "media",
         status: data.scheduledStart ? "agendada" : "rascunho",
         financialStatus: "nao_cobrado",

@@ -160,7 +160,8 @@ const orderSchema = Yup.object().shape({
   attendantId: Yup.number().integer().positive().nullable(),
   title: Yup.string().trim().required().min(2),
   description: nullableString,
-  serviceType: Yup.string().trim().required(),
+  attendanceTypeId: Yup.number().integer().positive().nullable(),
+  serviceType: nullableString,
   priority: Yup.string().oneOf(ServiceOrder.SERVICE_ORDER_PRIORITIES),
   status: Yup.string().oneOf(ServiceOrder.SERVICE_ORDER_STATUSES),
   financialStatus: Yup.string().oneOf(

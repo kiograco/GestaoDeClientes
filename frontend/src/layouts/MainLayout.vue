@@ -820,7 +820,7 @@ const menuTreeCatalog = [
           { key: 'cad-produtos', title: 'Produtos', icon: 'mdi-package-variant-closed', routeName: 'cadastros-operacionais', query: { aba: 'produtos' } },
           { key: 'cad-pragas', title: 'Pragas', icon: 'mdi-bug-outline', routeName: 'cadastros-operacionais', query: { aba: 'pragas' } },
           { key: 'cad-metodos', title: 'Métodos', icon: 'mdi-spray', routeName: 'cadastros-base', query: { modulo: 'methods' } },
-          { key: 'cad-tipos-atendimento', title: 'Tipos de Atendimento', icon: 'mdi-format-list-checks', routeName: 'cadastros-base', query: { modulo: 'attendance-types' } },
+          { key: 'cad-tipos-atendimento', title: 'Tipos de Atendimento', icon: 'mdi-format-list-checks', routeName: 'tipos-atendimento' },
           devItem('Informações para Orçamentos', 'cad-informacoes-orcamentos', 'mdi-information-outline')
         ]
       },

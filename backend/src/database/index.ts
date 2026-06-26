@@ -85,6 +85,7 @@ import BaseRegister from "../models/BaseRegister";
 import ClientUnit from "../models/ClientUnit";
 import State from "../models/State";
 import City from "../models/City";
+import AttendanceType from "../models/AttendanceType";
 import * as QueueJobs from "../libs/Queue";
 import { logger } from "../utils/logger";
 
@@ -185,7 +186,8 @@ const models = [
   BaseRegister,
   ClientUnit,
   State,
-  City
+  City,
+  AttendanceType
 ];
 
 sequelize.addModels(models);
