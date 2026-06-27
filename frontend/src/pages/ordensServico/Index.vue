@@ -6,6 +6,7 @@
         <div class="text-caption text-grey-7">Agenda de visitas, técnicos e histórico operacional</div>
       </div>
       <div class="col-12 col-md-auto row q-gutter-sm">
+        <q-btn flat color="primary" icon="mdi-file-delimited-outline" label="CSV" @click="baixarOrdensServico" />
         <q-btn v-if="podeOperarOrdens" unelevated color="primary" icon="mdi-calendar-plus" label="Nova ordem" @click="abrirOrdem()" />
       </div>
     </div>
@@ -13,7 +14,8 @@
     <q-card flat bordered class="q-mb-md">
       <q-card-section class="row q-col-gutter-sm">
         <q-select dense outlined emit-value map-options clearable class="col-12 col-md-3" label="Técnico" v-model="filtros.attendantId" :options="opcoesAtendentes" @input="carregarOrdens" />
-        <q-select dense outlined clearable class="col-12 col-md-2" label="Status" v-model="filtros.status" :options="statusOptions" @input="carregarOrdens" />
+        <q-select dense outlined emit-value map-options clearable class="col-12 col-md-3" label="Equipe" v-model="filtros.serviceTeamId" :options="opcoesEquipes" @input="carregarOrdens" />
+        <q-select dense outlined emit-value map-options clearable class="col-12 col-md-2" label="Status" v-model="filtros.status" :options="statusOptions" @input="carregarOrdens" />
         <q-select dense outlined clearable class="col-12 col-md-2" label="Prioridade" v-model="filtros.priority" :options="priorityOptions" @input="carregarOrdens" />
         <q-btn flat color="primary" icon="mdi-refresh" class="col-12 col-md-auto" label="Atualizar" @click="carregarTudo" />
       </q-card-section>
@@ -768,6 +770,7 @@
             </template>
           </q-select>
           <q-select dense outlined emit-value map-options class="col-12 col-md-6" label="Técnico" v-model="form.attendantId" :options="opcoesAtendentes" />
+          <q-select dense outlined emit-value map-options class="col-12 col-md-6" label="Equipe" v-model="form.serviceTeamId" :options="opcoesEquipes" />
           <q-input dense outlined class="col-12 col-md-6" label="Título" v-model="form.title" />
           <q-select
             dense outlined emit-value map-options
@@ -778,7 +781,7 @@
             @input="selecionarTipoAtendimentoOrdem"
           />
           <q-select dense outlined class="col-12 col-md-3" label="Prioridade" v-model="form.priority" :options="priorityOptions" />
-          <q-select dense outlined class="col-12 col-md-3" label="Status" v-model="form.status" :options="statusOptions" />
+          <q-select dense outlined emit-value map-options class="col-12 col-md-3" label="Status" v-model="form.status" :options="statusOptions" />
           <q-input dense outlined type="date" class="col-12 col-md-4" label="Data" v-model="form.scheduledDate" />
           <q-select
             dense outlined emit-value map-options
@@ -799,6 +802,11 @@
               v-model="form.recurrenceActive"
               label="Ordem recorrente"
               @input="alternarRecorrencia"
+            />
+            <q-toggle
+              v-model="form.isRaService"
+              label="Serviço RA"
+              class="q-ml-md"
             />
           </div>
           <q-select
@@ -826,6 +834,22 @@
             v-model.number="form.recurrenceIntervalDays"
             min="1"
             max="365"
+          />
+          <q-input
+            v-if="form.recurrenceActive"
+            dense outlined type="date"
+            class="col-12 col-md-3"
+            label="Final da recorrência"
+            v-model="form.recurrenceEndDate"
+          />
+          <q-input
+            v-if="form.recurrenceActive"
+            dense outlined type="number"
+            class="col-12 col-md-3"
+            label="Qtd. máxima"
+            v-model.number="form.recurrenceMaxOccurrences"
+            min="1"
+            max="730"
           />
           <q-input dense outlined class="col-12 col-md-6" label="Endereço" v-model="form.address" />
           <q-input dense outlined class="col-12 col-md-6" label="Complemento / Referência" v-model="form.addressComplement" />
@@ -1191,11 +1215,13 @@ import { socketIO } from 'src/utils/socket'
 import { ListarClientes, ObterCliente } from 'src/service/clientes'
 import { ListarCadastroBase } from 'src/service/cadastrosBase'
 import { ListarTiposAtendimento } from 'src/service/tiposAtendimento'
+import { canUsePermission } from 'src/router/access'
 import ClienteModal from 'src/pages/clientes/ClienteModal'
 import {
   ListarAtendentesServico,
   CriarAtendenteServico,
   AlterarAtendenteServico,
+  ListarEquipesServico,
   ListarEstoqueServico,
   ListarEstoqueBaixoServico,
   ListarMovimentacoesEstoqueServico,
@@ -1219,6 +1245,7 @@ import {
   DuplicarTipoServico,
   ExcluirTipoServico,
   ListarOrdensServico,
+  BaixarOrdensServico,
   DashboardOrdensServico,
   BaixarRelatorioFinanceiroOrdensServico,
   FechamentoMensalOrdensServico,
@@ -1245,6 +1272,7 @@ const localDateInput = (value = new Date()) => {
 const emptyForm = () => ({
   contactId: null,
   attendantId: null,
+  serviceTeamId: null,
   title: '',
   description: '',
   attendanceTypeId: null,
@@ -1263,6 +1291,8 @@ const emptyForm = () => ({
   recurrenceType: 'single',
   recurrenceDayOfMonth: null,
   recurrenceIntervalDays: 30,
+  recurrenceEndDate: '',
+  recurrenceMaxOccurrences: null,
   scheduledDate: '',
   scheduledStartTime: '',
   scheduledEndTime: '',
@@ -1275,6 +1305,7 @@ const emptyForm = () => ({
   zipCode: '',
   publicObservation: '',
   internalObservation: '',
+  isRaService: false,
   items: []
 })
 
@@ -1373,6 +1404,7 @@ export default {
       notificacao: { channels: ['internal'], message: '' },
       ordens: [],
       atendentes: [],
+      equipes: [],
       estoque: [],
       pragas: [],
       filtroPragas: '',
@@ -1399,7 +1431,7 @@ export default {
       fechamentoMensal: {},
       filtros: {},
       priorityOptions: ['baixa', 'media', 'alta', 'urgente'],
-      statusOptions: ['rascunho', 'agendada', 'em_atendimento', 'concluida', 'cancelada', 'reagendada'],
+      statusOptions: [],
       financialStatusOptions: [
         { label: 'Não cobrado', value: 'nao_cobrado' },
         { label: 'Cobrado', value: 'cobrado' },
@@ -1416,6 +1448,9 @@ export default {
         { label: 'A vencer', value: 'dueSoon' }
       ],
       recurrenceOptions: [
+        { label: 'Diária', value: 'daily' },
+        { label: 'Semanal', value: 'weekly' },
+        { label: 'Quinzenal', value: 'biweekly' },
         { label: 'Dia fixo todo mês', value: 'monthly_fixed_day' },
         { label: 'Intervalo em dias', value: 'custom_interval' }
       ],
@@ -1568,6 +1603,9 @@ export default {
   computed: {
     opcoesAtendentes () {
       return this.atendentes.map(item => ({ label: item.name, value: item.id }))
+    },
+    opcoesEquipes () {
+      return this.equipes.map(item => ({ label: item.name, value: item.id }))
     },
     opcoesTiposServico () {
       return this.tiposServico
@@ -1735,17 +1773,20 @@ export default {
     perfilAtual () {
       return localStorage.getItem('profile')
     },
+    pode () {
+      return permission => canUsePermission(this.perfilAtual, permission)
+    },
     podeOperarOrdens () {
-      return ['admin', 'superadmin', 'supervisor', 'atendente'].includes(this.perfilAtual)
+      return this.pode('service-orders:create') || this.pode('service-orders:edit')
     },
     podeGerenciarAgenda () {
-      return ['admin', 'superadmin', 'supervisor'].includes(this.perfilAtual)
+      return this.pode('service-schedule:create') || this.pode('service-schedule:edit')
     },
     podeVerFinanceiro () {
-      return this.podeGerenciarAgenda
+      return this.pode('service-orders:view')
     },
     podeVerObservacaoInterna () {
-      return ['admin', 'superadmin', 'supervisor', 'atendente', 'tecnico'].includes(this.perfilAtual)
+      return this.pode('service-orders:print')
     },
     podeGerenciarEstoque () {
       return this.podeGerenciarAgenda
@@ -1764,6 +1805,7 @@ export default {
       await Promise.all([
         this.carregarCadastrosBaseOrdem(),
         this.carregarAtendentes(),
+        this.carregarEquipes(),
         this.carregarEstoque(),
         this.carregarPragas(),
         this.carregarTiposAtendimento(),
@@ -1773,9 +1815,10 @@ export default {
     },
     async carregarCadastrosBaseOrdem () {
       try {
-        const [formasPagamento, metodos] = await Promise.all([
+        const [formasPagamento, metodos, situacoesOs] = await Promise.all([
           ListarCadastroBase('payment-methods', { status: 'active', rowsPerPage: 100 }),
-          ListarCadastroBase('methods', { status: 'active', rowsPerPage: 100 })
+          ListarCadastroBase('methods', { status: 'active', rowsPerPage: 100 }),
+          ListarCadastroBase('service-order-statuses', { status: 'active', rowsPerPage: 100 })
         ])
         this.paymentMethodOptions = (formasPagamento.data.rows || []).map(item => ({
           label: item.name,
@@ -1787,6 +1830,10 @@ export default {
         }))
         this.applicationMethodOptions = methodOptions
         this.serviceMethodOptions = methodOptions
+        this.statusOptions = (situacoesOs.data.rows || []).map(item => ({
+          label: item.name,
+          value: item.code || item.name
+        }))
       } catch (error) {
         this.paymentMethodOptions = []
         this.applicationMethodOptions = []
@@ -1797,6 +1844,10 @@ export default {
     async carregarAtendentes () {
       const { data } = await ListarAtendentesServico()
       this.atendentes = data
+    },
+    async carregarEquipes () {
+      const { data } = await ListarEquipesServico()
+      this.equipes = data
     },
     async carregarEstoque () {
       const { data } = await ListarEstoqueServico()
@@ -1857,12 +1908,12 @@ export default {
       this.tiposServico = data
     },
     async carregarOrdens () {
-      const params = { ...this.filtros }
+      const params = { ...this.filtros, pageNumber: 1, rowsPerPage: 500, sortBy: 'scheduledStart' }
       const { start, end } = this.periodoAgenda()
       params.start = start.toISOString()
       params.end = end.toISOString()
       const { data } = await ListarOrdensServico(params)
-      this.ordens = data
+      this.ordens = Array.isArray(data) ? data : (data.rows || [])
       await this.carregarDashboard()
     },
     async carregarDashboard () {
@@ -3110,6 +3161,24 @@ export default {
         end: end.toISOString()
       }
     },
+    async baixarOrdensServico () {
+      try {
+        const { start, end } = this.periodoAgenda()
+        const { data } = await BaixarOrdensServico({
+          ...this.filtros,
+          start: start.toISOString(),
+          end: end.toISOString()
+        })
+        const url = URL.createObjectURL(new Blob([data], { type: 'text/csv;charset=utf-8' }))
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `ordens-servico-${localDateInput()}.csv`
+        link.click()
+        URL.revokeObjectURL(url)
+      } catch (error) {
+        this.$notificarErro('Nao foi possivel baixar as ordens de servico', error)
+      }
+    },
     async baixarRelatorioFinanceiro () {
       try {
         const { data } = await BaixarRelatorioFinanceiroOrdensServico(this.parametrosFinanceirosAtuais())
@@ -3213,7 +3282,10 @@ export default {
           recurrenceActive: false,
           recurrenceType: 'single',
           recurrenceDayOfMonth: null,
-          recurrenceIntervalDays: null
+          recurrenceIntervalDays: null,
+          recurrenceEndDate: null,
+          recurrenceMaxOccurrences: null,
+          recurrenceWeekdays: null
         }
       }
       if (payload.recurrenceType === 'custom_interval') {
@@ -3221,14 +3293,31 @@ export default {
           recurrenceActive: true,
           recurrenceType: 'custom_interval',
           recurrenceDayOfMonth: null,
-          recurrenceIntervalDays: Number(payload.recurrenceIntervalDays)
+          recurrenceIntervalDays: Number(payload.recurrenceIntervalDays),
+          recurrenceEndDate: payload.recurrenceEndDate || null,
+          recurrenceMaxOccurrences: payload.recurrenceMaxOccurrences || null,
+          recurrenceWeekdays: null
+        }
+      }
+      if (['daily', 'weekly', 'biweekly'].includes(payload.recurrenceType)) {
+        return {
+          recurrenceActive: true,
+          recurrenceType: payload.recurrenceType,
+          recurrenceDayOfMonth: null,
+          recurrenceIntervalDays: payload.recurrenceType === 'daily' ? 1 : payload.recurrenceType === 'weekly' ? 7 : 14,
+          recurrenceEndDate: payload.recurrenceEndDate || null,
+          recurrenceMaxOccurrences: payload.recurrenceMaxOccurrences || null,
+          recurrenceWeekdays: payload.recurrenceType === 'daily' ? null : [new Date(`${payload.scheduledDate}T00:00:00`).getDay()]
         }
       }
       return {
         recurrenceActive: true,
         recurrenceType: 'monthly_fixed_day',
         recurrenceDayOfMonth: Number(payload.recurrenceDayOfMonth),
-        recurrenceIntervalDays: null
+        recurrenceIntervalDays: null,
+        recurrenceEndDate: payload.recurrenceEndDate || null,
+        recurrenceMaxOccurrences: payload.recurrenceMaxOccurrences || null,
+        recurrenceWeekdays: null
       }
     },
     conectarSocket () {

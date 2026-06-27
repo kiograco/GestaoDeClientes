@@ -1,5 +1,30 @@
 const ADMIN_ROLES = ['admin']
 const OPERATION_ROLES = ['admin', 'superadmin', 'supervisor', 'atendente', 'tecnico', 'user']
+const permissionsByProfile = {
+  superadmin: ['*'],
+  admin: ['service-orders:view', 'service-orders:create', 'service-orders:edit', 'service-orders:export', 'service-orders:print', 'service-schedule:view', 'service-schedule:create', 'service-schedule:edit'],
+  supervisor: ['service-orders:view', 'service-orders:create', 'service-orders:edit', 'service-orders:export', 'service-orders:print', 'service-schedule:view', 'service-schedule:create', 'service-schedule:edit'],
+  atendente: ['service-orders:view', 'service-orders:create', 'service-orders:edit', 'service-orders:export', 'service-orders:print', 'service-schedule:view', 'service-schedule:create', 'service-schedule:edit'],
+  tecnico: ['service-orders:view', 'service-orders:print', 'service-schedule:view'],
+  user: []
+}
+
+export const currentUserPermissions = () => {
+  try {
+    const usuario = JSON.parse(localStorage.getItem('usuario') || '{}')
+    const permissions = usuario?.configs?.permissions
+    return Array.isArray(permissions) ? permissions : null
+  } catch (error) {
+    return null
+  }
+}
+
+export const canUsePermission = (profile, permission) => {
+  const explicitPermissions = currentUserPermissions()
+  if (explicitPermissions) return explicitPermissions.includes('*') || explicitPermissions.includes(permission)
+  const permissions = permissionsByProfile[profile] || []
+  return permissions.includes('*') || permissions.includes(permission)
+}
 
 export const routeAccessRules = {
   login: { public: true },
@@ -35,7 +60,7 @@ export const routeAccessRules = {
   'cadastros-base': { roles: ['admin', 'supervisor'] },
   contatos: { roles: OPERATION_ROLES },
   'pipeline-vendas': { roles: OPERATION_ROLES },
-  'ordens-servico': { roles: OPERATION_ROLES },
+  'ordens-servico': { roles: OPERATION_ROLES, permission: 'service-orders:view' },
   monitoramento: { roles: OPERATION_ROLES },
   atendimento: { roles: OPERATION_ROLES },
   'chat-empty': { roles: OPERATION_ROLES },
@@ -101,5 +126,6 @@ export const canAccessRoute = (routeName, profile, enabledModules = {}) => {
   if (!profile) return false
   if (rule.module && !enabledModules?.[rule.module]) return false
   if (rule.roles && !rule.roles.includes(profile)) return false
+  if (rule.permission && !canUsePermission(profile, rule.permission)) return false
   return true
 }

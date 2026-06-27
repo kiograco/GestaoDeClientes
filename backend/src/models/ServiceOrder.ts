@@ -18,6 +18,7 @@ import ServiceAttendant from "./ServiceAttendant";
 import ServiceOrderItem from "./ServiceOrderItem";
 import ServiceOrderLog from "./ServiceOrderLog";
 import AttendanceType from "./AttendanceType";
+import ServiceTeam from "./ServiceTeam";
 
 @Table
 class ServiceOrder extends Model<ServiceOrder> {
@@ -46,6 +47,13 @@ class ServiceOrder extends Model<ServiceOrder> {
 
   @BelongsTo(() => ServiceAttendant)
   attendant: ServiceAttendant;
+
+  @ForeignKey(() => ServiceTeam)
+  @Column
+  serviceTeamId: number;
+
+  @BelongsTo(() => ServiceTeam)
+  serviceTeam: ServiceTeam;
 
   @ForeignKey(() => User)
   @Column
@@ -108,6 +116,28 @@ class ServiceOrder extends Model<ServiceOrder> {
 
   @Column
   recurrenceIntervalDays: number;
+
+  @ForeignKey(() => ServiceOrder)
+  @Column
+  recurrenceParentId: number;
+
+  @BelongsTo(() => ServiceOrder, "recurrenceParentId")
+  recurrenceParent: ServiceOrder;
+
+  @Column
+  recurrenceEndDate: Date;
+
+  @Column
+  recurrenceMaxOccurrences: number;
+
+  @Column(DataType.JSONB)
+  recurrenceWeekdays: number[];
+
+  @Column
+  occurrenceNumber: number;
+
+  @Column
+  isRaService: boolean;
 
   @Column
   scheduledStart: Date;

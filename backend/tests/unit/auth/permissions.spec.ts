@@ -15,4 +15,12 @@ describe("permissions by profile", () => {
     expect(can("user", "attendance-types:create")).toBe(false);
     expect(can("user", "attendance-types:delete")).toBe(false);
   });
+
+  it("usa permissoes explicitas do usuario quando configuradas", () => {
+    expect(can("user", "service-orders:view", ["service-orders:view"])).toBe(
+      true
+    );
+    expect(can("admin", "service-orders:view", [])).toBe(false);
+    expect(can("user", "service-orders:delete", ["*"])).toBe(true);
+  });
 });

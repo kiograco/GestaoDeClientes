@@ -25,6 +25,9 @@ import ServiceOrder from "../../models/ServiceOrder";
 import ServiceOrderItem from "../../models/ServiceOrderItem";
 import ServiceOrderLog from "../../models/ServiceOrderLog";
 import ServiceOrderOccurrenceException from "../../models/ServiceOrderOccurrenceException";
+import ServiceRa from "../../models/ServiceRa";
+import ServiceTeam from "../../models/ServiceTeam";
+import ServiceTeamAttendant from "../../models/ServiceTeamAttendant";
 import ServicePest from "../../models/ServicePest";
 import ServiceProduct from "../../models/ServiceProduct";
 import ServiceType from "../../models/ServiceType";
@@ -34,6 +37,7 @@ import Tenant from "../../models/Tenant";
 import { getIO } from "../../libs/socket";
 import Ticket from "../../models/Ticket";
 import AttendanceType from "../../models/AttendanceType";
+import BaseRegister from "../../models/BaseRegister";
 import SendMessageSystemProxy from "../../helpers/SendMessageSystemProxy";
 import {
   sendFinancialNotification,
@@ -69,6 +73,9 @@ export const SERVICE_ORDER_PAYMENT_METHODS = [
 
 export const SERVICE_ORDER_RECURRENCE_TYPES = [
   "single",
+  "daily",
+  "weekly",
+  "biweekly",
   "monthly_fixed_day",
   "custom_interval"
 ];
@@ -80,6 +87,14 @@ export interface ServiceAttendantData {
   specialty?: string | null;
   active?: boolean;
   workingHours?: LegacyAny;
+}
+
+export interface ServiceTeamData {
+  name: string;
+  code?: string | null;
+  responsibleId?: number | null;
+  attendantIds?: number[];
+  isActive?: boolean;
 }
 
 export interface ServiceOrderItemData {
@@ -102,6 +117,7 @@ export interface ServiceOrderData {
   title: string;
   description?: string | null;
   attendanceTypeId?: number | null;
+  serviceTeamId?: number | null;
   serviceType?: string | null;
   priority?: string;
   status?: string;
@@ -116,6 +132,10 @@ export interface ServiceOrderData {
   recurrenceActive?: boolean;
   recurrenceDayOfMonth?: number | null;
   recurrenceIntervalDays?: number | null;
+  recurrenceEndDate?: string | Date | null;
+  recurrenceMaxOccurrences?: number | null;
+  recurrenceWeekdays?: number[] | null;
+  recurrenceEditScope?: "single" | "future" | "series";
   scheduledStart?: string | Date | null;
   scheduledEnd?: string | Date | null;
   address?: string | null;
@@ -128,6 +148,7 @@ export interface ServiceOrderData {
   customerSignatureUrl?: string | null;
   attachmentUrls?: string[];
   cancelReason?: string | null;
+  isRaService?: boolean;
   items?: ServiceOrderItemData[];
 }
 
@@ -242,12 +263,14 @@ export interface ServiceOrderOccurrenceData {
   scheduledStart: string | Date;
   scheduledEnd: string | Date;
   attendantId?: number | null;
+  serviceTeamId?: number | null;
   status: string;
 }
 
 export interface ServiceOrderPatchData {
   expectedUpdatedAt: string | Date;
   attendantId?: number | null;
+  serviceTeamId?: number | null;
   scheduledStart?: string | Date | null;
   scheduledEnd?: string | Date | null;
   status?: string;
@@ -262,7 +285,6 @@ export interface ServiceOrderPatchData {
 
 const relevantStatuses = ["agendada", "em_atendimento", "reagendada"];
 const managerProfiles = ["admin", "superadmin", "supervisor"];
-const operatorProfiles = [...managerProfiles, "atendente"];
 const internalProfiles = [...managerProfiles, "atendente", "tecnico"];
 
 const cleanText = (value?: string | null): string | null => {
@@ -295,9 +317,6 @@ const resolveRecurrenceType = (data: ServiceOrderData): string => {
 const canSeeInternalObservation = (profile: string): boolean =>
   internalProfiles.includes(profile);
 
-const canManageServiceOrders = (profile: string): boolean =>
-  operatorProfiles.includes(profile);
-
 const resolveAttendanceType = async (
   tenantId: string | number,
   data: { attendanceTypeId?: number | null; serviceType?: string | null },
@@ -320,6 +339,42 @@ const resolveAttendanceType = async (
     where: { tenantId, name: { [Op.iLike]: serviceType } },
     transaction
   });
+};
+
+const resolveServiceOrderStatus = async (
+  tenantId: string | number,
+  status?: string | null,
+  transaction?: Transaction
+): Promise<string> => {
+  const normalizedStatus = cleanText(status) || "rascunho";
+  const configuredStatuses = await BaseRegister.findAll({
+    where: {
+      tenantId,
+      module: "service-order-statuses",
+      status: "active"
+    },
+    transaction
+  });
+
+  if (!configuredStatuses.length) {
+    if (SERVICE_ORDER_STATUSES.includes(normalizedStatus)) {
+      return normalizedStatus;
+    }
+    throw new AppError("Status da ordem invalido");
+  }
+
+  const matchedStatus = configuredStatuses.find(register => {
+    const values = [register.code, register.name]
+      .filter(Boolean)
+      .map(value => String(value).toLowerCase());
+    return values.includes(normalizedStatus.toLowerCase());
+  });
+
+  if (!matchedStatus) {
+    throw new AppError("Status da ordem invalido");
+  }
+
+  return matchedStatus.code || matchedStatus.name;
 };
 
 const applyServiceOrderFinancialFilters = (
@@ -373,6 +428,7 @@ const includeOrder = [
     ]
   },
   { model: ServiceAttendant },
+  { model: ServiceTeam },
   { model: AttendanceType },
   { model: User, as: "createdBy", attributes: ["id", "name", "email"] },
   {
@@ -456,6 +512,8 @@ const applyOccurrenceException = (
   scheduledEnd: exception.scheduledEnd.toISOString(),
   attendantId: exception.attendantId,
   attendant: exception.attendant || null,
+  serviceTeamId: exception.serviceTeamId,
+  serviceTeam: exception.serviceTeam || null,
   status: exception.status,
   occurrenceExceptionId: exception.id,
   originalOccurrenceStart: exception.occurrenceStart.toISOString(),
@@ -546,79 +604,98 @@ const occurrenceOverlaps = (
   return occurrenceStart < rangeEnd && occurrenceEnd > rangeStart;
 };
 
-const expandCustomIntervalOccurrences = (
+const recurrenceCursorDates = (
   order: Record<string, unknown>,
-  rangeStart: Date,
-  rangeEnd: Date,
   baseStart: Date,
-  durationMs: number
-): Record<string, unknown>[] => {
-  const intervalDays = Number(order.recurrenceIntervalDays);
-  if (!Number.isInteger(intervalDays) || intervalDays < 1) return [];
-
-  const intervalMs = intervalDays * 24 * 60 * 60 * 1000;
-  const firstIndex = Math.max(
-    0,
-    Math.floor((rangeStart.getTime() - baseStart.getTime()) / intervalMs) - 1
+  rangeEnd: Date
+): Date[] => {
+  const recurrenceType = String(order.recurrenceType || "single");
+  const maxOccurrences = Number(order.recurrenceMaxOccurrences || 0);
+  const recurrenceEndDate = normalizeDate(
+    order.recurrenceEndDate as string | Date | null
   );
-  const occurrences: Record<string, unknown>[] = [];
+  const hardEnd =
+    recurrenceEndDate && recurrenceEndDate < rangeEnd
+      ? recurrenceEndDate
+      : rangeEnd;
+  const dates: Date[] = [];
+  const pushDate = (date: Date): boolean => {
+    if (date > hardEnd) return false;
+    dates.push(date);
+    return !maxOccurrences || dates.length < maxOccurrences;
+  };
 
-  for (
-    let index = firstIndex;
-    baseStart.getTime() + index * intervalMs < rangeEnd.getTime();
-    index += 1
-  ) {
-    const occurrenceStart = addDays(baseStart, index * intervalDays);
-    if (occurrenceOverlaps(occurrenceStart, durationMs, rangeStart, rangeEnd)) {
-      occurrences.push(
-        buildOccurrence(order, occurrenceStart, baseStart, durationMs)
-      );
+  if (recurrenceType === "daily") {
+    for (
+      let cursor = new Date(baseStart);
+      cursor <= hardEnd;
+      cursor = addDays(cursor, 1)
+    ) {
+      if (!pushDate(new Date(cursor))) break;
     }
   }
 
-  return occurrences;
-};
-
-const expandMonthlyFixedDayOccurrences = (
-  order: Record<string, unknown>,
-  rangeStart: Date,
-  rangeEnd: Date,
-  baseStart: Date,
-  durationMs: number
-): Record<string, unknown>[] => {
-  const dayOfMonth = Number(order.recurrenceDayOfMonth);
-  if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
-    return [];
-  }
-
-  const occurrences: Record<string, unknown>[] = [];
-  const cursor = new Date(
-    Date.UTC(rangeStart.getUTCFullYear(), rangeStart.getUTCMonth() - 1, 1)
-  );
-
-  while (cursor < rangeEnd) {
-    const year = cursor.getUTCFullYear();
-    const month = cursor.getUTCMonth();
-    if (dayOfMonth <= daysInUTCMonth(year, month)) {
-      const occurrenceStart = withOccurrenceDate(
-        baseStart,
-        year,
-        month,
-        dayOfMonth
+  if (["weekly", "biweekly"].includes(recurrenceType)) {
+    const weekdays = Array.isArray(order.recurrenceWeekdays)
+      ? (order.recurrenceWeekdays as number[]).map(Number)
+      : [baseStart.getUTCDay()];
+    const stepWeeks = recurrenceType === "weekly" ? 1 : 2;
+    for (
+      let cursor = new Date(baseStart), weekIndex = 0;
+      cursor <= hardEnd;
+      cursor = addDays(cursor, 1)
+    ) {
+      const diffDays = Math.floor(
+        (cursor.getTime() - baseStart.getTime()) / (24 * 60 * 60 * 1000)
       );
+      weekIndex = Math.floor(diffDays / 7);
       if (
-        occurrenceStart >= baseStart &&
-        occurrenceOverlaps(occurrenceStart, durationMs, rangeStart, rangeEnd)
+        weekIndex % stepWeeks === 0 &&
+        weekdays.includes(cursor.getUTCDay())
       ) {
-        occurrences.push(
-          buildOccurrence(order, occurrenceStart, baseStart, durationMs)
+        const occurrenceStart = new Date(baseStart);
+        occurrenceStart.setUTCFullYear(
+          cursor.getUTCFullYear(),
+          cursor.getUTCMonth(),
+          cursor.getUTCDate()
         );
+        if (occurrenceStart >= baseStart && !pushDate(occurrenceStart)) break;
       }
     }
-    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
   }
 
-  return occurrences;
+  if (recurrenceType === "custom_interval") {
+    const intervalDays = Number(order.recurrenceIntervalDays || 0);
+    if (intervalDays > 0) {
+      for (let index = 0; ; index += 1) {
+        const occurrenceStart = addDays(baseStart, index * intervalDays);
+        if (!pushDate(occurrenceStart)) break;
+      }
+    }
+  }
+
+  if (recurrenceType === "monthly_fixed_day") {
+    const dayOfMonth = Number(order.recurrenceDayOfMonth);
+    const cursor = new Date(
+      Date.UTC(baseStart.getUTCFullYear(), baseStart.getUTCMonth(), 1)
+    );
+    while (cursor <= hardEnd) {
+      const year = cursor.getUTCFullYear();
+      const month = cursor.getUTCMonth();
+      if (dayOfMonth <= daysInUTCMonth(year, month)) {
+        const occurrenceStart = withOccurrenceDate(
+          baseStart,
+          year,
+          month,
+          dayOfMonth
+        );
+        if (occurrenceStart >= baseStart && !pushDate(occurrenceStart)) break;
+      }
+      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    }
+  }
+
+  return dates;
 };
 
 export const expandServiceOrderOccurrences = (
@@ -662,29 +739,27 @@ export const expandServiceOrderOccurrences = (
         ];
       }
 
-      if (order.recurrenceType === "custom_interval") {
+      if (
+        [
+          "daily",
+          "weekly",
+          "biweekly",
+          "custom_interval",
+          "monthly_fixed_day"
+        ].includes(String(order.recurrenceType))
+      ) {
+        const recurrenceDates = recurrenceCursorDates(
+          order,
+          baseStart,
+          rangeEnd
+        );
         return [
           ...occurrences,
-          ...expandCustomIntervalOccurrences(
-            order,
-            rangeStart,
-            rangeEnd,
-            baseStart,
-            durationMs
-          )
-        ];
-      }
-
-      if (order.recurrenceType === "monthly_fixed_day") {
-        return [
-          ...occurrences,
-          ...expandMonthlyFixedDayOccurrences(
-            order,
-            rangeStart,
-            rangeEnd,
-            baseStart,
-            durationMs
-          )
+          ...recurrenceDates
+            .filter(date =>
+              occurrenceOverlaps(date, durationMs, rangeStart, rangeEnd)
+            )
+            .map(date => buildOccurrence(order, date, baseStart, durationMs))
         ];
       }
 
@@ -762,6 +837,21 @@ const ensureAttendant = async (
   if (!attendant) throw new AppError("ERR_NO_SERVICE_ATTENDANT_FOUND", 404);
   if (!attendant.active) throw new AppError("ERR_SERVICE_ATTENDANT_INACTIVE");
   return attendant;
+};
+
+const ensureServiceTeam = async (
+  tenantId: string | number,
+  serviceTeamId?: number | null,
+  transaction?: Transaction
+): Promise<ServiceTeam | null> => {
+  if (!serviceTeamId) return null;
+  const serviceTeam = await ServiceTeam.findOne({
+    where: { id: serviceTeamId, tenantId },
+    transaction
+  });
+  if (!serviceTeam) throw new AppError("ERR_SERVICE_TEAM_NOT_FOUND", 404);
+  if (!serviceTeam.isActive) throw new AppError("ERR_SERVICE_TEAM_INACTIVE");
+  return serviceTeam;
 };
 
 const ensureServiceType = async (
@@ -853,6 +943,50 @@ export const validateServiceOrderSchedule = (data: ServiceOrderData): void => {
       );
     }
   }
+
+  if (["weekly", "biweekly"].includes(recurrenceType)) {
+    const weekdays = Array.isArray(data.recurrenceWeekdays)
+      ? data.recurrenceWeekdays
+      : [];
+    if (
+      !weekdays.length ||
+      weekdays.some(day => {
+        const normalizedDay = Number(day);
+        return (
+          !Number.isInteger(normalizedDay) ||
+          normalizedDay < 0 ||
+          normalizedDay > 6
+        );
+      })
+    ) {
+      throw new AppError("Informe dias da semana validos para a recorrencia");
+    }
+  }
+
+  if (
+    data.recurrenceMaxOccurrences !== undefined &&
+    data.recurrenceMaxOccurrences !== null
+  ) {
+    const maxOccurrences = Number(data.recurrenceMaxOccurrences);
+    if (
+      !Number.isInteger(maxOccurrences) ||
+      maxOccurrences < 1 ||
+      maxOccurrences > 730
+    ) {
+      throw new AppError(
+        "Informe quantidade maxima de ocorrencias entre 1 e 730"
+      );
+    }
+  }
+
+  if (data.recurrenceEndDate && start) {
+    const recurrenceEndDate = normalizeDate(data.recurrenceEndDate);
+    if (!recurrenceEndDate || recurrenceEndDate < start) {
+      throw new AppError(
+        "Data final da recorrencia deve ser maior que a inicial"
+      );
+    }
+  }
 };
 
 const normalizeRecurrence = (
@@ -863,15 +997,30 @@ const normalizeRecurrence = (
   | "recurrenceActive"
   | "recurrenceDayOfMonth"
   | "recurrenceIntervalDays"
+  | "recurrenceEndDate"
+  | "recurrenceMaxOccurrences"
+  | "recurrenceWeekdays"
 > => {
   const recurrenceType = resolveRecurrenceType(data);
+  const common = {
+    recurrenceEndDate: normalizeDate(data.recurrenceEndDate),
+    recurrenceMaxOccurrences:
+      data.recurrenceMaxOccurrences === undefined ||
+      data.recurrenceMaxOccurrences === null
+        ? null
+        : Number(data.recurrenceMaxOccurrences),
+    recurrenceWeekdays: Array.isArray(data.recurrenceWeekdays)
+      ? data.recurrenceWeekdays.map(day => Number(day))
+      : null
+  };
 
   if (recurrenceType === "monthly_fixed_day") {
     return {
       recurrenceType,
       recurrenceActive: data.recurrenceActive !== false,
       recurrenceDayOfMonth: Number(data.recurrenceDayOfMonth),
-      recurrenceIntervalDays: null
+      recurrenceIntervalDays: null,
+      ...common
     };
   }
 
@@ -880,7 +1029,21 @@ const normalizeRecurrence = (
       recurrenceType,
       recurrenceActive: data.recurrenceActive !== false,
       recurrenceDayOfMonth: null,
-      recurrenceIntervalDays: Number(data.recurrenceIntervalDays)
+      recurrenceIntervalDays: Number(data.recurrenceIntervalDays),
+      ...common
+    };
+  }
+
+  if (["daily", "weekly", "biweekly"].includes(recurrenceType)) {
+    let intervalDays = 14;
+    if (recurrenceType === "daily") intervalDays = 1;
+    if (recurrenceType === "weekly") intervalDays = 7;
+    return {
+      recurrenceType,
+      recurrenceActive: data.recurrenceActive !== false,
+      recurrenceDayOfMonth: null,
+      recurrenceIntervalDays: intervalDays,
+      ...common
     };
   }
 
@@ -888,7 +1051,10 @@ const normalizeRecurrence = (
     recurrenceType: "single",
     recurrenceActive: false,
     recurrenceDayOfMonth: null,
-    recurrenceIntervalDays: null
+    recurrenceIntervalDays: null,
+    recurrenceEndDate: null,
+    recurrenceMaxOccurrences: null,
+    recurrenceWeekdays: null
   };
 };
 
@@ -898,26 +1064,38 @@ const ensureNoScheduleConflict = async (
   scheduledStart?: Date | null,
   scheduledEnd?: Date | null,
   ignoreOrderId?: number,
-  transaction?: Transaction
+  transaction?: Transaction,
+  serviceTeamId?: number | null
 ): Promise<void> => {
-  if (!attendantId || !scheduledStart || !scheduledEnd) return;
+  if ((!attendantId && !serviceTeamId) || !scheduledStart || !scheduledEnd) {
+    return;
+  }
+  const resourceFilters = [
+    ...(attendantId ? [{ attendantId }] : []),
+    ...(serviceTeamId ? [{ serviceTeamId }] : [])
+  ] as LegacyAny[];
+  const conflictWhere: LegacyAny = {
+    tenantId,
+    [Op.or]: resourceFilters,
+    status: { [Op.in]: relevantStatuses },
+    [Op.and]: [
+      {
+        [Op.or]: [
+          {
+            scheduledStart: { [Op.lt]: scheduledEnd },
+            scheduledEnd: { [Op.gt]: scheduledStart }
+          },
+          {
+            recurrenceActive: true,
+            scheduledStart: { [Op.lt]: scheduledEnd }
+          }
+        ]
+      }
+    ],
+    ...(ignoreOrderId ? { id: { [Op.ne]: ignoreOrderId } } : {})
+  };
   const candidates = await ServiceOrder.findAll({
-    where: {
-      tenantId,
-      attendantId,
-      status: { [Op.in]: relevantStatuses },
-      [Op.or]: [
-        {
-          scheduledStart: { [Op.lt]: scheduledEnd },
-          scheduledEnd: { [Op.gt]: scheduledStart }
-        },
-        {
-          recurrenceActive: true,
-          scheduledStart: { [Op.lt]: scheduledEnd }
-        }
-      ],
-      ...(ignoreOrderId ? { id: { [Op.ne]: ignoreOrderId } } : {})
-    },
+    where: conflictWhere,
     transaction,
     lock: transaction?.LOCK.UPDATE
   });
@@ -934,12 +1112,12 @@ const ensureNoScheduleConflict = async (
   const exceptionConflict = await ServiceOrderOccurrenceException.findOne({
     where: {
       tenantId,
-      attendantId,
+      [Op.or]: resourceFilters,
       status: { [Op.in]: relevantStatuses },
       scheduledStart: { [Op.lt]: scheduledEnd },
       scheduledEnd: { [Op.gt]: scheduledStart },
       ...(ignoreOrderId ? { serviceOrderId: { [Op.ne]: ignoreOrderId } } : {})
-    },
+    } as LegacyAny,
     transaction,
     lock: transaction?.LOCK.UPDATE
   });
@@ -1231,6 +1409,101 @@ export const updateAttendant = async (
   });
   return attendant;
 };
+
+export const listServiceTeams = async (
+  tenantId: string | number
+): Promise<ServiceTeam[]> =>
+  ServiceTeam.findAll({
+    where: { tenantId },
+    include: [
+      { model: ServiceAttendant, as: "responsible", required: false },
+      { model: ServiceAttendant, as: "attendants", required: false }
+    ],
+    order: [["name", "ASC"]]
+  });
+
+export const createServiceTeam = async (
+  tenantId: string | number,
+  data: ServiceTeamData
+): Promise<ServiceTeam> =>
+  sequelize.transaction(async transaction => {
+    if (data.responsibleId) {
+      await ensureAttendant(tenantId, data.responsibleId, transaction);
+    }
+    const serviceTeam = await ServiceTeam.create(
+      {
+        tenantId,
+        name: cleanText(data.name),
+        code: cleanText(data.code),
+        responsibleId: data.responsibleId || null,
+        isActive: data.isActive !== false
+      },
+      { transaction }
+    );
+    const attendantIds = [...new Set(data.attendantIds || [])];
+    await Promise.all(
+      attendantIds.map(async attendantId => {
+        await ensureAttendant(tenantId, attendantId, transaction);
+        await ServiceTeamAttendant.create(
+          {
+            tenantId,
+            serviceTeamId: serviceTeam.id,
+            serviceAttendantId: attendantId,
+            isActive: true
+          },
+          { transaction }
+        );
+      })
+    );
+    return serviceTeam;
+  });
+
+export const updateServiceTeam = async (
+  tenantId: string | number,
+  serviceTeamId: string,
+  data: ServiceTeamData
+): Promise<ServiceTeam> =>
+  sequelize.transaction(async transaction => {
+    const serviceTeam = await ServiceTeam.findOne({
+      where: { id: serviceTeamId, tenantId },
+      transaction
+    });
+    if (!serviceTeam) throw new AppError("ERR_SERVICE_TEAM_NOT_FOUND", 404);
+    if (data.responsibleId) {
+      await ensureAttendant(tenantId, data.responsibleId, transaction);
+    }
+    await serviceTeam.update(
+      {
+        name: cleanText(data.name),
+        code: cleanText(data.code),
+        responsibleId: data.responsibleId || null,
+        isActive: data.isActive !== false
+      },
+      { transaction }
+    );
+    if (data.attendantIds) {
+      await ServiceTeamAttendant.destroy({
+        where: { tenantId, serviceTeamId: serviceTeam.id },
+        transaction
+      });
+      const attendantIds = [...new Set(data.attendantIds)];
+      await Promise.all(
+        attendantIds.map(async attendantId => {
+          await ensureAttendant(tenantId, attendantId, transaction);
+          await ServiceTeamAttendant.create(
+            {
+              tenantId,
+              serviceTeamId: serviceTeam.id,
+              serviceAttendantId: attendantId,
+              isActive: true
+            },
+            { transaction }
+          );
+        })
+      );
+    }
+    return serviceTeam;
+  });
 
 const normalizeNumber = (value?: number | null): number | null => {
   if (value === undefined || value === null || value === ("" as LegacyAny)) {
@@ -2113,7 +2386,7 @@ export const listOrders = async (
   tenantId: string | number,
   profile: string,
   filters: LegacyAny
-): Promise<Record<string, unknown>[]> => {
+): Promise<Record<string, unknown>[] | Record<string, unknown>> => {
   const where: LegacyAny = { tenantId };
   const rangeStart = filters.start ? new Date(filters.start) : null;
   const rangeEnd = filters.end ? new Date(filters.end) : null;
@@ -2123,6 +2396,9 @@ export const listOrders = async (
   if (filters.priority) where.priority = filters.priority;
   if (filters.attendanceTypeId)
     where.attendanceTypeId = filters.attendanceTypeId;
+  if (filters.serviceTeamId && !(rangeStart && rangeEnd)) {
+    where.serviceTeamId = filters.serviceTeamId;
+  }
   if (filters.serviceType) where.serviceType = filters.serviceType;
   if (filters.attendantId && !(rangeStart && rangeEnd)) {
     where.attendantId = filters.attendantId;
@@ -2145,7 +2421,7 @@ export const listOrders = async (
               }
             ]
           },
-          include: [{ model: ServiceAttendant }]
+          include: [{ model: ServiceAttendant }, { model: ServiceTeam }]
         })
       : [];
   if (rangeStart && rangeEnd) {
@@ -2188,12 +2464,43 @@ export const listOrders = async (
           rangeEnd
         )
       : occurrences;
-  return result.filter(
+  const filteredResult = result.filter(
     occurrence =>
       (!filters.status || occurrence.status === filters.status) &&
       (!filters.attendantId ||
-        Number(occurrence.attendantId) === Number(filters.attendantId))
+        Number(occurrence.attendantId) === Number(filters.attendantId)) &&
+      (!filters.serviceTeamId ||
+        Number(occurrence.serviceTeamId) === Number(filters.serviceTeamId))
   );
+  const sortBy = String(filters.sortBy || "scheduledStart");
+  const descending = String(filters.descending || "false") === "true";
+  const sortDirection = descending ? -1 : 1;
+  const sortedResult = [...filteredResult].sort((a, b) => {
+    const aValue = a[sortBy] || "";
+    const bValue = b[sortBy] || "";
+    if (sortBy.toLowerCase().includes("date") || sortBy.includes("Start")) {
+      return (
+        (new Date(String(aValue)).getTime() -
+          new Date(String(bValue)).getTime()) *
+        sortDirection
+      );
+    }
+    return String(aValue).localeCompare(String(bValue)) * sortDirection;
+  });
+
+  if (filters.pageNumber || filters.rowsPerPage) {
+    const limit = Math.min(Math.max(Number(filters.rowsPerPage) || 50, 1), 500);
+    const page = Math.max(Number(filters.pageNumber) || 1, 1);
+    const offset = limit * (page - 1);
+    const rows = sortedResult.slice(offset, offset + limit);
+    return {
+      rows,
+      count: sortedResult.length,
+      hasMore: sortedResult.length > offset + rows.length
+    };
+  }
+
+  return sortedResult;
 };
 
 export const getDashboard = async (
@@ -2202,6 +2509,7 @@ export const getDashboard = async (
 ): Promise<Record<string, unknown>> => {
   const where: LegacyAny = { tenantId };
   if (filters.attendantId) where.attendantId = filters.attendantId;
+  if (filters.serviceTeamId) where.serviceTeamId = filters.serviceTeamId;
   if (filters.status) where.status = filters.status;
   applyServiceOrderFinancialFilters(where, filters);
   if (filters.priority) where.priority = filters.priority;
@@ -2730,13 +3038,14 @@ const buildOrderPayload = async (
     tenantId,
     contactId: data.contactId,
     attendantId: data.attendantId || null,
+    serviceTeamId: data.serviceTeamId || null,
     createdByUserId: Number(userId),
     title: cleanText(data.title),
     description: cleanText(data.description),
     serviceType: attendanceType?.name || cleanText(data.serviceType),
     attendanceTypeId: attendanceType?.id || null,
     priority: data.priority || "baixa",
-    status: data.status || "rascunho",
+    status: await resolveServiceOrderStatus(tenantId, data.status, transaction),
     financialStatus: data.financialStatus,
     paymentMethod:
       data.paymentMethod === undefined
@@ -2771,7 +3080,8 @@ const buildOrderPayload = async (
     internalObservation: cleanText(data.internalObservation),
     customerSignatureUrl: cleanText(data.customerSignatureUrl),
     attachmentUrls: data.attachmentUrls || [],
-    cancelReason: cleanText(data.cancelReason)
+    cancelReason: cleanText(data.cancelReason),
+    isRaService: data.isRaService === true
   };
   Object.keys(payload).forEach(key => {
     if (payload[key] === undefined) delete payload[key];
@@ -2808,6 +3118,135 @@ const buildOrderItemPayload = (
     unitPrice,
     totalPrice: Number((quantity * unitPrice).toFixed(2))
   };
+};
+
+const materializeRecurringOrders = async (
+  tenantId: string | number,
+  parentOrder: ServiceOrder,
+  userId: string | number,
+  transaction: Transaction
+): Promise<void> => {
+  if (
+    !parentOrder.recurrenceActive ||
+    parentOrder.recurrenceType === "single" ||
+    (!parentOrder.recurrenceEndDate && !parentOrder.recurrenceMaxOccurrences)
+  ) {
+    return;
+  }
+  const baseStart = normalizeDate(parentOrder.scheduledStart);
+  const baseEnd = normalizeDate(parentOrder.scheduledEnd);
+  if (!baseStart || !baseEnd) return;
+  const durationMs = baseEnd.getTime() - baseStart.getTime();
+  const upperBound =
+    normalizeDate(parentOrder.recurrenceEndDate) ||
+    addDays(
+      baseStart,
+      Math.min(Number(parentOrder.recurrenceMaxOccurrences || 1), 730) * 31
+    );
+  const dates = recurrenceCursorDates(
+    parentOrder.toJSON() as Record<string, unknown>,
+    baseStart,
+    upperBound
+  ).slice(1);
+  const items = await ServiceOrderItem.findAll({
+    where: { tenantId, serviceOrderId: parentOrder.id },
+    transaction
+  });
+
+  await dates.reduce<Promise<void>>(
+    async (previous, occurrenceStart, index) => {
+      await previous;
+      const occurrenceNumber = index + 2;
+      const existing = await ServiceOrder.findOne({
+        where: {
+          tenantId,
+          recurrenceParentId: parentOrder.id,
+          occurrenceNumber
+        },
+        transaction
+      });
+      if (existing) return;
+      const occurrenceEnd = new Date(occurrenceStart.getTime() + durationMs);
+      await ensureNoScheduleConflict(
+        tenantId,
+        parentOrder.attendantId,
+        occurrenceStart,
+        occurrenceEnd,
+        parentOrder.id,
+        transaction,
+        parentOrder.serviceTeamId
+      );
+      const child = await ServiceOrder.create(
+        {
+          tenantId,
+          contactId: parentOrder.contactId,
+          attendantId: parentOrder.attendantId,
+          serviceTeamId: parentOrder.serviceTeamId,
+          createdByUserId: Number(userId),
+          title: parentOrder.title,
+          description: parentOrder.description,
+          serviceType: parentOrder.serviceType,
+          attendanceTypeId: parentOrder.attendanceTypeId,
+          priority: parentOrder.priority,
+          status: "agendada",
+          financialStatus: parentOrder.financialStatus,
+          paymentMethod: parentOrder.paymentMethod,
+          chargedAmount: parentOrder.chargedAmount,
+          paidAmount: parentOrder.paidAmount,
+          paymentDueDate: parentOrder.paymentDueDate,
+          paidAt: parentOrder.paidAt,
+          financialObservation: parentOrder.financialObservation,
+          recurrenceType: "single",
+          recurrenceActive: false,
+          recurrenceParentId: parentOrder.id,
+          occurrenceNumber,
+          scheduledStart: occurrenceStart,
+          scheduledEnd: occurrenceEnd,
+          address: parentOrder.address,
+          addressComplement: parentOrder.addressComplement,
+          city: parentOrder.city,
+          state: parentOrder.state,
+          zipCode: parentOrder.zipCode,
+          publicObservation: parentOrder.publicObservation,
+          internalObservation: parentOrder.internalObservation,
+          customerSignatureUrl: parentOrder.customerSignatureUrl,
+          attachmentUrls: parentOrder.attachmentUrls || [],
+          cancelReason: null,
+          isRaService: parentOrder.isRaService
+        },
+        { transaction }
+      );
+      await ServiceOrderItem.bulkCreate(
+        items.map(item => ({
+          tenantId,
+          serviceOrderId: child.id,
+          itemType: item.itemType,
+          serviceTypeId: item.serviceTypeId,
+          inventoryItemId: item.inventoryItemId,
+          inventoryBatchId: item.inventoryBatchId,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice,
+          pestTarget: item.pestTarget,
+          applicationMethod: item.applicationMethod,
+          dilutionUsed: item.dilutionUsed,
+          technicalObservation: item.technicalObservation
+        })),
+        { transaction }
+      );
+      await logOrder(
+        child.id,
+        userId,
+        "recurrence_generated",
+        "OS gerada por recorrencia",
+        null,
+        { recurrenceParentId: parentOrder.id, occurrenceNumber },
+        transaction
+      );
+    },
+    Promise.resolve()
+  );
 };
 
 const replaceOrderItems = async (
@@ -3056,6 +3495,7 @@ export const createOrder = async (
       );
       const normalizedData = { ...data, contactId: contact.id };
       await ensureAttendant(tenantId, data.attendantId, transaction);
+      await ensureServiceTeam(tenantId, data.serviceTeamId, transaction);
       const payload = await buildOrderPayload(
         tenantId,
         userId,
@@ -3068,13 +3508,34 @@ export const createOrder = async (
         payload.scheduledStart,
         payload.scheduledEnd,
         undefined,
-        transaction
+        transaction,
+        payload.serviceTeamId
       );
       const serviceOrder = await ServiceOrder.create(payload, { transaction });
       await replaceOrderItems(
         tenantId,
         serviceOrder.id,
         normalizedData.items,
+        transaction
+      );
+      if (serviceOrder.isRaService) {
+        await ServiceRa.create(
+          {
+            tenantId,
+            contactId: serviceOrder.contactId,
+            serviceOrderId: serviceOrder.id,
+            attendantId: serviceOrder.attendantId,
+            serviceTeamId: serviceOrder.serviceTeamId,
+            status: "pending_definition",
+            observations: serviceOrder.internalObservation
+          },
+          { transaction }
+        );
+      }
+      await materializeRecurringOrders(
+        tenantId,
+        serviceOrder,
+        userId,
         transaction
       );
       if (serviceOrder.status === "concluida") {
@@ -3121,13 +3582,14 @@ export const updateOrderOccurrence = async (
   if (scheduledEnd <= scheduledStart) {
     throw new AppError("Horario final deve ser maior que o horario inicial");
   }
-  if (!SERVICE_ORDER_STATUSES.includes(data.status)) {
-    throw new AppError("Status da ordem invalido");
-  }
-
   const exception = await sequelize.transaction(
     { isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE },
     async transaction => {
+      const normalizedStatus = await resolveServiceOrderStatus(
+        tenantId,
+        data.status,
+        transaction
+      );
       const serviceOrder = await ServiceOrder.findOne({
         where: { id: serviceOrderId, tenantId },
         transaction,
@@ -3154,20 +3616,38 @@ export const updateOrderOccurrence = async (
       }
 
       await ensureAttendant(tenantId, data.attendantId, transaction);
-      if (relevantStatuses.includes(data.status)) {
+      await ensureServiceTeam(tenantId, data.serviceTeamId, transaction);
+      if (relevantStatuses.includes(normalizedStatus)) {
+        const effectiveAttendantId =
+          data.attendantId === undefined
+            ? serviceOrder.attendantId
+            : data.attendantId;
+        const effectiveServiceTeamId =
+          data.serviceTeamId === undefined
+            ? serviceOrder.serviceTeamId
+            : data.serviceTeamId;
         await ensureNoScheduleConflict(
           tenantId,
-          data.attendantId,
+          effectiveAttendantId,
           scheduledStart,
           scheduledEnd,
           serviceOrder.id,
-          transaction
+          transaction,
+          effectiveServiceTeamId
         );
-        const exceptionConflict = data.attendantId
+        const exceptionResourceFilters = [
+          ...(effectiveAttendantId
+            ? [{ attendantId: effectiveAttendantId }]
+            : []),
+          ...(effectiveServiceTeamId
+            ? [{ serviceTeamId: effectiveServiceTeamId }]
+            : [])
+        ];
+        const exceptionConflict = exceptionResourceFilters.length
           ? await ServiceOrderOccurrenceException.findOne({
               where: {
                 tenantId,
-                attendantId: data.attendantId,
+                [Op.or]: exceptionResourceFilters,
                 status: { [Op.in]: relevantStatuses },
                 scheduledStart: { [Op.lt]: scheduledEnd },
                 scheduledEnd: { [Op.gt]: scheduledStart },
@@ -3200,7 +3680,8 @@ export const updateOrderOccurrence = async (
         scheduledStart,
         scheduledEnd,
         attendantId: data.attendantId || null,
-        status: data.status,
+        serviceTeamId: data.serviceTeamId || serviceOrder.serviceTeamId || null,
+        status: normalizedStatus,
         createdByUserId: Number(userId)
       };
       const saved = existing
@@ -3223,7 +3704,7 @@ export const updateOrderOccurrence = async (
 
   const loadedException = await ServiceOrderOccurrenceException.findOne({
     where: { id: exception.id, tenantId },
-    include: [{ model: ServiceAttendant }]
+    include: [{ model: ServiceAttendant }, { model: ServiceTeam }]
   });
   const serviceOrder = await loadOrder(tenantId, serviceOrderId);
   if (!loadedException) {
@@ -3279,13 +3760,23 @@ export const patchOrder = async (
         await ensureAttendant(tenantId, data.attendantId, transaction);
         payload.attendantId = data.attendantId || null;
       }
+      if (data.serviceTeamId !== undefined) {
+        await ensureServiceTeam(tenantId, data.serviceTeamId, transaction);
+        payload.serviceTeamId = data.serviceTeamId || null;
+      }
       if (data.scheduledStart !== undefined) {
         payload.scheduledStart = normalizeDate(data.scheduledStart);
       }
       if (data.scheduledEnd !== undefined) {
         payload.scheduledEnd = normalizeDate(data.scheduledEnd);
       }
-      if (data.status !== undefined) payload.status = data.status;
+      if (data.status !== undefined) {
+        payload.status = await resolveServiceOrderStatus(
+          tenantId,
+          data.status,
+          transaction
+        );
+      }
       if (data.financialStatus !== undefined) {
         payload.financialStatus = data.financialStatus;
       }
@@ -3321,6 +3812,10 @@ export const patchOrder = async (
         payload.attendantId !== undefined
           ? payload.attendantId
           : serviceOrder.attendantId;
+      const nextServiceTeamId =
+        payload.serviceTeamId !== undefined
+          ? payload.serviceTeamId
+          : serviceOrder.serviceTeamId;
       validateServiceOrderSchedule({
         contactId: serviceOrder.contactId,
         title: serviceOrder.title,
@@ -3339,7 +3834,8 @@ export const patchOrder = async (
         nextStart,
         nextEnd,
         serviceOrder.id,
-        transaction
+        transaction,
+        nextServiceTeamId
       );
 
       const oldValue = Object.keys(payload).reduce(
@@ -3390,9 +3886,6 @@ export const updateOrder = async (
   serviceOrderId: string,
   data: ServiceOrderData
 ): Promise<ServiceOrder> => {
-  if (!canManageServiceOrders(profile) && data.status) {
-    throw new AppError("ERR_SERVICE_ORDER_PERMISSION_DENIED", 403);
-  }
   validateServiceOrderSchedule(data);
   const updated = await sequelize.transaction(
     { isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE },
@@ -3410,6 +3903,7 @@ export const updateOrder = async (
       );
       const normalizedData = { ...data, contactId: contact.id };
       await ensureAttendant(tenantId, data.attendantId, transaction);
+      await ensureServiceTeam(tenantId, data.serviceTeamId, transaction);
       const oldValue = {
         status: serviceOrder.status,
         attendantId: serviceOrder.attendantId,
@@ -3439,7 +3933,8 @@ export const updateOrder = async (
         payload.scheduledStart,
         payload.scheduledEnd,
         serviceOrder.id,
-        transaction
+        transaction,
+        payload.serviceTeamId
       );
       await serviceOrder.update(payload, { transaction });
       await replaceOrderItems(

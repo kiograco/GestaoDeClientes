@@ -821,6 +821,7 @@ const menuTreeCatalog = [
           { key: 'cad-pragas', title: 'Pragas', icon: 'mdi-bug-outline', routeName: 'cadastros-operacionais', query: { aba: 'pragas' } },
           { key: 'cad-metodos', title: 'Métodos', icon: 'mdi-spray', routeName: 'cadastros-base', query: { modulo: 'methods' } },
           { key: 'cad-tipos-atendimento', title: 'Tipos de Atendimento', icon: 'mdi-format-list-checks', routeName: 'tipos-atendimento' },
+          { key: 'cad-situacoes-os', title: 'Situações de OS', icon: 'mdi-clipboard-check-outline', routeName: 'cadastros-base', query: { modulo: 'service-order-statuses' } },
           devItem('Informações para Orçamentos', 'cad-informacoes-orcamentos', 'mdi-information-outline')
         ]
       },

@@ -11,6 +11,7 @@ export const BASE_REGISTER_MODULES = [
   "chart-of-accounts",
   "payment-methods",
   "closing-types",
+  "service-order-statuses",
   "suppliers",
   "general-parameters"
 ] as const;

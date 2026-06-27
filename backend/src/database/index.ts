@@ -70,6 +70,9 @@ import ServiceOrder from "../models/ServiceOrder";
 import ServiceOrderItem from "../models/ServiceOrderItem";
 import ServiceOrderLog from "../models/ServiceOrderLog";
 import ServiceOrderOccurrenceException from "../models/ServiceOrderOccurrenceException";
+import ServiceRa from "../models/ServiceRa";
+import ServiceTeam from "../models/ServiceTeam";
+import ServiceTeamAttendant from "../models/ServiceTeamAttendant";
 import ServiceEnvironment from "../models/ServiceEnvironment";
 import ServiceMethod from "../models/ServiceMethod";
 import ServicePest from "../models/ServicePest";
@@ -172,6 +175,9 @@ const models = [
   ServiceOrderItem,
   ServiceOrderLog,
   ServiceOrderOccurrenceException,
+  ServiceTeam,
+  ServiceTeamAttendant,
+  ServiceRa,
   ServiceEnvironment,
   ServiceMethod,
   ServicePest,

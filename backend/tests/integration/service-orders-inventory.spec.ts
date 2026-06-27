@@ -1,5 +1,6 @@
 import request from "supertest";
 import AuditLog from "../../src/models/AuditLog";
+import BaseRegister from "../../src/models/BaseRegister";
 import Pest from "../../src/models/Pest";
 import ProductPest from "../../src/models/ProductPest";
 import ServiceAttendant from "../../src/models/ServiceAttendant";
@@ -9,6 +10,9 @@ import ServiceInventoryMovement from "../../src/models/ServiceInventoryMovement"
 import ServiceInventoryPestRecommendation from "../../src/models/ServiceInventoryPestRecommendation";
 import ServiceOrder from "../../src/models/ServiceOrder";
 import ServicePest from "../../src/models/ServicePest";
+import ServiceRa from "../../src/models/ServiceRa";
+import ServiceTeam from "../../src/models/ServiceTeam";
+import ServiceTeamAttendant from "../../src/models/ServiceTeamAttendant";
 import { bearerTokenFor } from "../helpers/auth";
 import { makeTestApp } from "../helpers/app";
 import { createAdminUser, createAgentUser, createContact } from "../factories";
@@ -71,6 +75,171 @@ const countPdfPages = (pdf: Buffer): number =>
   (pdf.toString("latin1").match(/\/Type\s*\/Page\b/g) || []).length;
 
 describe("service orders inventory API", () => {
+  it("valida situacao de OS pelo cadastro parametrizado da empresa", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    const contact = await createContact({ tenantId: user.tenantId });
+
+    await BaseRegister.create({
+      tenantId: user.tenantId,
+      module: "service-order-statuses",
+      code: "aguardando_cliente",
+      name: "Aguardando cliente",
+      status: "active",
+      data: {}
+    });
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        contactId: contact.id,
+        title: "Visita com situacao parametrizada",
+        serviceType: "Manutencao",
+        priority: "media",
+        status: "aguardando_cliente",
+        scheduledStart: "2026-09-11T13:00:00.000Z",
+        scheduledEnd: "2026-09-11T14:00:00.000Z",
+        items: []
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.status).toBe("aguardando_cliente");
+      });
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        contactId: contact.id,
+        title: "Visita com situacao invalida",
+        serviceType: "Manutencao",
+        priority: "media",
+        status: "status_fora_do_cadastro",
+        scheduledStart: "2026-09-12T13:00:00.000Z",
+        scheduledEnd: "2026-09-12T14:00:00.000Z",
+        items: []
+      })
+      .expect(400);
+  });
+
+  it("exporta ordens de servico em CSV respeitando filtros e tenant", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const otherUser = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    const contact = await createContact({ tenantId: user.tenantId });
+    const otherContact = await createContact({ tenantId: otherUser.tenantId });
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        contactId: contact.id,
+        title: "Exportar OS agendada",
+        serviceType: "Manutencao",
+        priority: "media",
+        status: "agendada",
+        scheduledStart: "2026-09-13T13:00:00.000Z",
+        scheduledEnd: "2026-09-13T14:00:00.000Z",
+        items: []
+      })
+      .expect(201);
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        contactId: contact.id,
+        title: "Nao deve exportar cancelada",
+        serviceType: "Manutencao",
+        priority: "media",
+        status: "cancelada",
+        scheduledStart: "2026-09-14T13:00:00.000Z",
+        scheduledEnd: "2026-09-14T14:00:00.000Z",
+        items: []
+      })
+      .expect(201);
+
+    await ServiceOrder.create({
+      tenantId: otherUser.tenantId,
+      contactId: otherContact.id,
+      createdByUserId: otherUser.id,
+      title: "OS de outro tenant",
+      serviceType: "Manutencao",
+      priority: "media",
+      status: "agendada"
+    });
+
+    await request(app)
+      .get("/service/orders/export")
+      .query({ status: "agendada" })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect("Content-Type", /text\/csv/)
+      .expect(response => {
+        const csv = response.text;
+        expect(csv).toContain("Exportar OS agendada");
+        expect(csv).not.toContain("Nao deve exportar cancelada");
+        expect(csv).not.toContain("OS de outro tenant");
+      });
+  });
+
+  it("pagina e ordena ordens de servico no servidor", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    const contact = await createContact({ tenantId: user.tenantId });
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        contactId: contact.id,
+        title: "OS pagina B",
+        serviceType: "Manutencao",
+        priority: "media",
+        status: "agendada",
+        scheduledStart: "2026-09-20T13:00:00.000Z",
+        scheduledEnd: "2026-09-20T14:00:00.000Z",
+        items: []
+      })
+      .expect(201);
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        contactId: contact.id,
+        title: "OS pagina A",
+        serviceType: "Manutencao",
+        priority: "media",
+        status: "agendada",
+        scheduledStart: "2026-09-19T13:00:00.000Z",
+        scheduledEnd: "2026-09-19T14:00:00.000Z",
+        items: []
+      })
+      .expect(201);
+
+    await request(app)
+      .get("/service/orders")
+      .query({
+        pageNumber: 1,
+        rowsPerPage: 1,
+        sortBy: "scheduledStart",
+        status: "agendada"
+      })
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.count).toBe(2);
+        expect(body.hasMore).toBe(true);
+        expect(body.rows).toHaveLength(1);
+        expect(body.rows[0].title).toBe("OS pagina A");
+      });
+  });
+
   it("aplica permissoes por perfil nas operacoes da agenda", async () => {
     const app = await makeTestApp();
     const admin = await createAdminUser();
@@ -116,9 +285,9 @@ describe("service orders inventory API", () => {
     await request(app)
       .get("/service/orders-dashboard")
       .set("Authorization", attendantAuthorization)
-      .expect(403);
+      .expect(200);
     await request(app)
-      .get("/service/orders-financial-report")
+      .get("/service/orders/export")
       .set("Authorization", technicianAuthorization)
       .expect(403);
     await request(app)
@@ -140,6 +309,254 @@ describe("service orders inventory API", () => {
       .get("/service/orders")
       .set("Authorization", bearerTokenFor(basicUser))
       .expect(403);
+  });
+
+  it("aplica permissoes granulares configuradas no usuario", async () => {
+    const app = await makeTestApp();
+    const tenantUser = await createAgentUser({
+      configs: { permissions: ["service-orders:view"] }
+    });
+    const authorization = bearerTokenFor(tenantUser);
+    const contact = await createContact({ tenantId: tenantUser.tenantId });
+
+    await request(app)
+      .get("/service/orders")
+      .set("Authorization", authorization)
+      .expect(200);
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        contactId: contact.id,
+        title: "Criacao sem permissao",
+        serviceType: "Manutencao",
+        priority: "media",
+        status: "agendada",
+        scheduledStart: "2026-09-15T13:00:00.000Z",
+        scheduledEnd: "2026-09-15T14:00:00.000Z",
+        items: []
+      })
+      .expect(403);
+  });
+
+  it("gerencia equipes de atendimento com isolamento por tenant", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const otherUser = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    const attendant = await ServiceAttendant.create({
+      tenantId: user.tenantId,
+      name: "Tecnico Equipe",
+      email: "tecnico-equipe@example.test",
+      active: true
+    });
+    const otherTeam = await ServiceTeam.create({
+      tenantId: otherUser.tenantId,
+      name: "Equipe de outro tenant",
+      code: "EXT",
+      isActive: true
+    });
+
+    const created = await request(app)
+      .post("/service/teams")
+      .set("Authorization", authorization)
+      .send({
+        name: "Equipe Norte",
+        code: "NORTE",
+        responsibleId: attendant.id,
+        attendantIds: [attendant.id],
+        isActive: true
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.name).toBe("Equipe Norte");
+        expect(body.tenantId).toBe(user.tenantId);
+      });
+
+    expect(
+      await ServiceTeamAttendant.count({
+        where: {
+          tenantId: user.tenantId,
+          serviceTeamId: created.body.id,
+          serviceAttendantId: attendant.id
+        }
+      })
+    ).toBe(1);
+
+    await request(app)
+      .get("/service/teams")
+      .set("Authorization", authorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.map((team: { id: number }) => team.id)).toContain(
+          created.body.id
+        );
+        expect(body.map((team: { id: number }) => team.id)).not.toContain(
+          otherTeam.id
+        );
+      });
+  });
+
+  it("bloqueia agenda quando ha conflito por equipe mesmo com outro tecnico", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    const contact = await createContact({ tenantId: user.tenantId });
+    const firstAttendant = await ServiceAttendant.create({
+      tenantId: user.tenantId,
+      name: "Tecnico Equipe A",
+      email: "tecnico-equipe-a@example.test",
+      active: true
+    });
+    const secondAttendant = await ServiceAttendant.create({
+      tenantId: user.tenantId,
+      name: "Tecnico Equipe B",
+      email: "tecnico-equipe-b@example.test",
+      active: true
+    });
+    const team = await ServiceTeam.create({
+      tenantId: user.tenantId,
+      name: "Equipe Conflito",
+      code: "CONFLITO",
+      isActive: true
+    });
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        contactId: contact.id,
+        attendantId: firstAttendant.id,
+        serviceTeamId: team.id,
+        title: "Visita da equipe",
+        serviceType: "Manutencao",
+        priority: "media",
+        status: "agendada",
+        scheduledStart: "2026-10-01T09:00:00.000Z",
+        scheduledEnd: "2026-10-01T10:00:00.000Z",
+        items: []
+      })
+      .expect(201);
+
+    await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        contactId: contact.id,
+        attendantId: secondAttendant.id,
+        serviceTeamId: team.id,
+        title: "Visita conflitante por equipe",
+        serviceType: "Manutencao",
+        priority: "media",
+        status: "agendada",
+        scheduledStart: "2026-10-01T09:30:00.000Z",
+        scheduledEnd: "2026-10-01T10:30:00.000Z",
+        items: []
+      })
+      .expect(409);
+  });
+
+  it.each([
+    ["daily", "2026-10-06T09:00:00.000Z", "2026-10-07T09:00:00.000Z"],
+    ["weekly", "2026-10-12T09:00:00.000Z", "2026-10-19T09:00:00.000Z"],
+    ["biweekly", "2026-10-19T09:00:00.000Z", "2026-11-02T09:00:00.000Z"]
+  ])(
+    "materializa recorrencia %s como ordens independentes",
+    async (recurrenceType, expectedSecond, expectedThird) => {
+      const app = await makeTestApp();
+      const user = await createAdminUser();
+      const authorization = bearerTokenFor(user);
+      const contact = await createContact({ tenantId: user.tenantId });
+
+      const created = await request(app)
+        .post("/service/orders")
+        .set("Authorization", authorization)
+        .send({
+          contactId: contact.id,
+          title: `Serie ${recurrenceType}`,
+          serviceType: "Manutencao",
+          priority: "media",
+          status: "agendada",
+          scheduledStart: "2026-10-05T09:00:00.000Z",
+          scheduledEnd: "2026-10-05T10:00:00.000Z",
+          recurrenceType,
+          recurrenceActive: true,
+          recurrenceMaxOccurrences: 3,
+          recurrenceWeekdays: [1],
+          items: []
+        })
+        .expect(201);
+
+      const children = await ServiceOrder.findAll({
+        where: {
+          tenantId: user.tenantId,
+          recurrenceParentId: created.body.id
+        },
+        order: [["occurrenceNumber", "ASC"]]
+      });
+
+      expect(children).toHaveLength(2);
+      expect(children.map(order => order.scheduledStart?.toISOString())).toEqual(
+        [expectedSecond, expectedThird]
+      );
+      expect(children.map(order => order.occurrenceNumber)).toEqual([2, 3]);
+      expect(children.every(order => order.recurrenceType === "single")).toBe(
+        true
+      );
+    }
+  );
+
+  it("cria estrutura formal de RA vinculada a ordem de servico", async () => {
+    const app = await makeTestApp();
+    const user = await createAdminUser();
+    const authorization = bearerTokenFor(user);
+    const contact = await createContact({ tenantId: user.tenantId });
+    const attendant = await ServiceAttendant.create({
+      tenantId: user.tenantId,
+      name: "Tecnico RA",
+      email: "tecnico-ra@example.test",
+      active: true
+    });
+    const team = await ServiceTeam.create({
+      tenantId: user.tenantId,
+      name: "Equipe RA",
+      code: "RA",
+      isActive: true
+    });
+
+    const created = await request(app)
+      .post("/service/orders")
+      .set("Authorization", authorization)
+      .send({
+        contactId: contact.id,
+        attendantId: attendant.id,
+        serviceTeamId: team.id,
+        title: "Atendimento RA",
+        serviceType: "Inspecao",
+        priority: "alta",
+        status: "agendada",
+        scheduledStart: "2026-10-08T09:00:00.000Z",
+        scheduledEnd: "2026-10-08T10:00:00.000Z",
+        isRaService: true,
+        items: []
+      })
+      .expect(201);
+
+    const serviceRa = await ServiceRa.findOne({
+      where: { tenantId: user.tenantId, serviceOrderId: created.body.id }
+    });
+
+    expect(serviceRa).toEqual(
+      expect.objectContaining({
+        tenantId: user.tenantId,
+        contactId: contact.id,
+        serviceOrderId: created.body.id,
+        attendantId: attendant.id,
+        serviceTeamId: team.id,
+        status: "pending_definition"
+      })
+    );
   });
 
   it("rejeita conflito com ocorrencia futura de ordem recorrente", async () => {

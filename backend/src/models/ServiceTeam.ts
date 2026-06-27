@@ -3,23 +3,23 @@ import {
   Column,
   CreatedAt,
   UpdatedAt,
+  DeletedAt,
   Model,
   PrimaryKey,
   AutoIncrement,
   Default,
   ForeignKey,
   BelongsTo,
-  HasMany,
   BelongsToMany,
-  DataType
+  HasMany
 } from "sequelize-typescript";
 import Tenant from "./Tenant";
+import ServiceAttendant from "./ServiceAttendant";
 import ServiceOrder from "./ServiceOrder";
-import ServiceTeam from "./ServiceTeam";
 import ServiceTeamAttendant from "./ServiceTeamAttendant";
 
-@Table
-class ServiceAttendant extends Model<ServiceAttendant> {
+@Table({ tableName: "ServiceTeams", paranoid: true })
+class ServiceTeam extends Model<ServiceTeam> {
   @PrimaryKey
   @AutoIncrement
   @Column
@@ -36,32 +36,33 @@ class ServiceAttendant extends Model<ServiceAttendant> {
   name: string;
 
   @Column
-  email: string;
+  code: string;
 
+  @ForeignKey(() => ServiceAttendant)
   @Column
-  phone: string;
+  responsibleId: number;
 
-  @Column
-  specialty: string;
+  @BelongsTo(() => ServiceAttendant, "responsibleId")
+  responsible: ServiceAttendant;
 
   @Default(true)
   @Column
-  active: boolean;
+  isActive: boolean;
 
-  @Column(DataType.JSONB)
-  workingHours: LegacyAny;
+  @BelongsToMany(() => ServiceAttendant, () => ServiceTeamAttendant)
+  attendants: ServiceAttendant[];
 
   @HasMany(() => ServiceOrder)
   serviceOrders: ServiceOrder[];
-
-  @BelongsToMany(() => ServiceTeam, () => ServiceTeamAttendant)
-  serviceTeams: ServiceTeam[];
 
   @CreatedAt
   createdAt: Date;
 
   @UpdatedAt
   updatedAt: Date;
+
+  @DeletedAt
+  deletedAt: Date;
 }
 
-export default ServiceAttendant;
+export default ServiceTeam;

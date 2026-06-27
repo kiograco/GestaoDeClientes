@@ -22,6 +22,21 @@ serviceOrderRoutes.put(
   ServiceOrderController.updateAttendant
 );
 serviceOrderRoutes.get(
+  "/service/teams",
+  isAuth,
+  ServiceOrderController.listServiceTeams
+);
+serviceOrderRoutes.post(
+  "/service/teams",
+  isAuth,
+  ServiceOrderController.createServiceTeam
+);
+serviceOrderRoutes.put(
+  "/service/teams/:serviceTeamId",
+  isAuth,
+  ServiceOrderController.updateServiceTeam
+);
+serviceOrderRoutes.get(
   "/service/inventory",
   isAuth,
   ServiceOrderController.listInventoryItems
@@ -135,6 +150,11 @@ serviceOrderRoutes.get(
   "/service/orders",
   isAuth,
   ServiceOrderController.listOrders
+);
+serviceOrderRoutes.get(
+  "/service/orders/export",
+  isAuth,
+  ServiceOrderController.exportOrders
 );
 serviceOrderRoutes.get(
   "/service/orders-dashboard",

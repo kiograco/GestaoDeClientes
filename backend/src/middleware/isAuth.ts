@@ -38,7 +38,7 @@ const isAuth = async (
 
     const user = await User.findOne({
       where: { id, tenantId },
-      attributes: ["id", "profile", "tenantId"],
+      attributes: ["id", "profile", "tenantId", "configs"],
       include: [{ model: Tenant, attributes: ["status", "accessExpiresAt"] }]
     });
     if (!user || user.profile !== profile) {
@@ -51,10 +51,16 @@ const isAuth = async (
       throw new AppError("ERR_TENANT_ACCESS_EXPIRED", 403);
     }
 
+    const configs = (user.configs || {}) as { permissions?: unknown };
+    const permissions = Array.isArray(configs.permissions)
+      ? configs.permissions.filter(permission => typeof permission === "string")
+      : undefined;
+
     req.user = {
       id: String(user.id),
       profile: user.profile,
-      tenantId: user.tenantId
+      tenantId: user.tenantId,
+      permissions
     };
   } catch (err) {
     if (err instanceof AppError) throw err;

@@ -3,20 +3,23 @@ import {
   Column,
   CreatedAt,
   UpdatedAt,
+  DeletedAt,
   Model,
   PrimaryKey,
   AutoIncrement,
   ForeignKey,
-  BelongsTo
+  BelongsTo,
+  DataType
 } from "sequelize-typescript";
 import Tenant from "./Tenant";
-import User from "./User";
-import ServiceOrder from "./ServiceOrder";
+import Contact from "./Contact";
+import ClientUnit from "./ClientUnit";
 import ServiceAttendant from "./ServiceAttendant";
 import ServiceTeam from "./ServiceTeam";
+import ServiceOrder from "./ServiceOrder";
 
-@Table
-class ServiceOrderOccurrenceException extends Model<ServiceOrderOccurrenceException> {
+@Table({ tableName: "ServiceRas", paranoid: true })
+class ServiceRa extends Model<ServiceRa> {
   @PrimaryKey
   @AutoIncrement
   @Column
@@ -26,21 +29,29 @@ class ServiceOrderOccurrenceException extends Model<ServiceOrderOccurrenceExcept
   @Column
   tenantId: number;
 
+  @BelongsTo(() => Tenant)
+  tenant: Tenant;
+
+  @ForeignKey(() => Contact)
+  @Column
+  contactId: number;
+
+  @BelongsTo(() => Contact)
+  contact: Contact;
+
+  @ForeignKey(() => ClientUnit)
+  @Column
+  clientUnitId: number;
+
+  @BelongsTo(() => ClientUnit)
+  clientUnit: ClientUnit;
+
   @ForeignKey(() => ServiceOrder)
   @Column
   serviceOrderId: number;
 
   @BelongsTo(() => ServiceOrder)
   serviceOrder: ServiceOrder;
-
-  @Column
-  occurrenceStart: Date;
-
-  @Column
-  scheduledStart: Date;
-
-  @Column
-  scheduledEnd: Date;
 
   @ForeignKey(() => ServiceAttendant)
   @Column
@@ -59,15 +70,17 @@ class ServiceOrderOccurrenceException extends Model<ServiceOrderOccurrenceExcept
   @Column
   status: string;
 
-  @ForeignKey(() => User)
-  @Column
-  createdByUserId: number;
+  @Column(DataType.TEXT)
+  observations: string;
 
   @CreatedAt
   createdAt: Date;
 
   @UpdatedAt
   updatedAt: Date;
+
+  @DeletedAt
+  deletedAt: Date;
 }
 
-export default ServiceOrderOccurrenceException;
+export default ServiceRa;
