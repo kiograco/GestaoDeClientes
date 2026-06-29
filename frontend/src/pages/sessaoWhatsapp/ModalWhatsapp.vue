@@ -69,6 +69,63 @@
             </q-banner>
           </div>
           <div
+            class="q-mt-md row full-width"
+            v-if="whatsapp.type === 'waba'"
+          >
+            <q-banner class="col-12 bg-blue-1 text-primary rounded-borders q-mb-md">
+              Use a API oficial da Meta. Cadastre no painel da Meta a URL de webhook exibida apos salvar o canal.
+            </q-banner>
+            <div class="col-12 q-mb-md">
+              <c-input
+                outlined
+                dense
+                label="Phone Number ID"
+                v-model="whatsapp.fbPageId"
+                hint="ID do numero no WhatsApp Cloud API"
+              />
+            </div>
+            <div class="col-12 q-mb-md">
+              <c-input
+                outlined
+                dense
+                label="Token de acesso Meta"
+                :type="isPwd ? 'password' : 'text'"
+                v-model="whatsapp.tokenAPI"
+                hint="Token permanente do app/usuario de sistema da Meta"
+              >
+                <template v-slot:append>
+                  <q-icon
+                    :name="isPwd ? 'visibility_off' : 'visibility'"
+                    class="cursor-pointer"
+                    @click="isPwd = !isPwd"
+                  />
+                </template>
+              </c-input>
+            </div>
+            <div
+              class="col-12"
+              v-if="whatsapp.UrlWabaWebHook"
+            >
+              <c-input
+                outlined
+                dense
+                readonly
+                label="Webhook Meta"
+                :value="whatsapp.UrlWabaWebHook"
+              >
+                <template v-slot:after>
+                  <q-btn
+                    round
+                    flat
+                    color="primary"
+                    icon="content_copy"
+                    @click="copy(whatsapp.UrlWabaWebHook)"
+                  />
+                </template>
+              </c-input>
+            </div>
+          </div>
+          <div
             class="q-mt-md row full-width justify-center"
             v-if="whatsapp.type === 'instagram'"
           >
@@ -265,11 +322,14 @@ export default {
         instagramUser: '',
         instagramKey: '',
         tokenAPI: '',
-        type: 'whatsapp',
+        fbPageId: '',
+        wabaBSP: 'meta',
+        type: 'waba',
         farewellMessage: ''
       },
       optionsWhatsappsTypes: [
-        { label: 'Whatsapp', value: 'whatsapp' },
+        { label: 'WhatsApp Oficial Meta', value: 'waba' },
+        { label: 'WhatsApp Web (legado)', value: 'whatsapp', disable: true },
         { label: 'Telegram', value: 'telegram' },
         { label: 'Instagram Oficial', value: 'instagram_oauth' }
       ],
@@ -323,7 +383,15 @@ export default {
     fecharModal () {
       this.whatsapp = {
         name: '',
-        isDefault: false
+        isDefault: false,
+        tokenTelegram: '',
+        instagramUser: '',
+        instagramKey: '',
+        tokenAPI: '',
+        fbPageId: '',
+        wabaBSP: 'meta',
+        type: 'waba',
+        farewellMessage: ''
       }
       this.$emit('update:whatsAppEdit', {})
       this.$emit('update:modalWhatsapp', false)
@@ -355,6 +423,17 @@ export default {
           position: 'top',
           message: 'Informe o usuário e clique em "Nova senha" para preencher a senha do Instagram.'
         })
+      }
+      if (whatsapp.type === 'waba') {
+        whatsapp.wabaBSP = 'meta'
+        if (!whatsapp.fbPageId || (!this.whatsAppEdit.id && !whatsapp.tokenAPI)) {
+          return this.$q.notify({
+            type: 'warning',
+            progress: true,
+            position: 'top',
+            message: 'Informe o Phone Number ID e o token de acesso da Meta.'
+          })
+        }
       }
       try {
         if (this.whatsAppEdit.id) {

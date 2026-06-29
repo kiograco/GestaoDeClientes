@@ -44,6 +44,13 @@ export function GetInstagramOAuthUrl (whatsAppId) {
   })
 }
 
+export function GetWabaMetaSignupUrl () {
+  return request({
+    url: '/whatsapp/meta/signup',
+    method: 'get'
+  })
+}
+
 export function GetWhatSession (whatsAppId) {
   return request({
     url: `/whatsapp/${whatsAppId}`,

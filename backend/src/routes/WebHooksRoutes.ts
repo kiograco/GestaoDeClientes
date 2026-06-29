@@ -12,6 +12,16 @@ webHooksRoutes.post(
 );
 
 webHooksRoutes.get(
+  "/wabahooks/meta/:token",
+  HooksController.CheckServiceWabaMeta
+);
+
+webHooksRoutes.post(
+  "/wabahooks/meta/:token",
+  HooksController.ReceivedRequestWabaMeta
+);
+
+webHooksRoutes.get(
   "/fb-messenger-hooks/:token",
   HooksController.CheckServiceMessenger
 );

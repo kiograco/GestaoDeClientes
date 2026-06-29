@@ -9,6 +9,7 @@ import Queue from "../../libs/Queue";
 import { StartInstaBotSession } from "../InstagramBotServices/StartInstaBotSession";
 import { StartTbotSession } from "../TbotServices/StartTbotSession";
 import { StartWaba360 } from "../WABA360/StartWaba360";
+import { StartWabaMeta } from "../WABAMeta/StartWabaMeta";
 import { StartMessengerBot } from "../MessengerChannelServices/StartMessengerBot";
 
 export const StartWhatsAppSession = async (
@@ -56,6 +57,9 @@ export const StartWhatsAppSession = async (
     if (whatsapp.type === "waba") {
       if (whatsapp.wabaBSP === "360") {
         StartWaba360(whatsapp);
+      }
+      if (whatsapp.wabaBSP === "meta") {
+        StartWabaMeta(whatsapp);
       }
     }
   } catch (err) {

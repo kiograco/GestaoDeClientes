@@ -4,7 +4,6 @@ import Whatsapp from "../../models/Whatsapp";
 import { StartInstaBotSession } from "../InstagramBotServices/StartInstaBotSession";
 import { StartMessengerBot } from "../MessengerChannelServices/StartMessengerBot";
 import { StartTbotSession } from "../TbotServices/StartTbotSession";
-import { StartWaba360 } from "../WABA360/StartWaba360";
 import { StartWhatsAppSession } from "./StartWhatsAppSession";
 // import { StartTbotSession } from "../TbotServices/StartTbotSession";
 
@@ -46,7 +45,7 @@ export const StartAllWhatsAppsSessions = async (): Promise<void> => {
     w => w.type === "telegram" && !!w.tokenTelegram
   );
   const instagramSessions = whatsapps.filter(w => w.type === "instagram");
-  const waba360Sessions = whatsapps.filter(w => w.type === "waba");
+  const wabaSessions = whatsapps.filter(w => w.type === "waba");
   const messengerSessions = whatsapps.filter(w => w.type === "messenger");
 
   if (whatsappSessions.length > 0) {
@@ -61,10 +60,10 @@ export const StartAllWhatsAppsSessions = async (): Promise<void> => {
     });
   }
 
-  if (waba360Sessions.length > 0) {
-    waba360Sessions.forEach(channel => {
-      if (channel.tokenAPI && channel.wabaBSP === "360") {
-        StartWaba360(channel);
+  if (wabaSessions.length > 0) {
+    wabaSessions.forEach(channel => {
+      if (channel.tokenAPI) {
+        StartWhatsAppSession(channel);
       }
     });
   }

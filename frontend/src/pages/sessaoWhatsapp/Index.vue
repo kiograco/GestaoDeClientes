@@ -10,6 +10,15 @@
           <div class="absolute-right q-pa-md">
             <q-btn
               rounded
+              color="primary"
+              icon="mdi-whatsapp"
+              label="Conectar Meta"
+              class="q-mr-sm"
+              @click="handleWabaMetaSignup"
+              :disable="!isAdmin"
+            />
+            <q-btn
+              rounded
               color="black"
               icon="mdi-plus"
               label="Adicionar"
@@ -212,7 +221,7 @@
 
 <script>
 
-import { DeletarWhatsapp, DeleteWhatsappSession, GetInstagramOAuthUrl, StartWhatsappSession, ListarWhatsapps, RequestNewQrCode, UpdateWhatsapp } from 'src/service/sessoesWhatsapp'
+import { DeletarWhatsapp, DeleteWhatsappSession, GetInstagramOAuthUrl, GetWabaMetaSignupUrl, StartWhatsappSession, ListarWhatsapps, RequestNewQrCode, UpdateWhatsapp } from 'src/service/sessoesWhatsapp'
 import { format, parseISO } from 'date-fns'
 import pt from 'date-fns/locale/pt-BR/index'
 import ModalQrCode from './ModalQrCode'
@@ -335,6 +344,10 @@ export default {
       }
     },
     retryInstagramConnection () {
+      if (this.instagramConnection.channelId === 'waba-meta') {
+        this.handleWabaMetaSignup()
+        return
+      }
       const channel = this.canais.find(item => item.id === this.instagramConnection.channelId)
       if (channel) this.handleConnectChannel(channel)
     },
@@ -381,6 +394,64 @@ export default {
         await StartWhatsappSession(whatsAppId)
       } catch (error) {
         console.error(error)
+      }
+    },
+    async handleWabaMetaSignup () {
+      this.setInstagramConnection(
+        'waba-meta',
+        'opening',
+        'Preparando conexao oficial da Meta',
+        'Aguarde enquanto abrimos o onboarding oficial do WhatsApp Business.'
+      )
+      const startedAt = Date.now()
+      try {
+        const { data } = await GetWabaMetaSignupUrl()
+        const popup = window.open(data.url, 'waba-meta-oauth', 'width=720,height=760')
+        if (!popup) {
+          throw new Error('Meta authorization popup blocked')
+        }
+        this.setInstagramConnection(
+          'waba-meta',
+          'waiting',
+          'Aguardando autorizacao da Meta',
+          'Conclua as etapas na janela aberta. O canal sera criado automaticamente ao final.'
+        )
+        for (let attempt = 0; attempt < 90; attempt++) {
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          const response = await ListarWhatsapps()
+          this.$store.commit('LOAD_WHATSAPPS', response.data)
+          const channel = response.data.find(item =>
+            item.type === 'waba' &&
+            item.wabaBSP === 'meta' &&
+            item.updatedAt &&
+            new Date(item.updatedAt).getTime() >= startedAt - 5000
+          )
+          if (channel) {
+            this.setInstagramConnection(
+              'waba-meta',
+              'success',
+              'WhatsApp Oficial conectado',
+              'O numero foi autorizado pela Meta e inserido automaticamente neste CRM.'
+            )
+            this.$notificarSucesso('WhatsApp Oficial conectado pela API Meta.')
+            return
+          }
+        }
+        this.setInstagramConnection(
+          'waba-meta',
+          'timeout',
+          'Tempo de autorizacao esgotado',
+          'Nao recebemos a confirmacao em tres minutos. Feche a janela anterior e tente novamente.'
+        )
+      } catch (error) {
+        console.error(error)
+        this.setInstagramConnection(
+          'waba-meta',
+          'error',
+          'Nao foi possivel conectar o WhatsApp Oficial',
+          'Verifique se o navegador bloqueou a nova janela e confirme as configuracoes do app Meta.'
+        )
+        this.$notificarErro('Nao foi possivel iniciar o onboarding oficial da Meta.')
       }
     },
     async handleRequestNewQrCode (channel, origem) {

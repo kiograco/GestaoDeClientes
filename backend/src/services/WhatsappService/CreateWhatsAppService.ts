@@ -44,7 +44,11 @@ const CreateWhatsAppService = async ({
   isDefault = false
 }: Request): Promise<Response> => {
   if (type === "waba" && (!tokenAPI || !wabaBSP)) {
-    throw new AppError("WABA: favor informar o Token e a BSP");
+    throw new AppError("WABA: favor informar o Token e o provedor");
+  }
+
+  if (type === "waba" && wabaBSP === "meta" && !fbPageId) {
+    throw new AppError("WABA Meta: favor informar o Phone Number ID");
   }
 
   if (type === "instagram" && (!instagramUser || !instagramKey)) {

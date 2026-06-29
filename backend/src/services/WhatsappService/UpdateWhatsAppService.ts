@@ -98,6 +98,14 @@ const UpdateWhatsAppService = async ({
       );
     }
 
+    if (type === "waba" && ((!tokenAPI && !whatsapp.tokenAPI) || !wabaBSP)) {
+      throw new AppError("WABA: favor informar o Token e o provedor");
+    }
+
+    if (type === "waba" && wabaBSP === "meta" && !fbPageId) {
+      throw new AppError("WABA Meta: favor informar o Phone Number ID");
+    }
+
     const data: WhatsappData = {
       name,
       status,

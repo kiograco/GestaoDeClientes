@@ -120,6 +120,7 @@ class Whatsapp extends Model<Whatsapp> {
   @Column(
     DataType.ENUM(
       "whatsapp",
+      "waba",
       "telegram",
       "instagram",
       "instagram_oauth",
@@ -160,7 +161,7 @@ class Whatsapp extends Model<Whatsapp> {
 
   @Default(null)
   @AllowNull
-  @Column(DataType.ENUM("360", "gupshup"))
+  @Column(DataType.ENUM("360", "gupshup", "meta"))
   wabaBSP: string;
 
   @Default(null)
