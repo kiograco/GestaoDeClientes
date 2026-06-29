@@ -762,6 +762,7 @@ const menuTreeCatalog = [
     children: [
       { key: 'atendimentos-novo', title: 'Novo Atendimento', icon: 'mdi-plus-circle-outline', routeName: 'atendimento' },
       { key: 'atendimentos-consultar', title: 'Consultar Atendimentos', icon: 'mdi-forum-outline', routeName: 'atendimento' },
+      { key: 'atendimentos-conexoes', title: 'Conexões de Atendimento', icon: 'mdi-cellphone-wireless', routeName: 'sessoes', roles: ['admin'] },
       {
         key: 'ordem-servico',
         title: 'Ordem de Serviço',
