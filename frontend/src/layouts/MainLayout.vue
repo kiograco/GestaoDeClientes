@@ -503,8 +503,8 @@ const objMenuGroups = [
 
 const objMenuAdmin = [
   {
-    title: 'Canais',
-    caption: 'Canais de Comunicação',
+    title: 'Conexões',
+    caption: 'WhatsApp e canais',
     icon: 'mdi-cellphone-wireless',
     routeName: 'sessoes'
   },
@@ -628,7 +628,7 @@ const menuCatalog = [
   { group: 'Visao Geral', title: 'Painel de Atendimentos', icon: 'mdi-view-dashboard-variant', routeName: 'painel-atendimentos', roles: ['admin'] },
   { group: 'Visao Geral', title: 'Relatórios', icon: 'mdi-file-chart', routeName: 'relatorios', roles: ['admin'] },
   { group: 'Atendimento', title: 'Atendimentos', icon: 'mdi-forum-outline', routeName: 'atendimento' },
-  { group: 'Atendimento', title: 'Canais', icon: 'mdi-cellphone-wireless', routeName: 'sessoes', roles: ['admin'] },
+  { group: 'Atendimento', title: 'Conexões', icon: 'mdi-cellphone-wireless', routeName: 'sessoes', roles: ['admin'] },
   { group: 'Atendimento', title: 'Filas', icon: 'mdi-arrow-decision-outline', routeName: 'filas', roles: ['admin'] },
   { group: 'Atendimento', title: 'Horario de Atendimento', icon: 'mdi-calendar-clock', routeName: 'horarioAtendimento', roles: ['admin'] },
   { group: 'Atendimento', title: 'Mensagens Rapidas', icon: 'mdi-reply-all-outline', routeName: 'mensagens-rapidas', roles: ['admin'] },

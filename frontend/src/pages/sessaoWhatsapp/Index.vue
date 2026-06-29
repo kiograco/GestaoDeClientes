@@ -5,24 +5,32 @@
         flat
         class="full-width"
       >
-        <q-card-section class="text-h6 text-bold">
-          Canais
-          <div class="absolute-right q-pa-md">
+        <q-card-section class="row items-center q-col-gutter-md">
+          <div class="col-12 col-md">
+            <div class="text-h6 text-bold">
+              Conexões
+            </div>
+            <div class="text-caption text-grey-7">
+              Conecte o WhatsApp Oficial pela Meta ou configure outros canais de atendimento.
+            </div>
+          </div>
+          <div class="col-12 col-md-auto row q-gutter-sm justify-end">
             <q-btn
               rounded
               color="primary"
               icon="mdi-whatsapp"
-              label="Conectar Meta"
-              class="q-mr-sm"
+              label="Conectar WhatsApp Oficial"
               @click="handleWabaMetaSignup"
               :disable="!isAdmin"
             />
             <q-btn
               rounded
-              color="black"
+              outline
+              color="primary"
               icon="mdi-plus"
-              label="Adicionar"
+              label="Adicionar outro canal"
               @click="modalWhatsapp = true"
+              :disable="!isAdmin"
             />
           </div>
         </q-card-section>

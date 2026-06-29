@@ -328,7 +328,7 @@ export default {
         farewellMessage: ''
       },
       optionsWhatsappsTypes: [
-        { label: 'WhatsApp Oficial Meta', value: 'waba' },
+        { label: 'WhatsApp Oficial Meta (manual)', value: 'waba' },
         { label: 'WhatsApp Web (legado)', value: 'whatsapp', disable: true },
         { label: 'Telegram', value: 'telegram' },
         { label: 'Instagram Oficial', value: 'instagram_oauth' }

@@ -76,7 +76,7 @@ export const routeDisplayNames = {
   'superadmin-planos': 'Planos',
   'home-dashboard': 'Dashboard',
   'painel-atendimentos': 'Painel de Atendimentos',
-  sessoes: 'Canais',
+  sessoes: 'Conexões',
   usuarios: 'Usuários',
   'auto-resposta': 'Auto Resposta',
   'mensagens-rapidas': 'Mensagens Rápidas',
