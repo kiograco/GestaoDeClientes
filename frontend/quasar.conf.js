@@ -69,6 +69,16 @@ module.exports = function (ctx) {
 
       // https://quasar.dev/quasar-cli/handling-webpack
       extendWebpack (cfg) {
+        // socket.io-client v4 moved build/index.js → build/cjs/index.js;
+        // webpack 4 can't resolve via `exports` field, so alias explicitly.
+        cfg.resolve = cfg.resolve || {}
+        cfg.resolve.alias = Object.assign({}, cfg.resolve.alias, {
+          'socket.io-client': require('path').resolve(
+            __dirname,
+            'node_modules/socket.io-client/build/cjs/index.js'
+          )
+        })
+
         cfg.module.rules.push({
           enforce: 'pre',
           test: /\.(js|vue)$/,

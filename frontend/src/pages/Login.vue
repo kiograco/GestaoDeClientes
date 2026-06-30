@@ -159,18 +159,6 @@
                 </div>
 
                 <div class="text-subtitle2 q-mt-lg q-mb-sm">Plano</div>
-                <q-select
-                  v-model="cadastro.planId"
-                  :options="opcoesPlanosCadastro"
-                  emit-value
-                  map-options
-                  outlined
-                  dense
-                  label="Selecione um plano"
-                  :disable="loadingPlanosCadastro || !planosCadastro.length"
-                  :loading="loadingPlanosCadastro"
-                  class="q-mb-md"
-                />
                 <div class="row q-col-gutter-md">
                   <div
                     v-for="plano in planosCadastro"
@@ -503,14 +491,6 @@ export default {
       password: { required }
     },
     emailRedefinicao: { required, email }
-  },
-  computed: {
-    opcoesPlanosCadastro () {
-      return this.planosCadastro.map(plano => ({
-        label: `${plano.name} - ${this.formatarPrecoPlano(plano)}`,
-        value: plano.id
-      }))
-    }
   },
   methods: {
     async abrirCadastro () {
