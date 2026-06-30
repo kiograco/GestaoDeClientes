@@ -4,6 +4,8 @@ public/*
 dist
 !public/.gitkeep
 .env
+.env.local
+.env.production
 .env.test
 .cache
 logs/

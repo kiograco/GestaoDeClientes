@@ -21,29 +21,6 @@ export function DeleteWhatsappSession (whatsAppId) {
   })
 }
 
-export function RequestNewQrCode (data) {
-  return request({
-    url: `/whatsappsession/${data.id}`,
-    method: 'put',
-    data
-  })
-}
-
-export function ConfirmInstagramTwoFactor (whatsAppId, verificationCode) {
-  return request({
-    url: `/instagramsession/${whatsAppId}/2fa`,
-    method: 'post',
-    data: { verificationCode }
-  })
-}
-
-export function GetInstagramOAuthUrl (whatsAppId) {
-  return request({
-    url: `/instagram/oauth/${whatsAppId}`,
-    method: 'get'
-  })
-}
-
 export function GetWabaMetaSignupUrl () {
   return request({
     url: '/whatsapp/meta/signup',

@@ -10,9 +10,6 @@ interface WhatsappData {
   session?: string;
   qrcode?: string | null;
   isDefault?: boolean;
-  tokenTelegram?: string;
-  instagramUser?: string;
-  instagramKey?: string;
   isActive?: boolean;
   type?:
     | "waba"
@@ -55,9 +52,6 @@ const UpdateWhatsAppService = async ({
     isDefault,
     session,
     qrcode,
-    tokenTelegram,
-    instagramUser,
-    instagramKey,
     isActive,
     type,
     wabaBSP,
@@ -89,21 +83,24 @@ const UpdateWhatsAppService = async ({
       throw new AppError("ERR_NO_WAPP_FOUND", 404);
     }
 
-    if (
-      type === "instagram" &&
-      (!instagramUser || (!instagramKey && !whatsapp.instagramKey))
-    ) {
-      throw new AppError(
-        "Instagram: favor informar o usuário e senha corretamente."
-      );
+    if (whatsapp.type !== "waba" || whatsapp.wabaBSP !== "meta") {
+      throw new AppError("ERR_ONLY_META_WHATSAPP_SUPPORTED", 400);
     }
 
-    if (type === "waba" && ((!tokenAPI && !whatsapp.tokenAPI) || !wabaBSP)) {
-      throw new AppError("WABA: favor informar o Token e o provedor");
+    if ((type && type !== "waba") || (wabaBSP && wabaBSP !== "meta")) {
+      throw new AppError("ERR_ONLY_META_WHATSAPP_SUPPORTED", 400);
     }
 
-    if (type === "waba" && wabaBSP === "meta" && !fbPageId) {
+    if (type === "waba" && !wabaBSP) {
+      throw new AppError("WABA Meta: favor informar o provedor Meta");
+    }
+
+    if (!fbPageId && !whatsapp.fbPageId && name) {
       throw new AppError("WABA Meta: favor informar o Phone Number ID");
+    }
+
+    if (!tokenAPI && !whatsapp.tokenAPI && name) {
+      throw new AppError("WABA Meta: favor informar o token de acesso");
     }
 
     const data: WhatsappData = {
@@ -112,20 +109,14 @@ const UpdateWhatsAppService = async ({
       session,
       qrcode,
       isDefault,
-      tokenTelegram,
-      instagramUser,
       isActive,
-      type,
-      wabaBSP,
+      type: type ? "waba" : undefined,
+      wabaBSP: wabaBSP ? "meta" : undefined,
       tokenAPI,
       fbPageId,
       farewellMessage,
       chatFlowId
     };
-
-    if (instagramKey) {
-      data.instagramKey = instagramKey;
-    }
 
     await whatsapp.update(data);
 

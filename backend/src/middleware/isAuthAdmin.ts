@@ -7,6 +7,8 @@ import User from "../models/User";
 
 interface TokenPayload {
   id: string;
+  profile: string;
+  tenantId: number;
 }
 
 const isAuthAdmin = async (
@@ -24,9 +26,9 @@ const isAuthAdmin = async (
 
   try {
     const decoded = verify(token, authConfig.secret);
-    const { id } = decoded as TokenPayload;
+    const { id, profile } = decoded as TokenPayload;
     const user = await User.findByPk(id);
-    if (!user || user.profile !== "superadmin") {
+    if (!user || user.profile !== "superadmin" || profile !== "superadmin") {
       throw new Error("Not super admin permission");
     }
 

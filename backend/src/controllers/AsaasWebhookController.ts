@@ -12,7 +12,9 @@ const safeEqual = (left: string, right: string): boolean =>
 
 const validateWebhookSignature = (req: Request): void => {
   const webhookSecret = process.env.ASAAS_WEBHOOK_SECRET;
-  if (!webhookSecret) return;
+  if (!webhookSecret) {
+    throw new AppError("ERR_ASAAS_WEBHOOK_SECRET_NOT_CONFIGURED", 500);
+  }
 
   const signatureHeader = req.headers["asaas-signature"];
   const timestampHeader = req.headers["asaas-timestamp"];

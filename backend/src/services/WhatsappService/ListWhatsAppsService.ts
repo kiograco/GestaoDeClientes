@@ -5,8 +5,9 @@ const ListWhatsAppsService = async (
 ): Promise<Whatsapp[]> => {
   const whatsapps = await Whatsapp.findAll({
     where: {
-      tenantId
-      // type: "w"
+      tenantId,
+      type: "waba",
+      wabaBSP: "meta"
     },
     attributes: {
       exclude: [

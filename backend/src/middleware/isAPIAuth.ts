@@ -11,6 +11,7 @@ interface TokenPayload {
   sessionId: number;
   tenantId: number;
   purpose: string;
+  tokenVersion: number;
   iat: number;
   exp: number;
 }

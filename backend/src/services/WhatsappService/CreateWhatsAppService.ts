@@ -8,9 +8,6 @@ interface Request {
   status?: string;
   isDefault?: boolean;
   tenantId: string | number;
-  tokenTelegram?: string;
-  instagramUser?: string;
-  instagramKey?: string;
   wabaBSP?: string;
   tokenAPI?: string;
   fbPageId?: string;
@@ -33,9 +30,6 @@ const CreateWhatsAppService = async ({
   name,
   status = "DISCONNECTED",
   tenantId,
-  tokenTelegram,
-  instagramUser,
-  instagramKey,
   type,
   wabaBSP,
   tokenAPI,
@@ -43,22 +37,16 @@ const CreateWhatsAppService = async ({
   farewellMessage,
   isDefault = false
 }: Request): Promise<Response> => {
-  if (type === "waba" && (!tokenAPI || !wabaBSP)) {
-    throw new AppError("WABA: favor informar o Token e o provedor");
+  if (type !== "waba" || wabaBSP !== "meta") {
+    throw new AppError("ERR_ONLY_META_WHATSAPP_SUPPORTED", 400);
   }
 
-  if (type === "waba" && wabaBSP === "meta" && !fbPageId) {
+  if (!tokenAPI) {
+    throw new AppError("WABA Meta: favor informar o token de acesso");
+  }
+
+  if (!fbPageId) {
     throw new AppError("WABA Meta: favor informar o Phone Number ID");
-  }
-
-  if (type === "instagram" && (!instagramUser || !instagramKey)) {
-    throw new AppError(
-      "Instagram: favor informar o Usuário e senha corretamente."
-    );
-  }
-
-  if (type === "telegram" && !tokenTelegram) {
-    throw new AppError("Telegram: favor informar o Token.");
   }
 
   const whatsappFound = await Whatsapp.findOne({
@@ -69,10 +57,8 @@ const CreateWhatsAppService = async ({
     isDefault = !whatsappFound;
   }
 
-  if (isDefault) {
-    if (whatsappFound) {
-      await whatsappFound.update({ isDefault: false });
-    }
+  if (isDefault && whatsappFound) {
+    await whatsappFound.update({ isDefault: false });
   }
 
   try {
@@ -81,11 +67,8 @@ const CreateWhatsAppService = async ({
       status,
       isDefault,
       tenantId,
-      tokenTelegram,
-      instagramUser,
-      instagramKey,
-      type,
-      wabaBSP,
+      type: "waba",
+      wabaBSP: "meta",
       tokenAPI,
       fbPageId,
       farewellMessage

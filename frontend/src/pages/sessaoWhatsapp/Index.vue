@@ -11,7 +11,7 @@
               Conexões
             </div>
             <div class="text-caption text-grey-7">
-              Conecte o WhatsApp Oficial pela Meta ou configure outros canais de atendimento.
+              Conecte o WhatsApp Oficial pela Meta ou informe manualmente os dados do numero.
             </div>
           </div>
           <div class="col-12 col-md-auto row q-gutter-sm justify-end">
@@ -19,7 +19,7 @@
               rounded
               color="primary"
               icon="mdi-whatsapp"
-              label="Conectar WhatsApp Oficial"
+              label="Conectar pela Meta"
               @click="handleWabaMetaSignup"
               :disable="!isAdmin"
             />
@@ -27,9 +27,9 @@
               rounded
               outline
               color="primary"
-              icon="mdi-plus"
-              label="Adicionar outro canal"
-              @click="modalWhatsapp = true"
+              icon="mdi-form-textbox-password"
+              label="Informar dados do número"
+              @click="openManualWabaModal"
               :disable="!isAdmin"
             />
           </div>
@@ -80,14 +80,14 @@
               <q-avatar>
                 <q-icon
                   size="40px"
-                  :name="`img:${item.type === 'instagram_oauth' ? 'instagram' : item.type}-logo.png`"
+                  name="img:waba-logo.png"
                 />
               </q-avatar>
             </q-item-section>
             <q-item-section>
               <q-item-label class="text-h6 text-bold">Nome: {{ item.name }}</q-item-label>
               <q-item-label class="text-h6 text-caption">
-                {{ item.type }}
+                WhatsApp Oficial Meta
               </q-item-label>
             </q-item-section>
             <q-item-section side>
@@ -104,12 +104,6 @@
           <q-separator />
           <q-card-section>
             <ItemStatusChannel :item="item" />
-            <template v-if="item.type === 'messenger'">
-              <div class="text-body2 text-bold q-mt-sm">
-                <span> Página: </span>
-                {{ item.fbObject && item.fbObject.name || 'Nenhuma página configurada.' }}
-              </div>
-            </template>
           </q-card-section>
           <q-card-section>
             <q-select
@@ -132,19 +126,9 @@
             class="q-gutter-md q-pa-md q-pt-none"
             align="center"
           >
-            <template v-if="item.type !== 'messenger'">
-              <q-btn
-                rounded
-                v-if="item.type == 'whatsapp' && item.status == 'qrcode'"
-                color="blue-5"
-                label="QR Code"
-                @click="handleOpenQrModal(item, 'btn-qrCode')"
-                icon-right="watch_later"
-                :disable="!isAdmin"
-              />
-
+            <template>
               <div
-                v-if="['DISCONNECTED', 'INSTAGRAM_BAD_PASSWORD'].includes(item.status)"
+                v-if="item.status === 'DISCONNECTED'"
                 class="q-gutter-sm"
               >
                 <q-btn
@@ -152,14 +136,6 @@
                   color="positive"
                   label="Conectar"
                   @click="handleConnectChannel(item)"
-                />
-                <q-btn
-                  rounded
-                  v-if="item.status == 'DISCONNECTED' && item.type == 'whatsapp'"
-                  color="blue-5"
-                  label="Novo QR Code"
-                  @click="handleRequestNewQrCode(item, 'btn-qrCode')"
-                  icon-right="watch_later"
                   :disable="!isAdmin"
                 />
               </div>
@@ -201,18 +177,13 @@
               class="absolute-bottom-right"
             >
               <q-tooltip>
-                Deletar conexáo
+                Deletar conexão
               </q-tooltip>
             </q-btn>
           </q-card-actions>
         </q-card>
       </template>
     </div>
-    <ModalQrCode
-      :abrirModalQR.sync="abrirModalQR"
-      :channel="cDadosWhatsappSelecionado"
-      @gerar-novo-qrcode="v => handleRequestNewQrCode(v, 'btn-qrCode')"
-    />
     <ModalWhatsapp
       :modalWhatsapp.sync="modalWhatsapp"
       :whatsAppEdit.sync="whatsappSelecionado"
@@ -229,10 +200,9 @@
 
 <script>
 
-import { DeletarWhatsapp, DeleteWhatsappSession, GetInstagramOAuthUrl, GetWabaMetaSignupUrl, StartWhatsappSession, ListarWhatsapps, RequestNewQrCode, UpdateWhatsapp } from 'src/service/sessoesWhatsapp'
+import { DeletarWhatsapp, DeleteWhatsappSession, GetWabaMetaSignupUrl, StartWhatsappSession, ListarWhatsapps, UpdateWhatsapp } from 'src/service/sessoesWhatsapp'
 import { format, parseISO } from 'date-fns'
 import pt from 'date-fns/locale/pt-BR/index'
-import ModalQrCode from './ModalQrCode'
 import { mapGetters } from 'vuex'
 import ModalWhatsapp from './ModalWhatsapp'
 import ItemStatusChannel from './ItemStatusChannel'
@@ -243,7 +213,6 @@ const userLogado = JSON.parse(localStorage.getItem('usuario'))
 export default {
   name: 'IndexSessoesWhatsapp',
   components: {
-    ModalQrCode,
     ModalWhatsapp,
     ItemStatusChannel
   },
@@ -252,7 +221,6 @@ export default {
       loading: false,
       userLogado,
       isAdmin: false,
-      abrirModalQR: false,
       modalWhatsapp: false,
       whatsappSelecionado: {},
       listaChatFlow: [],
@@ -263,9 +231,6 @@ export default {
         state: null,
         title: '',
         message: ''
-      },
-      objStatus: {
-        qrcode: ''
       },
       columns: [
         {
@@ -324,10 +289,6 @@ export default {
   },
   computed: {
     ...mapGetters(['whatsapps']),
-    cDadosWhatsappSelecionado () {
-      const { id } = this.whatsappSelecionado
-      return this.whatsapps.find(w => w.id === id)
-    },
     instagramConnectionColor () {
       if (this.instagramConnection.state === 'success') return 'positive'
       if (['error', 'timeout'].includes(this.instagramConnection.state)) return 'negative'
@@ -351,23 +312,70 @@ export default {
         message
       }
     },
+    getMetaSignupError (error) {
+      const errorCode = error?.data?.error || error?.response?.data?.error || error?.message
+      const errors = {
+        ERR_META_WHATSAPP_OAUTH_NOT_CONFIGURED: {
+          title: 'Onboarding Meta nao configurado',
+          message: 'Configure as variaveis META_APP_ID, META_APP_SECRET, META_WHATSAPP_REDIRECT_URI e META_WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID no backend.',
+          notify: 'Onboarding Meta nao configurado no servidor.'
+        },
+        'Meta authorization popup blocked': {
+          title: 'Janela da Meta bloqueada',
+          message: 'Permita popups para este site no navegador e tente conectar novamente.',
+          notify: 'O navegador bloqueou a janela de autorizacao da Meta.'
+        },
+        ERR_META_WHATSAPP_OAUTH_DENIED: {
+          title: 'Autorizacao Meta cancelada',
+          message: 'A autorizacao foi negada ou cancelada na Meta. Inicie novamente e conclua todas as etapas.',
+          notify: 'Autorizacao Meta cancelada.'
+        },
+        ERR_META_WHATSAPP_INVALID_STATE: {
+          title: 'Sessao Meta expirada',
+          message: 'A sessao de autorizacao expirou ou ficou invalida. Clique em Conectar pela Meta novamente.',
+          notify: 'Sessao de autorizacao Meta invalida.'
+        },
+        ERR_META_WHATSAPP_OAUTH_TOKEN: {
+          title: 'Token Meta nao gerado',
+          message: 'A Meta nao retornou o token de acesso. Revise App ID, App Secret, permissao do app e Redirect URI.',
+          notify: 'Falha ao gerar token Meta.'
+        },
+        ERR_META_WHATSAPP_PHONE_NOT_FOUND: {
+          title: 'Numero nao encontrado na Meta',
+          message: 'A autorizacao foi concluida, mas nenhum Phone Number ID foi encontrado na conta selecionada.',
+          notify: 'Nenhum numero WhatsApp Business foi encontrado na Meta.'
+        }
+      }
+
+      return errors[errorCode] || {
+        title: 'Nao foi possivel conectar o WhatsApp Oficial',
+        message: 'Confira as credenciais do app Meta, o Redirect URI e tente novamente. Detalhe tecnico: ' + (errorCode || 'erro nao informado'),
+        notify: 'Nao foi possivel iniciar o onboarding oficial da Meta.'
+      }
+    },
     retryInstagramConnection () {
       if (this.instagramConnection.channelId === 'waba-meta') {
         this.handleWabaMetaSignup()
         return
       }
-      const channel = this.canais.find(item => item.id === this.instagramConnection.channelId)
-      if (channel) this.handleConnectChannel(channel)
+      this.clearInstagramConnection()
     },
     formatarData (data, formato) {
       return format(parseISO(data), formato, { locale: pt })
     },
-    handleOpenQrModal (channel) {
-      this.whatsappSelecionado = channel
-      this.abrirModalQR = true
-    },
     handleOpenModalWhatsapp (whatsapp) {
       this.whatsappSelecionado = whatsapp
+      this.modalWhatsapp = true
+    },
+    openManualWabaModal () {
+      this.whatsappSelecionado = {
+        type: 'waba',
+        wabaBSP: 'meta',
+        name: '',
+        fbPageId: '',
+        tokenAPI: '',
+        farewellMessage: ''
+      }
       this.modalWhatsapp = true
     },
     async handleDisconectWhatsSession (whatsAppId) {
@@ -453,99 +461,26 @@ export default {
         )
       } catch (error) {
         console.error(error)
+        const metaError = this.getMetaSignupError(error)
         this.setInstagramConnection(
           'waba-meta',
           'error',
-          'Nao foi possivel conectar o WhatsApp Oficial',
-          'Verifique se o navegador bloqueou a nova janela e confirme as configuracoes do app Meta.'
+          metaError.title,
+          metaError.message
         )
-        this.$notificarErro('Nao foi possivel iniciar o onboarding oficial da Meta.')
+        this.$notificarErro(metaError.notify)
+
+        if ((error?.data?.error || error?.response?.data?.error) === 'ERR_META_WHATSAPP_OAUTH_NOT_CONFIGURED') {
+          this.openManualWabaModal()
+        }
       }
-    },
-    async handleRequestNewQrCode (channel, origem) {
-      if (channel.type === 'telegram' && !channel.tokenTelegram) {
-        this.$notificarErro('Necessário informar o token para Telegram')
-      }
-      this.loading = true
-      try {
-        await RequestNewQrCode({ id: channel.id, isQrcode: true })
-        this.handleOpenQrModal(channel)
-        this.pollQrCode(channel.id)
-      } catch (error) {
-        console.error(error)
-      }
-      this.loading = false
     },
     async handleConnectChannel (channel) {
-      if (channel.type !== 'instagram_oauth') {
-        return this.handleStartWhatsAppSession(channel.id)
+      if (channel.type !== 'waba' || channel.wabaBSP !== 'meta') {
+        this.$notificarErro('Apenas conexoes WhatsApp Oficial Meta podem ser conectadas.')
+        return
       }
-      this.setInstagramConnection(
-        channel.id,
-        'opening',
-        'Preparando autorizacao do Instagram',
-        'Aguarde enquanto abrimos a pagina oficial de autorizacao.'
-      )
-      try {
-        const { data } = await GetInstagramOAuthUrl(channel.id)
-        const popup = window.open(data.url, 'instagram-oauth', 'width=720,height=760')
-        if (!popup) {
-          throw new Error('Instagram authorization popup blocked')
-        }
-        this.setInstagramConnection(
-          channel.id,
-          'waiting',
-          'Aguardando autorizacao do Instagram',
-          'Conclua as etapas na janela aberta. A verificacao pode levar ate tres minutos.'
-        )
-        for (let attempt = 0; attempt < 90; attempt++) {
-          await new Promise(resolve => setTimeout(resolve, 2000))
-          const response = await ListarWhatsapps()
-          this.$store.commit('LOAD_WHATSAPPS', response.data)
-          const updated = response.data.find(item => item.id === channel.id)
-          if (updated && updated.status === 'CONNECTED') {
-            this.setInstagramConnection(
-              channel.id,
-              'success',
-              'Instagram conectado',
-              'A conta foi autorizada e o canal esta pronto para uso.'
-            )
-            this.$notificarSucesso('Instagram conectado pela API oficial.')
-            return
-          }
-        }
-        this.setInstagramConnection(
-          channel.id,
-          'timeout',
-          'Tempo de autorizacao esgotado',
-          'Nao recebemos a confirmacao em tres minutos. Feche a janela anterior e tente novamente.'
-        )
-      } catch (error) {
-        console.error(error)
-        this.setInstagramConnection(
-          channel.id,
-          'error',
-          'Nao foi possivel conectar o Instagram',
-          'Verifique se o navegador bloqueou a nova janela e tente novamente. Se o erro persistir, confirme o acesso a conta diretamente no Instagram.'
-        )
-        this.$notificarErro('Nao foi possivel iniciar a autorizacao oficial do Instagram.')
-      }
-    },
-    async pollQrCode (channelId) {
-      for (let attempt = 0; attempt < 45; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        try {
-          const { data } = await ListarWhatsapps()
-          this.$store.commit('LOAD_WHATSAPPS', data)
-          const channel = data.find(item => item.id === channelId)
-          if (!channel || channel.qrcode || channel.status === 'CONNECTED') {
-            return
-          }
-        } catch (error) {
-          console.error(error)
-          return
-        }
-      }
+      return this.handleStartWhatsAppSession(channel.id)
     },
     async listarWhatsapps () {
       const { data } = await ListarWhatsapps()

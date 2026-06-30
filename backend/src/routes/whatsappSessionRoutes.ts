@@ -23,10 +23,4 @@ whatsappSessionRoutes.delete(
   WhatsAppSessionController.remove
 );
 
-whatsappSessionRoutes.post(
-  "/instagramsession/:whatsappId/2fa",
-  isAuth,
-  WhatsAppSessionController.instagramTwoFactor
-);
-
 export default whatsappSessionRoutes;

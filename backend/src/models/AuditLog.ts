@@ -36,7 +36,7 @@ class AuditLog extends Model<AuditLog> {
   @Column
   userAgent: string;
 
-  @Column(DataType.JSON)
+  @Column(DataType.JSONB)
   metadata: Record<string, unknown>;
 
   @CreatedAt

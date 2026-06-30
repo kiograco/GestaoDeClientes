@@ -4,11 +4,33 @@ import AppError from "../errors/AppError";
 import Whatsapp from "../models/Whatsapp";
 import HandleMessage360 from "../services/WABA360/HandleMessage360";
 
+const validate360Signature = (req: Request): void => {
+  const secret = process.env.DIALOG360_WEBHOOK_SECRET;
+  if (!secret) {
+    throw new AppError("ERR_360_WEBHOOK_SECRET_NOT_CONFIGURED", 500);
+  }
+  const signature = req.header("d360-signature");
+  const rawBody = (req as LegacyAny).rawBody as Buffer | undefined;
+  if (!signature || !rawBody) {
+    throw new AppError("ERR_360_WEBHOOK_SIGNATURE_MISSING", 403);
+  }
+  const expected = `sha256=${createHmac("sha256", secret)
+    .update(rawBody)
+    .digest("hex")}`;
+  if (
+    expected.length !== signature.length ||
+    !timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
+  ) {
+    throw new AppError("ERR_360_WEBHOOK_SIGNATURE_INVALID", 403);
+  }
+};
+
 export const ReceivedRequest360 = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
   try {
+    validate360Signature(req);
     // const message = {
     //   token: req.params.token,
     //   messages: req.body

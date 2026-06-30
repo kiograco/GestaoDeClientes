@@ -52,7 +52,7 @@ export default async function modules(app: Application): Promise<void> {
     )
   );
 
-  app.use(routes);
+  app.use("/api/v1", routes);
   app.use(Sentry.Handlers.errorHandler());
 
   // error handle

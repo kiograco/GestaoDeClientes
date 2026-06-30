@@ -53,7 +53,12 @@ const signupSchema = Yup.object().shape({
     .shape({
       name: Yup.string().trim().required().min(2),
       email: Yup.string().trim().email().required(),
-      password: Yup.string().required().min(6)
+      password: Yup.string()
+        .required()
+        .min(10, "A senha deve ter no mínimo 10 caracteres")
+        .matches(/[A-Z]/, "A senha deve conter pelo menos uma letra maiúscula")
+        .matches(/[a-z]/, "A senha deve conter pelo menos uma letra minúscula")
+        .matches(/[0-9]/, "A senha deve conter pelo menos um número")
     })
     .required(),
   acceptedTerms: Yup.boolean().oneOf([true]).required()

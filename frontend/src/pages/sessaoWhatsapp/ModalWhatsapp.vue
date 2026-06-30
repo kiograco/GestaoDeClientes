@@ -14,33 +14,62 @@
           <q-icon
             size="50px"
             class="q-mr-md"
-            :name="whatsapp.type ? `img:${whatsapp.type === 'instagram_oauth' ? 'instagram' : whatsapp.type}-logo.png` : 'mdi-alert'"
-          /> {{ whatsapp.id ? 'Editar' :
-              'Adicionar'
-            }}
-          Canal
+            name="img:waba-logo.png"
+          />
+          {{ whatsapp.id ? 'Editar' : 'Adicionar' }} WhatsApp Oficial Meta
         </div>
       </q-card-section>
+
       <q-card-section>
         <div class="row">
-          <div class="col-12 q-my-sm">
-            <q-select
-              :disable="!!whatsapp.id"
-              v-model="whatsapp.type"
-              :options="optionsWhatsappsTypes"
-              label="Tipo"
-              emit-value
-              map-options
-              outlined
-              rounded
-              dense
-            />
+          <div class="col-12 q-mb-md">
+            <q-banner class="bg-blue-1 text-primary rounded-borders">
+              Cadastre apenas numeros do WhatsApp Business conectados pela API oficial da Meta.
+              O Phone Number ID e o token ficam salvos somente no backend deste tenant.
+            </q-banner>
           </div>
-          <div class="col-12">
+
+          <div class="col-12 q-mb-md">
+            <q-list
+              dense
+              bordered
+              class="rounded-borders bg-grey-1"
+            >
+              <q-item>
+                <q-item-section avatar>
+                  <q-icon
+                    color="primary"
+                    name="mdi-numeric-1-circle-outline"
+                  />
+                </q-item-section>
+                <q-item-section>Informe o Phone Number ID do numero na Meta.</q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section avatar>
+                  <q-icon
+                    color="primary"
+                    name="mdi-numeric-2-circle-outline"
+                  />
+                </q-item-section>
+                <q-item-section>Informe o token permanente de acesso da Meta.</q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section avatar>
+                  <q-icon
+                    color="primary"
+                    name="mdi-numeric-3-circle-outline"
+                  />
+                </q-item-section>
+                <q-item-section>Depois de salvar, copie o webhook exibido e cadastre no painel da Meta.</q-item-section>
+              </q-item>
+            </q-list>
+          </div>
+
+          <div class="col-12 q-mb-md">
             <c-input
               outlined
               rounded
-              label="Nome"
+              label="Nome da conexao"
               dense
               v-model="whatsapp.name"
               :validator="$v.whatsapp.name"
@@ -48,177 +77,62 @@
             />
           </div>
 
+          <div class="col-12 q-mb-md">
+            <c-input
+              outlined
+              dense
+              label="Phone Number ID"
+              v-model="whatsapp.fbPageId"
+              hint="Exemplo: 123456789012345"
+            />
+          </div>
+
+          <div class="col-12 q-mb-md">
+            <c-input
+              outlined
+              dense
+              label="Token de acesso Meta"
+              :type="isPwd ? 'password' : 'text'"
+              v-model="whatsapp.tokenAPI"
+              hint="Token permanente do usuario de sistema ou app da Meta"
+            >
+              <template v-slot:append>
+                <q-icon
+                  :name="isPwd ? 'visibility_off' : 'visibility'"
+                  class="cursor-pointer"
+                  @click="isPwd = !isPwd"
+                />
+              </template>
+            </c-input>
+          </div>
+
           <div
-            class="col-12 q-mt-md"
-            v-if="whatsapp.type === 'telegram'"
+            class="col-12 q-mb-md"
+            v-if="whatsapp.UrlWabaWebHook"
           >
             <c-input
               outlined
               dense
-              label="Token Telegram"
-              v-model="whatsapp.tokenTelegram"
-            />
-          </div>
-          <div
-            class="q-mt-md row full-width justify-center"
-            v-if="whatsapp.type === 'instagram_oauth'"
-          >
-            <q-banner class="bg-blue-1 text-primary rounded-borders">
-              A conta sera conectada pela autorizacao oficial da Meta apos
-              salvar o canal. Nao informe sua senha do Instagram neste sistema.
-            </q-banner>
-          </div>
-          <div
-            class="q-mt-md row full-width"
-            v-if="whatsapp.type === 'waba'"
-          >
-            <q-banner class="col-12 bg-blue-1 text-primary rounded-borders q-mb-md">
-              Use a API oficial da Meta. Cadastre no painel da Meta a URL de webhook exibida apos salvar o canal.
-            </q-banner>
-            <div class="col-12 q-mb-md">
-              <c-input
-                outlined
-                dense
-                label="Phone Number ID"
-                v-model="whatsapp.fbPageId"
-                hint="ID do numero no WhatsApp Cloud API"
-              />
-            </div>
-            <div class="col-12 q-mb-md">
-              <c-input
-                outlined
-                dense
-                label="Token de acesso Meta"
-                :type="isPwd ? 'password' : 'text'"
-                v-model="whatsapp.tokenAPI"
-                hint="Token permanente do app/usuario de sistema da Meta"
-              >
-                <template v-slot:append>
-                  <q-icon
-                    :name="isPwd ? 'visibility_off' : 'visibility'"
-                    class="cursor-pointer"
-                    @click="isPwd = !isPwd"
-                  />
-                </template>
-              </c-input>
-            </div>
-            <div
-              class="col-12"
-              v-if="whatsapp.UrlWabaWebHook"
+              readonly
+              label="Webhook para cadastrar na Meta"
+              :value="whatsapp.UrlWabaWebHook"
             >
-              <c-input
-                outlined
-                dense
-                readonly
-                label="Webhook Meta"
-                :value="whatsapp.UrlWabaWebHook"
-              >
-                <template v-slot:after>
-                  <q-btn
-                    round
-                    flat
-                    color="primary"
-                    icon="content_copy"
-                    @click="copy(whatsapp.UrlWabaWebHook)"
-                  />
-                </template>
-              </c-input>
-            </div>
-          </div>
-          <div
-            class="q-mt-md row full-width justify-center"
-            v-if="whatsapp.type === 'instagram'"
-          >
-            <div class="col">
-              <fieldset class="full-width q-pa-md rounded-all">
-                <legend>Dados da conta do Instagram</legend>
-                <div
-                  class="col-12 q-mb-md"
-                  v-if="whatsapp.type === 'instagram'"
-                >
-                  <c-input
-                    outlined
-                    dense
-                    label="Usuário"
-                    v-model="whatsapp.instagramUser"
-                    hint="Seu usuário do Instagram (sem @)"
-                  />
-                </div>
-                <div
-                  v-if="whatsapp.type === 'instagram' && !isEdit"
-                  class="text-center"
-                >
-                  <q-btn
-                    color="positive"
-                    icon="edit"
-                    label="Nova senha"
-                    @click="isEdit = !isEdit"
-                  >
-                    <q-tooltip>
-                      Alterar senha
-                    </q-tooltip>
-                  </q-btn>
-                </div>
-                <div
-                  class="col-12"
-                  v-if="whatsapp.type === 'instagram' && isEdit"
-                >
-                  <c-input
-                    outlined
-                    rounded
-                    label="Senha"
-                    :type="isPwd ? 'password' : 'text'"
-                    v-model="whatsapp.instagramKey"
-                    hint="Senha utilizada para logar no Instagram"
-                    placeholder="*************"
-                    :disable="!isEdit"
-                  >
-                    <template v-slot:after>
-                      <q-btn
-                        class="bg-padrao"
-                        round
-                        flat
-                        color="negative"
-                        icon="mdi-close"
-                        @click="isEdit = !isEdit"
-                      >
-                        <q-tooltip>
-                          Cancelar alteração de senha
-                        </q-tooltip>
-
-                      </q-btn>
-                    </template>
-                    <template v-slot:append>
-                      <q-icon
-                        :name="isPwd ? 'visibility_off' : 'visibility'"
-                        class="cursor-pointer"
-                        @click="isPwd = !isPwd"
-                      />
-                    </template>
-                  </c-input>
-                </div>
-                <div
-                  class="col-12 q-mt-md"
-                  v-if="whatsapp.type === 'instagram' && whatsapp.id"
-                >
-                  <c-input
-                    outlined
-                    dense
-                    label="Código 2FA"
-                    v-model="whatsapp.instagramTwoFactorCode"
-                    hint="Após clicar em Conectar, informe o código recebido pelo Instagram e salve novamente."
-                  />
-                </div>
-              </fieldset>
-
-            </div>
+              <template v-slot:after>
+                <q-btn
+                  round
+                  flat
+                  color="primary"
+                  icon="content_copy"
+                  @click="copy(whatsapp.UrlWabaWebHook)"
+                />
+              </template>
+            </c-input>
           </div>
         </div>
 
         <div class="row q-my-md">
           <div class="col-12 relative-position">
-            <label class="text-caption">Mensagem Despedida:
-            </label>
+            <label class="text-caption">Mensagem Despedida:</label>
             <textarea
               ref="inputFarewellMessage"
               style="min-height: 15vh; max-height: 15vh;"
@@ -228,8 +142,7 @@
               dense
               outlined
               v-model="whatsapp.farewellMessage"
-            >
-            </textarea>
+            />
             <div class="absolute-top-right">
               <q-btn
                 rounded
@@ -242,7 +155,7 @@
                   name="mdi-variable"
                 />
                 <q-tooltip>
-                  Variáveis
+                  Variaveis
                 </q-tooltip>
                 <q-menu touch-position>
                   <q-list
@@ -265,6 +178,7 @@
           </div>
         </div>
       </q-card-section>
+
       <q-card-actions
         align="center"
         class="q-mt-lg"
@@ -290,9 +204,19 @@
 
 <script>
 import { required, minLength, maxLength } from 'vuelidate/lib/validators'
-import { ConfirmInstagramTwoFactor, UpdateWhatsapp, CriarWhatsapp } from 'src/service/sessoesWhatsapp'
+import { UpdateWhatsapp, CriarWhatsapp } from 'src/service/sessoesWhatsapp'
 import cInput from 'src/components/cInput.vue'
 import { copyToClipboard, Notify } from 'quasar'
+
+const emptyWhatsapp = () => ({
+  name: '',
+  isDefault: false,
+  tokenAPI: '',
+  fbPageId: '',
+  wabaBSP: 'meta',
+  type: 'waba',
+  farewellMessage: ''
+})
 
 export default {
   components: { cInput },
@@ -314,28 +238,10 @@ export default {
   data () {
     return {
       isPwd: true,
-      isEdit: false,
-      whatsapp: {
-        name: '',
-        isDefault: false,
-        tokenTelegram: '',
-        instagramUser: '',
-        instagramKey: '',
-        tokenAPI: '',
-        fbPageId: '',
-        wabaBSP: 'meta',
-        type: 'waba',
-        farewellMessage: ''
-      },
-      optionsWhatsappsTypes: [
-        { label: 'WhatsApp Oficial Meta (manual)', value: 'waba' },
-        { label: 'WhatsApp Web (legado)', value: 'whatsapp', disable: true },
-        { label: 'Telegram', value: 'telegram' },
-        { label: 'Instagram Oficial', value: 'instagram_oauth' }
-      ],
+      whatsapp: emptyWhatsapp(),
       variaveis: [
         { label: 'Nome', value: '{{name}}' },
-        { label: 'Saudação', value: '{{greeting}}' },
+        { label: 'Saudacao', value: '{{greeting}}' },
         { label: 'Protocolo', value: '{{protocol}}' }
       ]
     }
@@ -346,61 +252,40 @@ export default {
       isDefault: {}
     }
   },
-  computed: {
-    cBaseUrlIntegração () {
-      return this.whatsapp.UrlMessengerWebHook
-    }
-  },
   methods: {
     copy (text) {
       copyToClipboard(text)
-        .then(this.$notificarSucesso('URL de integração copiada!'))
+        .then(this.$notificarSucesso('URL de integracao copiada!'))
         .catch()
     },
 
     onInsertSelectVariable (variable) {
-      const self = this
-      var tArea = this.$refs.inputFarewellMessage
-      // get cursor's position:
-      var startPos = tArea.selectionStart,
-        endPos = tArea.selectionEnd,
-        cursorPos = startPos,
-        tmpStr = tArea.value
-      // filter:
-      if (!variable) {
-        return
-      }
-      // insert:
-      self.txtContent = this.whatsapp.farewellMessage
-      self.txtContent = tmpStr.substring(0, startPos) + variable + tmpStr.substring(endPos, tmpStr.length)
-      this.whatsapp.farewellMessage = self.txtContent
-      // move cursor:
+      const tArea = this.$refs.inputFarewellMessage
+      const startPos = tArea.selectionStart
+      const endPos = tArea.selectionEnd
+      const tmpStr = tArea.value
+
+      if (!variable) return
+
+      this.whatsapp.farewellMessage = tmpStr.substring(0, startPos) + variable + tmpStr.substring(endPos, tmpStr.length)
+
       setTimeout(() => {
-        tArea.selectionStart = tArea.selectionEnd = cursorPos + 1
+        tArea.selectionStart = tArea.selectionEnd = startPos + variable.length
       }, 10)
     },
 
     fecharModal () {
-      this.whatsapp = {
-        name: '',
-        isDefault: false,
-        tokenTelegram: '',
-        instagramUser: '',
-        instagramKey: '',
-        tokenAPI: '',
-        fbPageId: '',
-        wabaBSP: 'meta',
-        type: 'waba',
-        farewellMessage: ''
-      }
+      this.whatsapp = emptyWhatsapp()
       this.$emit('update:whatsAppEdit', {})
       this.$emit('update:modalWhatsapp', false)
     },
+
     abrirModal () {
-      if (this.whatsAppEdit.id) {
-        this.whatsapp = { ...this.whatsAppEdit }
-      }
+      this.whatsapp = this.whatsAppEdit.id
+        ? { ...emptyWhatsapp(), ...this.whatsAppEdit, type: 'waba', wabaBSP: 'meta' }
+        : emptyWhatsapp()
     },
+
     async handleSaveWhatsApp (whatsapp) {
       this.$v.whatsapp.$touch()
       if (this.$v.whatsapp.$error) {
@@ -416,33 +301,27 @@ export default {
           }]
         })
       }
-      if (whatsapp.type === 'instagram' && (!whatsapp.instagramUser || !whatsapp.instagramKey)) {
+
+      const payload = {
+        ...whatsapp,
+        type: 'waba',
+        wabaBSP: 'meta'
+      }
+
+      if (!payload.fbPageId || (!this.whatsAppEdit.id && !payload.tokenAPI)) {
         return this.$q.notify({
           type: 'warning',
           progress: true,
           position: 'top',
-          message: 'Informe o usuário e clique em "Nova senha" para preencher a senha do Instagram.'
+          message: 'Informe o Phone Number ID e o token de acesso da Meta.'
         })
       }
-      if (whatsapp.type === 'waba') {
-        whatsapp.wabaBSP = 'meta'
-        if (!whatsapp.fbPageId || (!this.whatsAppEdit.id && !whatsapp.tokenAPI)) {
-          return this.$q.notify({
-            type: 'warning',
-            progress: true,
-            position: 'top',
-            message: 'Informe o Phone Number ID e o token de acesso da Meta.'
-          })
-        }
-      }
+
       try {
         if (this.whatsAppEdit.id) {
-          await UpdateWhatsapp(this.whatsAppEdit.id, whatsapp)
-          if (whatsapp.type === 'instagram' && whatsapp.instagramTwoFactorCode) {
-            await ConfirmInstagramTwoFactor(this.whatsAppEdit.id, whatsapp.instagramTwoFactorCode)
-          }
+          await UpdateWhatsapp(this.whatsAppEdit.id, payload)
         } else {
-          await CriarWhatsapp(whatsapp)
+          await CriarWhatsapp(payload)
         }
         this.$q.notify({
           type: 'positive',
@@ -458,22 +337,21 @@ export default {
         this.$emit('recarregar-lista')
         this.fecharModal()
       } catch (error) {
-        console.error(error, error.data.error === 'ERR_NO_PERMISSION_CONNECTIONS_LIMIT')
-        if (error.data.error === 'ERR_NO_PERMISSION_CONNECTIONS_LIMIT') {
+        console.error(error)
+        if (error?.data?.error === 'ERR_NO_PERMISSION_CONNECTIONS_LIMIT') {
           Notify.create({
             type: 'negative',
-            message: 'Limite de conexões atingida.',
+            message: 'Limite de conexoes atingida.',
             caption: 'ERR_NO_PERMISSION_CONNECTIONS_LIMIT',
             position: 'top',
             progress: true
           })
         } else {
-          console.error(error)
           return this.$q.notify({
             type: 'error',
             progress: true,
             position: 'top',
-            message: 'Ops! Verifique os erros... O nome da conexão não pode existir na plataforma, é um identificador único.',
+            message: 'Ops! Verifique os erros... O nome da conexao nao pode existir na plataforma, e um identificador unico.',
             actions: [{
               icon: 'close',
               round: true,

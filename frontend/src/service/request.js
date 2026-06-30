@@ -86,6 +86,8 @@ service.interceptors.response.use(
   },
   error => {
     loading.hide(error.config)
+    const requestUrl = error?.config?.url || ''
+    const isAuthRequest = requestUrl.indexOf('/auth/') !== -1
     const errorCode = error?.response?.data?.error
     const tenantAccessErrors = ['ERR_TENANT_INACTIVE', 'ERR_TENANT_ACCESS_EXPIRED']
     if (tenantAccessErrors.includes(errorCode)) {
@@ -93,7 +95,7 @@ service.interceptors.response.use(
       if (errorCode === 'ERR_TENANT_ACCESS_EXPIRED' && Router.currentRoute.name !== 'minha-assinatura') {
         Router.push({ name: 'minha-assinatura' })
       }
-    } else if (error?.response?.status === 403 && !error.config._retry) {
+    } else if ([401, 403].includes(error?.response?.status) && !isAuthRequest && !error.config._retry) {
       error.config._retry = true
       return RefreshToken().then(res => {
         if (res.data) {
@@ -102,6 +104,8 @@ service.interceptors.response.use(
           error.config.headers.Authorization = 'Bearer ' + res.data.token
           return service(error.config)
         }
+      }).catch(refreshError => {
+        return Promise.reject(refreshError)
       })
     }
     if (error.response && error.response.status === 401) {

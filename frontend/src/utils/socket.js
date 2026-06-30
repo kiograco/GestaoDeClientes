@@ -2,9 +2,9 @@ import { io } from 'socket.io-client'
 import { getAccessToken } from 'src/utils/authToken'
 
 export const socketIO = () => {
-  return io(process.env.VUE_URL_API, {
+  const socket = io(process.env.VUE_URL_API, {
     reconnection: true,
-    autoConnect: true,
+    autoConnect: !!getAccessToken(),
     transports: ['polling', 'websocket'],
     auth: (cb) => {
       const token = getAccessToken()
@@ -12,6 +12,19 @@ export const socketIO = () => {
       cb({ token })
     }
   })
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('access-token-updated', event => {
+      const hasToken = !!event.detail?.hasToken
+      if (hasToken && !socket.connected) {
+        socket.connect()
+      } else if (!hasToken && socket.connected) {
+        socket.disconnect()
+      }
+    })
+  }
+
+  return socket
 }
 
 const socket = socketIO()

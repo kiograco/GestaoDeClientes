@@ -24,12 +24,10 @@ interface ChannelData {
   name: string;
   status?: string;
   isActive?: string;
-  tokenTelegram?: string;
-  instagramUser?: string;
-  instagramKey?: string;
-  type: "waba" | "instagram" | "telegram" | "whatsapp";
+  type: "waba";
   wabaBSP?: string;
   tokenAPI?: string;
+  fbPageId?: string;
   tenantId: string | number;
 }
 
@@ -147,27 +145,16 @@ export const storeChannel = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const {
-    name,
-    tenantId,
-    tokenTelegram,
-    instagramUser,
-    instagramKey,
-    type,
-    wabaBSP,
-    tokenAPI
-  } = req.body;
+  const { name, tenantId, type, wabaBSP, tokenAPI, fbPageId } = req.body;
 
   const data: ChannelData = {
     name,
     status: "DISCONNECTED",
     tenantId,
-    tokenTelegram,
-    instagramUser,
-    instagramKey,
-    type,
-    wabaBSP,
-    tokenAPI
+    type: type || "waba",
+    wabaBSP: wabaBSP || "meta",
+    tokenAPI,
+    fbPageId
   };
 
   const channels = await CreateWhatsAppService(data);

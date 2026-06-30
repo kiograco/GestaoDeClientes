@@ -53,7 +53,7 @@ Router.beforeEach(async (to, from, next) => {
     return
   }
 
-  const refreshed = await tryRefreshToken()
+  const refreshed = token ? true : await tryRefreshToken()
   if (!token && !refreshed && !to.query.tokenSetup) {
     Notify.create({ message: 'Necessario realizar login', position: 'top' })
     next({ name: 'login' })

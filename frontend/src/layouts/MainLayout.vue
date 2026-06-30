@@ -1006,12 +1006,6 @@ export default {
       )
       return idx !== -1
     },
-    cQrCode () {
-      const idx = this.whatsapps.findIndex(
-        w => w.status === 'qrcode' || w.status === 'DESTROYED'
-      )
-      return idx !== -1
-    },
     cOpening () {
       const idx = this.whatsapps.findIndex(w => w.status === 'OPENING')
       return idx !== -1

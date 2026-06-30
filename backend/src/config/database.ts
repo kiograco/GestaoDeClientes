@@ -6,14 +6,9 @@ const numberEnv = (name, fallback) => {
 };
 
 module.exports = {
-  define: {
-    charset: "utf8mb4",
-    collate: "utf8mb4_bin"
-    // freezeTableName: true
-  },
   pool: {
-    max: numberEnv("POSTGRES_POOL_MAX", 100),
-    min: numberEnv("POSTGRES_POOL_MIN", 10),
+    max: numberEnv("POSTGRES_POOL_MAX", 20),
+    min: numberEnv("POSTGRES_POOL_MIN", 2),
     acquire: numberEnv("POSTGRES_POOL_ACQUIRE", 30000),
     idle: numberEnv("POSTGRES_POOL_IDLE", 10000)
   },

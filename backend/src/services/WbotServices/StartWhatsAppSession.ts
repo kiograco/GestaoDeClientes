@@ -1,26 +1,15 @@
-import { hasWbot, initWbot, isWbotStarting } from "../../libs/wbot";
 import Whatsapp from "../../models/Whatsapp";
-import { wbotMessageListener } from "./wbotMessageListener";
 import { getIO } from "../../libs/socket";
-import wbotMonitor from "./wbotMonitor";
 import { logger } from "../../utils/logger";
 import AppError from "../../errors/AppError";
-import Queue from "../../libs/Queue";
-import { StartInstaBotSession } from "../InstagramBotServices/StartInstaBotSession";
-import { StartTbotSession } from "../TbotServices/StartTbotSession";
-import { StartWaba360 } from "../WABA360/StartWaba360";
 import { StartWabaMeta } from "../WABAMeta/StartWabaMeta";
-import { StartMessengerBot } from "../MessengerChannelServices/StartMessengerBot";
 
 export const StartWhatsAppSession = async (
   whatsapp: Whatsapp
 ): Promise<void> => {
-  if (
-    whatsapp.type === "whatsapp" &&
-    (hasWbot(whatsapp.id) || isWbotStarting(whatsapp.id))
-  ) {
-    logger.info(`Session ${whatsapp.id} is already active or starting.`);
-    return;
+  if (whatsapp.type !== "waba" || whatsapp.wabaBSP !== "meta") {
+    await whatsapp.update({ status: "DISCONNECTED" });
+    throw new AppError("ERR_ONLY_META_WHATSAPP_SUPPORTED", 400);
   }
 
   await whatsapp.update({ status: "OPENING" });
@@ -32,36 +21,7 @@ export const StartWhatsAppSession = async (
   });
 
   try {
-    if (whatsapp.type === "whatsapp") {
-      const wbot = await initWbot(whatsapp);
-      wbotMessageListener(wbot);
-      wbotMonitor(wbot, whatsapp);
-      await Queue.add("SendMessages", {
-        tenantId: whatsapp.tenantId,
-        sessionId: whatsapp.id
-      });
-    }
-
-    if (whatsapp.type === "telegram") {
-      StartTbotSession(whatsapp);
-    }
-
-    if (whatsapp.type === "instagram") {
-      StartInstaBotSession(whatsapp);
-    }
-
-    if (whatsapp.type === "messenger") {
-      StartMessengerBot(whatsapp);
-    }
-
-    if (whatsapp.type === "waba") {
-      if (whatsapp.wabaBSP === "360") {
-        StartWaba360(whatsapp);
-      }
-      if (whatsapp.wabaBSP === "meta") {
-        StartWabaMeta(whatsapp);
-      }
-    }
+    StartWabaMeta(whatsapp);
   } catch (err) {
     logger.error(`StartWhatsAppSession | Error: ${err}`);
     throw new AppError("ERR_START_SESSION", 404);

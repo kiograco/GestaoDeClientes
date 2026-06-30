@@ -163,7 +163,7 @@ export default {
   computed: {
     ...mapGetters(['whatsapps']),
     cSessions () {
-      return this.whatsapps.filter(w => w.type === 'whatsapp' && !w.isDeleted)
+      return this.whatsapps.filter(w => w.type === 'waba' && w.wabaBSP === 'meta' && !w.isDeleted)
     }
   },
   methods: {
