@@ -75,7 +75,7 @@
             flat
             class="app-icon-btn"
             icon="mdi-home"
-            @click="() => $router.push({ name: 'home-dashboard' })"
+            @click="retornarMenu"
           >
             <q-tooltip content-class="bg-padrao text-grey-9 text-bold">
               Retornar ao menu
@@ -798,6 +798,7 @@ import { messagesLog } from '../../utils/constants'
 import ModalPedidoManual from 'src/pages/delivery/ModalPedidoManual'
 import ClienteModal from 'src/pages/clientes/ClienteModal'
 import { clearAccessToken } from 'src/utils/authToken'
+import { defaultRouteByProfile } from 'src/router/access'
 export default {
   name: 'IndexAtendimento',
   mixins: [mixinSockets, socketInitial],
@@ -913,6 +914,15 @@ export default {
     }
   },
   methods: {
+    retornarMenu () {
+      const target = defaultRouteByProfile(localStorage.getItem('profile'))
+      if (this.$route.name === target.name) return
+      this.$router.push(target).catch(error => {
+        if (error?.name !== 'NavigationDuplicated') {
+          throw error
+        }
+      })
+    },
     handlerNotifications (data) {
       const options = {
         body: `${data.body} - ${format(new Date(), 'HH:mm')}`,
