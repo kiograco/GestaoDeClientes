@@ -1,6 +1,6 @@
-import axios from "axios";
 import AppError from "../../errors/AppError";
 import { logger } from "../../utils/logger";
+import { request360Media } from "./waba360Client";
 
 interface Request {
   file: LegacyAny;
@@ -15,7 +15,7 @@ const SetPhotoProfileInfo = async ({
   const apiUrl360 = `${process.env.API_URL_360}/v1/settings/profile/photo`;
 
   try {
-    await axios({
+    await request360Media({
       method: "post",
       url: apiUrl360,
       data: { file },

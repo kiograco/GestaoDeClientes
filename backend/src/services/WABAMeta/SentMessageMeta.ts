@@ -1,6 +1,6 @@
-import axios from "axios";
 import AppError from "../../errors/AppError";
 import { logger } from "../../utils/logger";
+import { metaGraphBreaker } from "./metaGraphClient";
 
 interface Request {
   message: Record<string, unknown>;
@@ -16,7 +16,7 @@ const SentMessageMeta = async ({
   phoneNumberId
 }: Request): Promise<WabaResponse> => {
   try {
-    const res = await axios({
+    const res = await metaGraphBreaker.fire({
       method: "post",
       url: `https://graph.facebook.com/${graphApiVersion}/${phoneNumberId}/messages`,
       data: {

@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 import AppError from "../../errors/AppError";
 import { logger } from "../../utils/logger";
+import { createCircuitBreaker } from "../../libs/circuitBreaker";
 
 interface CustomerInput {
   name: string;
@@ -61,11 +62,24 @@ const createClient = (): AxiosInstance => {
   } as LegacyAny);
 };
 
+const asaasBreaker = createCircuitBreaker(
+  "asaas",
+  (request: () => Promise<unknown>) => request(),
+  { timeout: 15000 }
+);
+
 const requestAsaas = async <T>(request: () => Promise<T>): Promise<T> => {
   try {
-    return await request();
+    return (await asaasBreaker.fire(request)) as T;
   } catch (error) {
-    if (!axios.isAxiosError(error)) throw error;
+    if (!axios.isAxiosError(error)) {
+      logger.error(
+        `Asaas request failed (circuit breaker): ${
+          (error as Error)?.message || error
+        }`
+      );
+      throw new AppError("ERR_ASAAS_UNAVAILABLE", 502);
+    }
 
     const status = error.response?.status;
     const data = error.response?.data as AsaasErrorResponse | undefined;

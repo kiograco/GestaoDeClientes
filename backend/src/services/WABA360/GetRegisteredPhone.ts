@@ -1,6 +1,6 @@
-import axios from "axios";
 import AppError from "../../errors/AppError";
 import { logger } from "../../utils/logger";
+import { request360 } from "./waba360Client";
 
 interface Response {
   // eslint-disable-next-line camelcase
@@ -12,7 +12,7 @@ const GetRegisteredPhone = async (apiKey: string): Promise<Response> => {
   const apiUrl360 = `${process.env.API_URL_360}/v1/configs/phone_number`;
 
   try {
-    const res = await axios({
+    const res = await request360({
       method: "get",
       url: apiUrl360,
       headers: {

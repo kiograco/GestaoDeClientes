@@ -1,9 +1,9 @@
-import axios from "axios";
 import AppError from "../../errors/AppError";
 import { getIO } from "../../libs/socket";
 import Whatsapp from "../../models/Whatsapp";
 import { logger } from "../../utils/logger";
 import WabaMetaSendMessagesSystem from "./WabaMetaSendMessagesSystem";
+import { metaGraphBreaker } from "./metaGraphClient";
 
 const checkingWabaMeta: LegacyAny = {};
 const graphApiVersion = process.env.META_GRAPH_API_VERSION || "v20.0";
@@ -38,7 +38,7 @@ export const StartWabaMeta = async (connection: Whatsapp): Promise<void> => {
       );
     }
 
-    const { data } = await axios({
+    const { data } = await metaGraphBreaker.fire({
       method: "get",
       url: `https://graph.facebook.com/${graphApiVersion}/${connection.fbPageId}`,
       params: { fields: "display_phone_number,verified_name" },

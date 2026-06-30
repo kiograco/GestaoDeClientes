@@ -1,6 +1,6 @@
-import axios from "axios";
 import AppError from "../../errors/AppError";
 import { logger } from "../../utils/logger";
+import { request360 } from "./waba360Client";
 
 interface BusinessProfile {
   vertical:
@@ -40,7 +40,7 @@ const SetBusinessProfile = async ({
   const apiUrl360 = `${process.env.API_URL_360}/v1/settings/business/profile`;
 
   try {
-    await axios({
+    await request360({
       method: "post",
       url: apiUrl360,
       data,

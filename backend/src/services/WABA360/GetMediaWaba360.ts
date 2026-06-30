@@ -1,11 +1,11 @@
 /* eslint-disable camelcase */
-import axios from "axios";
 import { createWriteStream } from "fs";
 import { join } from "path";
 import AppError from "../../errors/AppError";
 import Ticket from "../../models/Ticket";
 import Whatsapp from "../../models/Whatsapp";
 import { logger } from "../../utils/logger";
+import { request360Media } from "./waba360Client";
 
 interface Request {
   channel: Whatsapp;
@@ -21,7 +21,7 @@ const downloadFile = async (
   const apiUrl360 = `${process.env.API_URL_360}/v1/media/${wabaMediaId}`;
   const pathFile = join(__dirname, "..", "..", "public", filename);
 
-  const request = await axios({
+  const request = await request360Media({
     url: apiUrl360,
     method: "GET",
     responseType: "stream",

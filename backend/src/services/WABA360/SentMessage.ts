@@ -1,6 +1,6 @@
-import axios from "axios";
 import AppError from "../../errors/AppError";
 import { logger } from "../../utils/logger";
+import { request360 } from "./waba360Client";
 
 interface Request {
   message: WabaMessage;
@@ -15,7 +15,7 @@ const SentMessage = async ({
   const apiUrl360 = `${process.env.API_URL_360}/v1/messages`;
 
   try {
-    const res = await axios({
+    const res = await request360({
       method: "post",
       url: apiUrl360,
       data: { ...message },

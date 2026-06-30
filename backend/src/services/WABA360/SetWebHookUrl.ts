@@ -1,6 +1,6 @@
-import axios from "axios";
 import AppError from "../../errors/AppError";
 import { logger } from "../../utils/logger";
+import { request360 } from "./waba360Client";
 
 interface Request {
   url: string;
@@ -11,7 +11,7 @@ const SetWebHookUrl = async ({ url, apiKey }: Request): Promise<boolean> => {
   const apiUrl360 = `${process.env.API_URL_360}/v1/configs/webhook`;
 
   try {
-    await axios({
+    await request360({
       method: "post",
       url: apiUrl360,
       data: { url },
