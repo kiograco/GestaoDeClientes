@@ -31,7 +31,7 @@
           :sent="mensagem.fromMe"
           class="text-weight-medium"
           :bg-color="mensagem.fromMe ? 'grey-2' : $q.dark.isActive ? 'blue-2' : 'blue-1'"
-          :class="{ pulseIdentications: identificarMensagem == `chat-message-${mensagem.id}` }"
+          :class="{ pulseIdentications: identificarMensagem === `chat-message-${mensagem.id}` }"
         >
           <!-- :bg-color="mensagem.fromMe ? 'grey-2' : 'secondary' " -->
           <div
@@ -376,7 +376,7 @@ export default {
       abrirModalImagem: false,
       urlMedia: '',
       identificarMensagem: null,
-      ackIcons: { // Se ACK == 3 ou 4 entao color green
+      ackIcons: { // Se ACK === 3 ou 4 entao color green
         0: 'mdi-clock-outline',
         1: 'mdi-check',
         2: 'mdi-check-all',

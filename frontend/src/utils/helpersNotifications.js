@@ -6,7 +6,7 @@ export const notificarErro = (msg, error = null) => {
   if (error) {
     erro = error?.data?.error || error?.data?.msg || error?.data?.message || error?.response?.data.error || 'Não identificado'
   }
-  const findErro = Errors.find(e => e.error == erro)
+  const findErro = Errors.find(e => e.error === erro)
   let message = ''
 
   if (error && findErro?.error) {

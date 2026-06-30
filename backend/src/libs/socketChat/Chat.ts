@@ -434,7 +434,7 @@ const onDisconnect = (socket: Socket) => {
     UpdateOnlineBubbles(socket);
 
     if (reason === "transport error") {
-      reason = "client terminated";
+      reason = "client terminated" as LegacyAny;
     }
     logger.debug(`User disconnected (${reason}): ${user.name} - ${socket.id}`);
   });

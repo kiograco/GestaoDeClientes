@@ -935,7 +935,7 @@ export default {
       }
       const oldToLine = this.node.conditions[idx].nextStepId
       this.node.conditions[idx].nextStepId = nextStepId
-      if (oldToLine != nextStepId) {
+      if (oldToLine !== nextStepId) {
         this.$emit('addNewLineCondition', this.node.id, nextStepId, oldToLine)
       }
     },

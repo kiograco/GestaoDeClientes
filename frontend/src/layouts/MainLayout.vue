@@ -154,7 +154,7 @@
                   </q-item-section>
                 </q-item>
                 <q-separator v-if="notificationPermission !== 'granted'" />
-                <q-item v-if="(parseInt(notifications.count) + parseInt(notifications_p.count)) == 0">
+                <q-item v-if="(parseInt(notifications.count) + parseInt(notifications_p.count)) === 0">
                   <q-item-section style="cursor: pointer;">
                     Nada de novo por aqui!
                   </q-item-section>

@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
-import { head, has } from "lodash";
-import XLSX from "xlsx";
+import { has } from "lodash";
+import ExcelJS from "exceljs";
 import Contact from "../../models/Contact";
 // import CheckContactNumber from "../WbotServices/CheckNumber";
 
@@ -10,9 +10,26 @@ export async function ImportFileContactsService(
   tags: string[],
   wallets: string[]
 ): Promise<Contact[]> {
-  const workbook = XLSX.readFile(file?.path as string);
-  const worksheet = head(Object.values(workbook.Sheets)) as LegacyAny;
-  const rows: LegacyAny[] = XLSX.utils.sheet_to_json(worksheet, { header: 0 });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(file?.path as string);
+  const worksheet = workbook.worksheets[0];
+
+  const headers: Record<number, string> = {};
+  const rows: Record<string, string>[] = [];
+
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) {
+      row.eachCell((cell, colNumber) => {
+        headers[colNumber] = String(cell.value ?? "");
+      });
+    } else {
+      const rowData: Record<string, string> = {};
+      row.eachCell((cell, colNumber) => {
+        rowData[headers[colNumber]] = String(cell.value ?? "");
+      });
+      rows.push(rowData);
+    }
+  });
   const contacts: LegacyAny = [];
 
   rows.forEach(row => {

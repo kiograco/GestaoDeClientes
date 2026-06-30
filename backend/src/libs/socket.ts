@@ -1,5 +1,6 @@
 import { Server as SocketIO } from "socket.io";
-import socketRedis from "socket.io-redis";
+import { createAdapter } from "@socket.io/redis-adapter";
+import Redis from "ioredis";
 import { Server } from "http";
 import AppError from "../errors/AppError";
 import decodeTokenSocket from "./decodeTokenSocket";
@@ -52,16 +53,16 @@ export const initIO = (httpServer: Server): SocketIO => {
     pingInterval: 60000
   });
 
-  const connRedis = {
-    host: process.env.IO_REDIS_SERVER,
-    port: Number(process.env.IO_REDIS_PORT),
+  const redisOptions = {
+    host: process.env.IO_REDIS_SERVER || "localhost",
+    port: Number(process.env.IO_REDIS_PORT) || 6379,
     username: process.env.IO_REDIS_USERNAME,
     password: process.env.IO_REDIS_PASSWORD
   };
 
-  // apresentando problema na assinatura
-  const redis = socketRedis as LegacyAny;
-  io.adapter(redis(connRedis));
+  const pubClient = new Redis(redisOptions);
+  const subClient = pubClient.duplicate();
+  io.adapter(createAdapter(pubClient, subClient));
 
   io.use(async (socket, next) => {
     try {
@@ -172,24 +173,18 @@ export const disconnectTenantSockets = async (
   tenantId: number | string
 ): Promise<void> => {
   try {
-    const socketServer = getIO() as LegacyAny;
-    const socketIds: Set<string> = await socketServer
+    const socketServer = getIO();
+    const sockets = await socketServer
       .in(String(tenantId))
-      .allSockets();
-    const adapter = socketServer.of("/").adapter as LegacyAny;
+      .fetchSockets();
 
     await Promise.all(
-      Array.from(socketIds).map(async socketId => {
+      sockets.map(async socket => {
         try {
-          if (typeof adapter.remoteDisconnect === "function") {
-            await adapter.remoteDisconnect(socketId, true);
-            return;
-          }
-
-          socketServer.sockets.sockets.get(socketId)?.disconnect(true);
+          socket.disconnect(true);
         } catch (error) {
           logger.warn(
-            `Unable to disconnect tenant socket ${socketId}: ${error}`
+            `Unable to disconnect tenant socket ${socket.id}: ${error}`
           );
         }
       })

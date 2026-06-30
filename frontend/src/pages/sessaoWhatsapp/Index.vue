@@ -141,7 +141,7 @@
               </div>
 
               <div
-                v-if="item.status == 'OPENING'"
+                v-if="item.status === 'OPENING'"
                 class="row items-center q-gutter-sm flex flex-inline"
               >
                 <div class="text-bold">

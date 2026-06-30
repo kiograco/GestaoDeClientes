@@ -74,7 +74,7 @@ const checkTicketFilter = (ticket) => {
   }
 
   // verificar se já é um ticket do usuário
-  if (ticket?.userId == userId) {
+  if (ticket?.userId === userId) {
     console.log('Ticket do usuário', ticket?.userId, userId)
     return true
   }
@@ -112,7 +112,7 @@ const checkTicketFilter = (ticket) => {
   // verificar se a fila do ticket está filtrada
   if (isQueuesTenantExists && filtros?.queuesIds.length) {
     const isQueue = filtros.queuesIds.findIndex(q => ticket.queueId === q)
-    if (isQueue == -1) {
+    if (isQueue === -1) {
       console.log('filas filtradas e diferentes da do ticket', ticket.queueId)
       return false
     }
@@ -120,7 +120,7 @@ const checkTicketFilter = (ticket) => {
 
   // se configuração para carteira ativa: verificar se já é um ticket da carteira do usuário
   if (DirectTicketsToWallets() && (ticket?.contact?.wallets?.length || 0) > 0) {
-    const idx = ticket?.contact?.wallets.findIndex(w => w.id == userId)
+    const idx = ticket?.contact?.wallets.findIndex(w => w.id === userId)
     if (idx !== -1) {
       console.log('Ticket da carteira do usuário')
       return true
@@ -218,7 +218,7 @@ const atendimentoTicket = {
         state.tickets = tickets.filter(t => checkTicketFilter(t))
 
         // atualizar se ticket focado
-        if (state.ticketFocado.id == payload.id) {
+        if (state.ticketFocado.id === payload.id) {
           state.ticketFocado = {
             ...state.ticketFocado,
             ...payload
@@ -265,7 +265,7 @@ const atendimentoTicket = {
       state.ticketFocado.contact = payload
     },
     UPDATE_CONTACT (state, payload) {
-      if (state.ticketFocado.contactId == payload.id) {
+      if (state.ticketFocado.contactId === payload.id) {
         state.ticketFocado.contact = payload
       }
       const ticketIndex = state.tickets.findIndex(t => t.contactId === payload.id)
@@ -281,7 +281,7 @@ const atendimentoTicket = {
     TICKET_FOCADO (state, payload) {
       const params = {
         ...payload,
-        status: payload.status == 'pending' ? 'open' : payload.status
+        status: payload.status === 'pending' ? 'open' : payload.status
       }
       state.ticketFocado = params
       // return state.ticketFocado
@@ -322,7 +322,7 @@ const atendimentoTicket = {
           mensagens.push(payload)
         }
         state.mensagens = mensagens
-        if (payload.scheduleDate && payload.status == 'pending') {
+        if (payload.scheduleDate && payload.status === 'pending') {
           const idxScheduledMessages = state.ticketFocado.scheduledMessages.findIndex(m => m.id === payload.id)
           if (idxScheduledMessages === -1) {
             state.ticketFocado.scheduledMessages.push(payload)
@@ -330,10 +330,10 @@ const atendimentoTicket = {
         }
       }
 
-      const TicketIndexUpdate = state.tickets.findIndex(t => t.id == payload.ticket.id)
+      const TicketIndexUpdate = state.tickets.findIndex(t => t.id === payload.ticket.id)
       if (TicketIndexUpdate !== -1) {
         const tickets = [...state.tickets]
-        const unreadMessages = state.ticketFocado.id == payload.ticket.id ? 0 : payload.ticket.unreadMessages
+        const unreadMessages = state.ticketFocado.id === payload.ticket.id ? 0 : payload.ticket.unreadMessages
         tickets[TicketIndexUpdate] = {
           ...state.tickets[TicketIndexUpdate],
           answered: payload.ticket.answered,
@@ -346,7 +346,7 @@ const atendimentoTicket = {
     // OK
     UPDATE_MESSAGE_STATUS (state, payload) {
       // Se ticket não for o focado, não atualizar.
-      if (state.ticketFocado.id != payload.ticket.id) {
+      if (state.ticketFocado.id !== payload.ticket.id) {
         return
       }
       const messageIndex = state.mensagens.findIndex(m => m.id === payload.id)
@@ -360,7 +360,7 @@ const atendimentoTicket = {
       // tratar a atualização das mensagens deletadas.
       if (state.ticketFocado?.scheduledMessages) {
         const scheduledMessages = [...state.ticketFocado.scheduledMessages]
-        const scheduled = scheduledMessages.filter(m => m.id != payload.id)
+        const scheduled = scheduledMessages.filter(m => m.id !== payload.id)
         state.ticketFocado.scheduledMessages = scheduled
       }
     },

@@ -395,7 +395,7 @@ export default {
         rowsNumber: 0,
         lastIndex: 0
       },
-      ACK: { // Se ACK == 3 ou 4 entao color green
+      ACK: { // Se ACK === 3 ou 4 entao color green
         '-1': 'Error',
         0: 'Envio Pendente',
         1: 'Entrega Pendente',

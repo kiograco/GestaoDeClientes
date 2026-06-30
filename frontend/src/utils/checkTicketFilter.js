@@ -59,7 +59,7 @@ const checkTicketFilter = (ticket) => {
   }
 
   // verificar se já é um ticket do usuário
-  if (ticket?.userId == userId) {
+  if (ticket?.userId === userId) {
     console.log('Ticket do usuário', ticket?.userId, userId)
     return true
   }
@@ -97,7 +97,7 @@ const checkTicketFilter = (ticket) => {
   // verificar se a fila do ticket está filtrada
   if (isQueuesTenantExists && filtros?.queuesIds.length) {
     const isQueue = filtros.queuesIds.findIndex(q => ticket.queueId === q)
-    if (isQueue == -1) {
+    if (isQueue === -1) {
       console.log('filas filtradas e diferentes da do ticket', ticket.queueId)
       return false
     }
@@ -105,7 +105,7 @@ const checkTicketFilter = (ticket) => {
 
   // se configuração para carteira ativa: verificar se já é um ticket da carteira do usuário
   if (DirectTicketsToWallets() && (ticket?.contact?.wallets?.length || 0) > 0) {
-    const idx = ticket?.contact?.wallets.findIndex(w => w.id == userId)
+    const idx = ticket?.contact?.wallets.findIndex(w => w.id === userId)
     if (idx !== -1) {
       console.log('Ticket da carteira do usuário')
       return true

@@ -47,7 +47,7 @@ export default {
   computed: {
     cStatus () {
       const usuario = this.usuario
-      return this.statusOptions.find(s => s.value == usuario.status) || {}
+      return this.statusOptions.find(s => s.value === usuario.status) || {}
     }
   },
   data () {

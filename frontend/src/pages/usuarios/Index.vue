@@ -132,7 +132,7 @@ export default {
           classes: 'ellipsis',
           style: 'max-width: 400px;'
         },
-        { name: 'profile', label: 'Perfil', field: 'profile', align: 'left', format: (v) => (this.optionsProfile.find(o => o.value == v) || { label: v }).label },
+        { name: 'profile', label: 'Perfil', field: 'profile', align: 'left', format: (v) => (this.optionsProfile.find(o => o.value === v) || { label: v }).label },
         { name: 'acoes', label: 'Ações', field: 'acoes', align: 'center' }
       ]
     }

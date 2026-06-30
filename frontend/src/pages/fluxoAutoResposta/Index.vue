@@ -334,7 +334,7 @@ export default {
           label: 'Tipo',
           field: 'action',
           align: 'left',
-          format: (v) => this.tipoAutoResposta.find(a => a.value == v).label || ''
+          format: (v) => this.tipoAutoResposta.find(a => a.value === v).label || ''
         },
         { name: 'isActive', label: 'Status', field: 'isActive', align: 'center', format: (v) => v === true ? 'Ativo' : 'Inativo' },
         { name: 'celularTeste', label: 'Celular Teste', field: 'celularTeste', align: 'center' },
@@ -349,7 +349,7 @@ export default {
       ],
       columnsAcoes: [
         { name: 'words', label: 'Chave', field: 'words', align: 'left' },
-        { name: 'action', label: 'Ação', field: 'action', align: 'left', format: (v) => this.acaoEtapa.find(a => a.value == v).label },
+        { name: 'action', label: 'Ação', field: 'action', align: 'left', format: (v) => this.acaoEtapa.find(a => a.value === v).label },
         {
           name: 'queueId',
           label: 'Fila Destino',

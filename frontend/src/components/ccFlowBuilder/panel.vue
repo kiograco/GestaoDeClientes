@@ -144,7 +144,7 @@ export default {
           return
         }
         el.onmousedown = (e) => {
-          if (e.button == 2) {
+          if (e.button === 2) {
             return
           }
           let disX = e.clientX
@@ -369,7 +369,7 @@ export default {
       conn.setPaintStyle({ strokeWidth: 3, stroke: '#8db1dd' })
 
       this.data.lineList.forEach(function (line) {
-        if (line.from == from && line.to == to) {
+        if (line.from === from && line.to === to) {
           line.label = label
         }
       })
@@ -405,7 +405,7 @@ export default {
 
     deleteLine (from, to) {
       this.data.lineList = this.data.lineList.filter(function (line) {
-        if (line.from == from && line.to == to) {
+        if (line.from === from && line.to === to) {
           return false
         }
         return true

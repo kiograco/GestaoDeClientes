@@ -323,7 +323,7 @@ export default {
         this.$notificarErro('Não é possível programar campanha com data menor que a atual')
       }
 
-      if (campanha.contactsCount == 0) {
+      if (campanha.contactsCount === 0) {
         this.$notificarErro('Necessário ter contatos vinculados para programar a campanha.')
       }
 

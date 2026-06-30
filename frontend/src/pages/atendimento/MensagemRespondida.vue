@@ -194,7 +194,7 @@ export default {
       abrirModalImagem: false,
       urlMedia: '',
 
-      ackIcons: { // Se ACK == 3 ou 4 entao color green
+      ackIcons: { // Se ACK === 3 ou 4 entao color green
         0: 'mdi-clock-outline',
         1: 'mdi-check',
         2: 'mdi-check-all',

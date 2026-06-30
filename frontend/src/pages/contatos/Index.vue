@@ -375,7 +375,7 @@ export default {
           align: 'left',
           style: 'width: 300px',
           format: (v, r) => {
-            if (r.number && r.name == r.number && r.pushname) {
+            if (r.number && r.name === r.number && r.pushname) {
               return r.pushname
             }
             return r.name

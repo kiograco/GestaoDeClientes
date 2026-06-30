@@ -33,10 +33,10 @@ export default {
         for (var i = 0; i < format.length; i++) {
           if (format[i] === wildcard) {
             // eslint-disable-next-line no-unused-expressions
-            if (indices.length % 2) { (format[i - 1] == ' ') ? null : ((typeof (format[i + 1]) == 'undefined') ? indices.push(i) : (is_aplhanumeric(format[i + 1]) ? null : indices.push(i))) } else { (typeof (format[i + 1]) == 'undefined') ? null : ((format[i + 1] == ' ') ? null : (typeof (format[i - 1]) == 'undefined') ? indices.push(i) : ((is_aplhanumeric(format[i - 1])) ? null : indices.push(i))) }
+            if (indices.length % 2) { (format[i - 1] === ' ') ? null : ((typeof (format[i + 1]) === 'undefined') ? indices.push(i) : (is_aplhanumeric(format[i + 1]) ? null : indices.push(i))) } else { (typeof (format[i + 1]) === 'undefined') ? null : ((format[i + 1] === ' ') ? null : (typeof (format[i - 1]) === 'undefined') ? indices.push(i) : ((is_aplhanumeric(format[i - 1])) ? null : indices.push(i))) }
           } else {
             // eslint-disable-next-line no-unused-expressions
-            (format[i].charCodeAt() == 10 && indices.length % 2) ? indices.pop() : null
+            (format[i].charCodeAt() === 10 && indices.length % 2) ? indices.pop() : null
           }
         }
         // eslint-disable-next-line no-unused-expressions

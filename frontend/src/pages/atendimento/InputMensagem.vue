@@ -1,6 +1,6 @@
 <template>
   <div>
-    <template v-if="ticketFocado.status != 'pending'">
+    <template v-if="ticketFocado.status !== 'pending'">
 
       <div
         class="row absolute-full fit col-12"

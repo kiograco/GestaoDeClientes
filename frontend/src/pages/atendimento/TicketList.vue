@@ -148,7 +148,7 @@ export default {
         ...paramsInit
       }
 
-      if (params.pageNumber == 1) {
+      if (params.pageNumber === 1) {
         this.$store.commit('RESET_TICKETS', this.status)
       }
 
@@ -242,7 +242,7 @@ export default {
       propNames.forEach(propName => {
         this.$watch(propName, (newVal, oldVal) => {
           console.log('handle obsevablePropsSocket', propName)
-          if (propName != 'searchParam') {
+          if (propName !== 'searchParam') {
             if (this.socket) {
               this.socket.disconnect()
             }

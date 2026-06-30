@@ -80,7 +80,7 @@ export default {
       this.$emit('clickNode', this.node.id)
     },
     changeNodeSite () {
-      if (this.node.left == this.$refs.node.style.left && this.node.top == this.$refs.node.style.top) {
+      if (this.node.left === this.$refs.node.style.left && this.node.top === this.$refs.node.style.top) {
         return
       }
       this.$emit('changeNodeSite', {

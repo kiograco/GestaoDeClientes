@@ -72,13 +72,13 @@ export default {
   },
   computed: {
     cError () {
-      if (this.error == 'NI') {
+      if (this.error === 'NI') {
         return this.hasErrors
       }
       return this.error
     },
     cErrorMessage () {
-      if (this.errorMessage == '') {
+      if (this.errorMessage === '') {
         return this.firstErrorMessage
       }
       return this.errorMessage

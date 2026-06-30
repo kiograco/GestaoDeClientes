@@ -15,7 +15,7 @@ export default {
       },
       validator (value) {
         for (const size of ['xl', 'lg', 'md', 'sm', 'xs']) {
-          if (value[size] && 12 % value[size] != 0) {
+          if (value[size] && 12 % value[size] !== 0) {
             return false
           }
         }

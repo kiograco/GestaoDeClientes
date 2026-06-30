@@ -1,5 +1,5 @@
 import PDFDocument from "pdfkit";
-import XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 export type ExportFormat = "csv" | "xlsx" | "pdf";
 
@@ -38,17 +38,21 @@ export const exportRows = async (
   );
 
   if (format === "xlsx") {
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(
-      workbook,
-      XLSX.utils.json_to_sheet(normalizedRows),
-      title.slice(0, 31)
-    );
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(title.slice(0, 31));
+    if (normalizedRows.length > 0) {
+      worksheet.columns = Object.keys(normalizedRows[0]).map(key => ({
+        header: key,
+        key
+      }));
+      normalizedRows.forEach(row => worksheet.addRow(row));
+    }
+    const buffer = (await workbook.xlsx.writeBuffer()) as Buffer;
     return {
       contentType:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       fileName: `${title}.xlsx`,
-      buffer: XLSX.write(workbook, { type: "buffer", bookType: "xlsx" })
+      buffer
     };
   }
 

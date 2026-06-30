@@ -82,7 +82,7 @@
             icon="mdi-message-text-clock-outline"
             flat
             class="app-icon-btn"
-            :disable="cticket.status == 'closed'"
+            :disable="cticket.status === 'closed'"
           >
             <q-tooltip content-class="bg-grey-9 text-bold">
               Agendamento de mensagem
@@ -97,13 +97,13 @@
             @click="$emit('updateTicket:resolver')"
             icon="mdi-comment-check"
             label="Resolver"
-            :disable-main-btn="cticket.status == 'closed'"
+            :disable-main-btn="cticket.status === 'closed'"
           >
             <q-list>
               <q-item
                 clickable
                 v-close-popup
-                v-if="cticket.status == 'closed'"
+                v-if="cticket.status === 'closed'"
                 @click="$emit('updateTicket:reabrir')"
               >
                 <q-item-section avatar>
@@ -121,7 +121,7 @@
                 v-close-popup
                 @click="$emit('updateTicket:retornar')"
                 clickable
-                v-if="cticket.status == 'open'"
+                v-if="cticket.status === 'open'"
               >
                 <q-item-section avatar>
                   <q-avatar
@@ -139,7 +139,7 @@
                 v-close-popup
                 @click="listarFilas"
                 clickable
-                v-if="cticket.status != 'closed'"
+                v-if="cticket.status !== 'closed'"
               >
                 <q-item-section avatar>
                   <q-avatar
@@ -268,7 +268,7 @@ export default {
       const fila = this.filaSelecionada
       if (fila == null) return true
       const queues_valid = element.queues.filter(function (element, index, array) {
-        return (element.id == fila)
+        return (element.id === fila)
       })
       return (queues_valid.length > 0)
     },

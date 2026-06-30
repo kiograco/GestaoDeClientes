@@ -66,7 +66,7 @@
             <thead>
               <tr>
                 <td
-                  v-for="col in bl_sintetico ? columns.filter(c => c.name == opcoesRelatorio.agrupamento) : columns"
+                  v-for="col in bl_sintetico ? columns.filter(c => c.name === opcoesRelatorio.agrupamento) : columns"
                   :key="col.name"
                 >
                   {{ col.label }}
@@ -115,7 +115,7 @@
           <thead>
             <tr>
               <td
-                v-for="col in bl_sintetico ? columns.filter(c => c.name == opcoesRelatorio.agrupamento) : columns"
+                v-for="col in bl_sintetico ? columns.filter(c => c.name === opcoesRelatorio.agrupamento) : columns"
                 :key="col.name"
               >
                 {{ col.label }}
@@ -208,7 +208,7 @@ export default {
         { raw: true }
       )
       for (const col in json) {
-        if (col[0] == 'J') {
+        if (col[0] === 'J') {
           json[col].t = 'n'
           json[col].v = json[col].v.replace(/\./g, '').replace(',', '.')
           // json[col].f = `VALUE(${json[col].v})`

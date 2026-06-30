@@ -130,13 +130,13 @@ export default {
       return this.cValue ? format(parse(this.cValue, 'yyyy-MM-dd HH:mm', new Date()), 'dd/MM/yyyy HH:mm') : format(new Date(), 'dd/MM/yyyy HH:mm')
     },
     cError () {
-      if (this.error == 'NI') {
+      if (this.error === 'NI') {
         return this.hasErrors
       }
       return this.error
     },
     cErrorMessage () {
-      if (this.errorMessage == '') {
+      if (this.errorMessage === '') {
         return this.firstErrorMessage
       }
       return this.errorMessage
