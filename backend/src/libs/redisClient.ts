@@ -31,7 +31,11 @@ export const getValue = (key: string) => {
 };
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export const setValue = (key: string, value: LegacyAny) => {
+export const setValue = (
+  key: string,
+  value: LegacyAny,
+  ttlSeconds?: number
+) => {
   return new Promise((resolve, reject) => {
     let stringfy: LegacyAny;
     if (typeof value === "object") {
@@ -39,10 +43,15 @@ export const setValue = (key: string, value: LegacyAny) => {
     } else {
       stringfy = String(value);
     }
-    redisClient.set(key, stringfy, err => {
+    const callback = (err: LegacyAny): LegacyAny => {
       if (err) return reject(err);
       return resolve(stringfy);
-    });
+    };
+    if (ttlSeconds) {
+      redisClient.set(key, stringfy, "EX", ttlSeconds, callback);
+    } else {
+      redisClient.set(key, stringfy, callback);
+    }
   });
 };
 

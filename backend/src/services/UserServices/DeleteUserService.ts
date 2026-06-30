@@ -2,6 +2,7 @@
 import AppError from "../../errors/AppError";
 import Ticket from "../../models/Ticket";
 import UpdateDeletedUserOpenTicketsStatus from "../../helpers/UpdateDeletedUserOpenTicketsStatus";
+import { invalidateAuthCache } from "../../libs/authCache";
 
 const DeleteUserService = async (
   id: string | number,
@@ -29,6 +30,7 @@ const DeleteUserService = async (
   }
 
   await user.destroy();
+  await invalidateAuthCache(tenantId, user.id);
 };
 
 export default DeleteUserService;

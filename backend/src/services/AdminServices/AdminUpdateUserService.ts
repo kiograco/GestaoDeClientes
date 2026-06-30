@@ -6,6 +6,7 @@ import {
   PASSWORD_POLICY_MESSAGE
 } from "../../helpers/UserSecurity";
 import User from "../../models/User";
+import { invalidateAuthCache } from "../../libs/authCache";
 
 interface UserData {
   email?: string;
@@ -61,6 +62,8 @@ const AdminUpdateUserService = async ({
     profile,
     name
   });
+
+  await invalidateAuthCache(user.tenantId, user.id);
 
   await user.reload({
     attributes: ["id", "name", "email", "profile", "tenantId"]

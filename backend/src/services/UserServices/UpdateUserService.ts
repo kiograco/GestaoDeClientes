@@ -10,6 +10,7 @@ import {
 import Queue from "../../models/Queue";
 import User from "../../models/User";
 import UsersQueues from "../../models/UsersQueues";
+import { invalidateAuthCache } from "../../libs/authCache";
 
 interface UserQueues {
   id?: number;
@@ -100,6 +101,8 @@ const UpdateUserService = async ({
     profile,
     name
   });
+
+  await invalidateAuthCache(tenantId, user.id);
 
   await user.reload({
     attributes: ["id", "name", "email", "profile"],
