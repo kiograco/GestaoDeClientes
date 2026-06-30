@@ -1,10 +1,10 @@
-import GetDefaultWhatsApp from "../../helpers/GetDefaultWhatsApp";
+﻿import GetDefaultWhatsApp from "../../helpers/GetDefaultWhatsApp";
 import { getWbot } from "../../libs/wbot";
 import Contact from "../../models/Contact";
 import { logger } from "../../utils/logger";
 
 const ImportContactsService = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<void> => {
   const defaultWhatsapp = await GetDefaultWhatsApp(tenantId);
 
@@ -36,7 +36,7 @@ const ImportContactsService = async (
 
         if (numberExists) return null;
 
-        return Contact.create({ number, name, tenantId });
+        return Contact.create({ number, name, tenantId } as LegacyAny);
       })
     );
   }

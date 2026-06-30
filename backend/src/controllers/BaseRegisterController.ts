@@ -390,7 +390,7 @@ export const createClientUnit = async (
   await auditAction(req, "client_unit_created", "client_unit", unit.id, {
     clientId: unit.clientId,
     name: unit.name
-  });
+  } as LegacyAny);
   return res.status(201).json(unit);
 };
 

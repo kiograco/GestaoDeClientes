@@ -1,11 +1,11 @@
-// import AppError from "../../errors/AppError";
+﻿// import AppError from "../../errors/AppError";
 import Tag from "../../models/Tag";
 
 interface Request {
   tag: string;
   color: string;
   isActive: boolean;
-  userId: number;
+  userId: string | number;
   tenantId: number | string;
 }
 
@@ -22,7 +22,7 @@ const CreateTagService = async ({
     isActive,
     userId,
     tenantId
-  });
+  } as LegacyAny);
 
   return tagData;
 };

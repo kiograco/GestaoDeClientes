@@ -45,7 +45,7 @@ export default {
           mediaName: data.mediaName,
           timestamp: message.timestamp,
           jobId: data.jobId
-        },
+        } as LegacyAny,
         { where: { id: data.campaignContact.id } }
       );
 

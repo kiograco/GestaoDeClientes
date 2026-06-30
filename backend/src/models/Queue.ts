@@ -1,4 +1,4 @@
-import {
+﻿import {
   Table,
   Column,
   CreatedAt,
@@ -35,7 +35,7 @@ class Queue extends Model<Queue> {
 
   @ForeignKey(() => User)
   @Column
-  userId: number;
+  userId: string | number;
 
   @BelongsTo(() => User)
   user: User;

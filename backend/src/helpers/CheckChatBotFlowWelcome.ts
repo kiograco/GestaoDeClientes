@@ -51,7 +51,7 @@ const CheckChatBotFlowWelcome = async (instance: Ticket): Promise<void> => {
     chatFlowId: chatFlow.id,
     stepChatFlow: lineFlow.to,
     lastInteractionBot: new Date()
-  });
+  } as LegacyAny);
 
   await CreateLogTicketService({
     ticketId: instance.id,

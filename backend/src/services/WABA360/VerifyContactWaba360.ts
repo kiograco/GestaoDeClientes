@@ -1,4 +1,4 @@
-import Contact from "../../models/Contact";
+﻿import Contact from "../../models/Contact";
 import CreateOrUpdateContactService from "../ContactServices/CreateOrUpdateContactService";
 
 interface WABAContact {
@@ -11,7 +11,7 @@ interface WABAContact {
 
 const VerifyContactWaba360 = async (
   contact: WABAContact,
-  tenantId: string | number
+  tenantId: number
 ): Promise<Contact> => {
   const profilePicUrl = undefined;
 

@@ -1,4 +1,4 @@
-/* eslint-disable no-restricted-syntax */
+﻿/* eslint-disable no-restricted-syntax */
 import { promisify } from "util";
 import { join } from "path";
 import { writeFile } from "fs";
@@ -10,7 +10,7 @@ const writeFileAsync = promisify(writeFile);
 interface ChatFlowData {
   flow: LegacyAny;
   name: string;
-  userId: number;
+  userId: string | number;
   isActive: boolean;
   celularTeste?: string;
 }
@@ -18,7 +18,7 @@ interface ChatFlowData {
 interface Request {
   chatFlowData: ChatFlowData;
   chatFlowId: string;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const UpdateChatFlowService = async ({

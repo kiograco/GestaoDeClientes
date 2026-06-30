@@ -1,4 +1,4 @@
-import {
+﻿import {
   Table,
   Column,
   CreatedAt,
@@ -115,7 +115,7 @@ class Message extends Model<Message> {
   @Default(null)
   @AllowNull
   @Column
-  userId: number;
+  userId: string | number;
 
   @BelongsTo(() => User)
   user: User;

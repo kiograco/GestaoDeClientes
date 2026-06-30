@@ -1,10 +1,10 @@
-// import { getIO } from "../libs/socket";
+﻿// import { getIO } from "../libs/socket";
 import Ticket from "../models/Ticket";
 import UpdateTicketService from "../services/TicketServices/UpdateTicketService";
 
 const UpdateDeletedUserOpenTicketsStatus = async (
   tickets: Ticket[],
-  tenantId: string | number,
+  tenantId: number,
   userIdRequest: string | number
 ): Promise<void> => {
   tickets.forEach(async t => {

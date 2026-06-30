@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+﻿import { Request, Response } from "express";
 import { disconnectTenantSockets, getIO } from "../libs/socket";
 import AdminListChatFlowService from "../services/AdminServices/AdminListChatFlowService";
 import AdminListSettingsService from "../services/AdminServices/AdminListSettingsService";
@@ -28,7 +28,7 @@ interface ChannelData {
   wabaBSP?: string;
   tokenAPI?: string;
   fbPageId?: string;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 export const indexUsers = async (
@@ -120,7 +120,7 @@ export const updateSettings = async (
   const setting = await UpdateSettingService({
     key,
     value,
-    tenantId
+    tenantId: Number(tenantId)
   });
 
   const io = getIO();

@@ -1,4 +1,4 @@
-import * as Yup from "yup";
+﻿import * as Yup from "yup";
 import { Request, Response } from "express";
 import AppError from "../errors/AppError";
 
@@ -10,7 +10,7 @@ interface StepsReplyActionData {
   stepReplyId: number;
   words: string;
   action: number;
-  userId: number;
+  userId: string | number;
   queueId?: number;
   userIdDestination?: number;
   nextStepId?: number;

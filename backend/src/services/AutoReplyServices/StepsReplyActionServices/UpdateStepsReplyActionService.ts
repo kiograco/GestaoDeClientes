@@ -1,11 +1,11 @@
-import AppError from "../../../errors/AppError";
+﻿import AppError from "../../../errors/AppError";
 import StepsReplyAction from "../../../models/StepsReplyAction";
 
 interface StepsReplyActionData {
   stepReplyId: number;
   words: string;
   action: number;
-  userId: number;
+  userId: string | number;
   queueId?: number;
   userIdDestination?: number;
   nextStepId?: number;

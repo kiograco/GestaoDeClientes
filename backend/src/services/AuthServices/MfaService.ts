@@ -1,4 +1,4 @@
-import AppError from "../../errors/AppError";
+﻿import AppError from "../../errors/AppError";
 import {
   createTotpUri,
   generateTotpSecret,
@@ -31,7 +31,7 @@ export const verifyUserMfaCode = (user: User, code?: string): void => {
 
 export const StartMfaSetupService = async (
   userId: string | number,
-  tenantId: string | number
+  tenantId: number
 ): Promise<{ secret: string; otpauthUrl: string }> => {
   const user = await User.findOne({ where: { id: userId, tenantId } });
   if (!user) throw new AppError("ERR_NO_USER_FOUND", 404);
@@ -56,7 +56,7 @@ export const StartMfaSetupService = async (
 
 export const ConfirmMfaSetupService = async (
   userId: string | number,
-  tenantId: string | number,
+  tenantId: number,
   code: string
 ): Promise<void> => {
   const user = await User.findOne({ where: { id: userId, tenantId } });
@@ -83,7 +83,7 @@ export const ConfirmMfaSetupService = async (
 
 export const DisableMfaService = async (
   userId: string | number,
-  tenantId: string | number,
+  tenantId: number,
   code: string
 ): Promise<void> => {
   const user = await User.findOne({ where: { id: userId, tenantId } });

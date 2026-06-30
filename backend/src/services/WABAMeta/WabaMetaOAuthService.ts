@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 import { sign, verify } from "jsonwebtoken";
 import { Op } from "sequelize";
 import authConfig from "../../config/auth";
@@ -13,7 +13,7 @@ import {
 interface WabaMetaOAuthState {
   purpose: string;
   tenantId: number;
-  userId: number;
+  userId: string | number;
 }
 
 interface WabaPhoneNumber {
@@ -44,7 +44,7 @@ export const getWabaMetaEmbeddedSignupUrl = ({
   userId
 }: {
   tenantId: number;
-  userId: number;
+  userId: string | number;
 }): string => {
   const { appId, redirectUri, graphApiVersion, embeddedSignupConfigId } =
     getWabaMetaOAuthConfig();

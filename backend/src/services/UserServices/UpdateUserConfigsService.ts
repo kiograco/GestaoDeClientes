@@ -1,4 +1,4 @@
-// import * as Yup from "yup";
+﻿// import * as Yup from "yup";
 
 import AppError from "../../errors/AppError";
 import User from "../../models/User";
@@ -15,7 +15,7 @@ interface UserData {
 interface Request {
   userConfigs: UserData;
   userId: string | number;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const UpdateUserConfigsService = async ({

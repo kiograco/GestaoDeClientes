@@ -1,4 +1,4 @@
-import { QueryTypes } from "sequelize";
+﻿import { QueryTypes } from "sequelize";
 import User from "../../models/User";
 // import AppError from "../../errors/AppError";
 // import Queue from "../../models/Queue";
@@ -8,7 +8,7 @@ import CreateLogTicketService from "../TicketServices/CreateLogTicketService";
 const DefinedUserBotService = async (
   ticket: Ticket,
   queueId: string | number,
-  tenantId: string | number,
+  tenantId: number,
   method = "R"
 ): Promise<void> => {
   // method: R = Random | B = Balanced ;

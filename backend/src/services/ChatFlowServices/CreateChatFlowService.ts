@@ -1,4 +1,4 @@
-/* eslint-disable no-restricted-syntax */
+﻿/* eslint-disable no-restricted-syntax */
 // import AppError from "../../errors/AppError";
 import { promisify } from "util";
 import { join } from "path";
@@ -13,7 +13,7 @@ interface Request {
   flow: LegacyAny;
   name: string;
   isActive: boolean;
-  userId: number;
+  userId: string | number;
   tenantId: number | string;
 }
 
@@ -49,7 +49,7 @@ const CreateChatFlowService = async ({
     tenantId,
     name,
     isActive
-  });
+  } as LegacyAny);
 
   return chatFlow;
 };

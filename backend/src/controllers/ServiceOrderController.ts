@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+﻿import { Request, Response } from "express";
 import { Op } from "sequelize";
 import * as Yup from "yup";
 import AppError from "../errors/AppError";
@@ -797,8 +797,8 @@ export const updateInventoryItem = async (
     data
   );
   const changes = inventoryChanges(
-    before ? (before.toJSON() as Record<string, unknown>) : null,
-    item.toJSON() as Record<string, unknown>,
+    before ? (before.toJSON() as unknown as Record<string, unknown>) : null,
+    item.toJSON() as unknown as Record<string, unknown>,
     data as unknown as Record<string, unknown>
   );
   await auditStockAction(req, "service_inventory_updated", item.id, {

@@ -1,4 +1,4 @@
-/* eslint-disable prefer-destructuring */
+﻿/* eslint-disable prefer-destructuring */
 import fs from "fs";
 // import { promisify } from "util";
 import { join } from "path";
@@ -35,7 +35,7 @@ interface MessageData {
   status?: string;
   idFront?: string;
   id?: string;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 interface MessageRequest {
@@ -50,7 +50,7 @@ interface Request {
   scheduleDate?: string | Date;
   sendType: string;
   status: string;
-  tenantId: string | number;
+  tenantId: number;
   medias?: Express.Multer.File[];
   ticket: Ticket;
   userId?: number | string;
@@ -205,7 +205,7 @@ const CreateMessageSystemService = async ({
             mediaType:
               media.mediaType ||
               media.mimetype.substr(0, media.mimetype.indexOf("/"))
-          });
+          } as LegacyAny);
 
           const messageCreated = await Message.findByPk(msgCreated.id, {
             include: [
@@ -260,7 +260,7 @@ const CreateMessageSystemService = async ({
         userId,
         messageId: message.id?.id || message.messageId || null,
         mediaType: "chat"
-      });
+      } as LegacyAny);
 
       const messageCreated = await Message.findByPk(msgCreated.id, {
         include: [

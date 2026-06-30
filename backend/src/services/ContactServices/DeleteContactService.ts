@@ -1,11 +1,11 @@
-import Contact from "../../models/Contact";
+﻿import Contact from "../../models/Contact";
 import AppError from "../../errors/AppError";
 import Ticket from "../../models/Ticket";
 import socketEmit from "../../helpers/socketEmit";
 
 interface Request {
   id: string | number;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const DeleteContactService = async ({

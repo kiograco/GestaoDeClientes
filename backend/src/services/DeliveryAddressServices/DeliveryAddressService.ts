@@ -1,4 +1,4 @@
-import { Op, fn, col, where } from "sequelize";
+﻿import { Op, fn, col, where } from "sequelize";
 import sequelize from "../../database";
 import AppError from "../../errors/AppError";
 import Contact from "../../models/Contact";
@@ -33,7 +33,7 @@ const normalizeZipCode = (zipCode?: string | null): string | null =>
   zipCode ? zipCode.replace(/\D/g, "") : null;
 
 const ensureContact = async (
-  tenantId: string | number,
+  tenantId: number,
   contactId: number
 ): Promise<void> => {
   const contact = await Contact.findOne({ where: { id: contactId, tenantId } });
@@ -41,7 +41,7 @@ const ensureContact = async (
 };
 
 export const listAddresses = async (
-  tenantId: string | number,
+  tenantId: number,
   contactId: number
 ): Promise<CustomerAddress[]> => {
   await ensureContact(tenantId, contactId);
@@ -55,7 +55,7 @@ export const listAddresses = async (
 };
 
 const clearDefaultAddress = (
-  tenantId: string | number,
+  tenantId: number,
   contactId: number,
   transaction: LegacyAny
 ) =>
@@ -65,7 +65,7 @@ const clearDefaultAddress = (
   );
 
 export const createAddress = async (
-  tenantId: string | number,
+  tenantId: number,
   data: AddressData
 ): Promise<CustomerAddress> => {
   await ensureContact(tenantId, data.contactId);
@@ -74,14 +74,14 @@ export const createAddress = async (
       await clearDefaultAddress(tenantId, data.contactId, transaction);
     }
     return CustomerAddress.create(
-      { ...data, zipCode: normalizeZipCode(data.zipCode), tenantId },
+      { ...data, zipCode: normalizeZipCode(data.zipCode), tenantId } as LegacyAny,
       { transaction }
     );
   });
 };
 
 export const updateAddress = async (
-  tenantId: string | number,
+  tenantId: number,
   addressId: string,
   data: AddressData
 ): Promise<CustomerAddress> => {
@@ -104,7 +104,7 @@ export const updateAddress = async (
 };
 
 export const deleteAddress = async (
-  tenantId: string | number,
+  tenantId: number,
   addressId: string
 ): Promise<void> => {
   const address = await CustomerAddress.findOne({
@@ -115,12 +115,12 @@ export const deleteAddress = async (
 };
 
 export const listZones = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<DeliveryZone[]> =>
   DeliveryZone.findAll({ where: { tenantId }, order: [["name", "ASC"]] });
 
 export const createZone = async (
-  tenantId: string | number,
+  tenantId: number,
   data: ZoneData
 ): Promise<DeliveryZone> =>
   DeliveryZone.create({
@@ -128,10 +128,10 @@ export const createZone = async (
     zipCodeStart: normalizeZipCode(data.zipCodeStart),
     zipCodeEnd: normalizeZipCode(data.zipCodeEnd),
     tenantId
-  });
+  } as LegacyAny);
 
 export const updateZone = async (
-  tenantId: string | number,
+  tenantId: number,
   zoneId: string,
   data: ZoneData
 ): Promise<DeliveryZone> => {
@@ -146,7 +146,7 @@ export const updateZone = async (
 };
 
 export const deleteZone = async (
-  tenantId: string | number,
+  tenantId: number,
   zoneId: string
 ): Promise<void> => {
   const zone = await DeliveryZone.findOne({ where: { id: zoneId, tenantId } });
@@ -155,7 +155,7 @@ export const deleteZone = async (
 };
 
 export const resolveZone = async (
-  tenantId: string | number,
+  tenantId: number,
   district?: string,
   zipCode?: string
 ): Promise<DeliveryZone> => {

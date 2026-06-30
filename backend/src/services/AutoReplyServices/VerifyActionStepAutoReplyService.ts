@@ -18,7 +18,7 @@ const VerifyActionStepAutoReplyService = async (
     where: {
       stepReplyId: stepAutoReplyId,
       // words: msg
-      words: where(fn("lower", col("words")), fn("lower", msg))
+      words: where(fn("lower", col("words")), fn("lower", msg)) as LegacyAny
     },
     include: [
       {

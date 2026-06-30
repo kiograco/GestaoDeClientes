@@ -1,4 +1,4 @@
-import sequelize from "../../database";
+﻿import sequelize from "../../database";
 import AppError from "../../errors/AppError";
 import Product from "../../models/Product";
 import ProductCategory from "../../models/ProductCategory";
@@ -47,22 +47,22 @@ const productInclude = [
 ];
 
 export const listCategories = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<ProductCategory[]> =>
   ProductCategory.findAll({ where: { tenantId }, order: [["name", "ASC"]] });
 
 export const createCategory = async (
-  tenantId: string | number,
+  tenantId: number,
   data: CategoryData
 ): Promise<ProductCategory> =>
   ProductCategory.create({
     ...data,
     name: data.name.trim(),
     tenantId
-  });
+  } as LegacyAny);
 
 export const updateCategory = async (
-  tenantId: string | number,
+  tenantId: number,
   categoryId: string,
   data: CategoryData
 ): Promise<ProductCategory> => {
@@ -76,7 +76,7 @@ export const updateCategory = async (
 };
 
 export const deleteCategory = async (
-  tenantId: string | number,
+  tenantId: number,
   categoryId: string
 ): Promise<void> => {
   const category = await ProductCategory.findOne({
@@ -90,7 +90,7 @@ export const deleteCategory = async (
 };
 
 export const listProducts = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<Product[]> =>
   Product.findAll({
     where: { tenantId },
@@ -99,7 +99,7 @@ export const listProducts = async (
   });
 
 const ensureCategory = async (
-  tenantId: string | number,
+  tenantId: number,
   categoryId: number
 ): Promise<void> => {
   const category = await ProductCategory.findOne({
@@ -110,14 +110,14 @@ const ensureCategory = async (
 
 const createOptionGroups = async (
   product: Product,
-  tenantId: string | number,
+  tenantId: number,
   optionGroups: OptionGroupData[],
   transaction: LegacyAny
 ): Promise<void> => {
   await Promise.all(
     optionGroups.map(async groupData => {
       const group = await ProductOptionGroup.create(
-        { ...groupData, productId: product.id, tenantId },
+        { ...groupData, productId: product.id, tenantId } as LegacyAny,
         { transaction }
       );
       if (groupData.options?.length) {
@@ -135,7 +135,7 @@ const createOptionGroups = async (
 };
 
 export const createProduct = async (
-  tenantId: string | number,
+  tenantId: number,
   data: ProductData
 ): Promise<Product> => {
   await ensureCategory(tenantId, data.categoryId);
@@ -143,7 +143,7 @@ export const createProduct = async (
 
   const product = await sequelize.transaction(async transaction => {
     const created = await Product.create(
-      { ...productData, tenantId },
+      { ...productData, tenantId } as LegacyAny,
       { transaction }
     );
     await createOptionGroups(created, tenantId, optionGroups, transaction);
@@ -157,7 +157,7 @@ export const createProduct = async (
 };
 
 export const updateProduct = async (
-  tenantId: string | number,
+  tenantId: number,
   productId: string,
   data: ProductData
 ): Promise<Product> => {
@@ -193,7 +193,7 @@ export const updateProduct = async (
 };
 
 export const deleteProduct = async (
-  tenantId: string | number,
+  tenantId: number,
   productId: string
 ): Promise<void> => {
   const product = await Product.findOne({ where: { id: productId, tenantId } });

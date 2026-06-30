@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+﻿import { Op } from "sequelize";
 import AppError from "../../errors/AppError";
 import Contact from "../../models/Contact";
 import ContactTag from "../../models/ContactTag";
@@ -7,7 +7,7 @@ import Tag from "../../models/Tag";
 interface Request {
   tags: number[] | string[];
   contactId: string;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 interface ContactTagData {
@@ -64,7 +64,7 @@ const UpdateContactService = async ({
     tenantId
   }));
 
-  await ContactTag.bulkCreate(contactTags);
+  await ContactTag.bulkCreate(contactTags as LegacyAny);
 
   await contact.reload({
     attributes: ["id", "name", "number", "email", "profilePicUrl"],

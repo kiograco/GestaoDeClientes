@@ -1,4 +1,4 @@
-import { setMinutes, setHours, parseISO } from "date-fns";
+﻿import { setMinutes, setHours, parseISO } from "date-fns";
 import AppError from "../../errors/AppError";
 import Campaign from "../../models/Campaign";
 import { logger } from "../../utils/logger";
@@ -26,7 +26,7 @@ interface Request {
   campaignData: CampaignData;
   medias?: Express.Multer.File[];
   campaignId: string | number;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const UpdateCampaignService = async ({

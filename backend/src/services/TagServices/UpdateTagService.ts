@@ -1,11 +1,11 @@
-import AppError from "../../errors/AppError";
+﻿import AppError from "../../errors/AppError";
 import Tag from "../../models/Tag";
 
 interface TagData {
   tag: string;
   color: string;
   isActive: boolean;
-  userId: number;
+  userId: string | number;
   tenantId: number | string;
 }
 

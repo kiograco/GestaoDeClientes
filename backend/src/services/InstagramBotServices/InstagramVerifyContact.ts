@@ -1,4 +1,4 @@
-import { DirectThreadFeedResponse } from "instagram-private-api";
+﻿import { DirectThreadFeedResponse } from "instagram-private-api";
 import { IgApiClientMQTT } from "instagram_mqtt";
 import Contact from "../../models/Contact";
 import CreateOrUpdateContactService from "../ContactServices/CreateOrUpdateContactService";
@@ -28,7 +28,7 @@ interface Session extends IgApiClientMQTT {
 const InstagramVerifyContact = async (
   threadData: DirectThreadFeedResponse,
   instaBot: Session,
-  tenantId: string | number
+  tenantId: number
 ): Promise<Contact> => {
   let profilePicUrl;
   let user;

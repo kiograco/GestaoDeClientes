@@ -51,7 +51,7 @@ const UpsertMessageAPIService = async ({
       messageWA,
       apiConfig,
       tenantId
-    });
+    } as LegacyAny);
     message = await messageExists.reload();
   } else {
     message = await ApiMessage.create({
@@ -67,7 +67,7 @@ const UpsertMessageAPIService = async ({
       messageWA,
       apiConfig,
       tenantId
-    });
+    } as LegacyAny);
   }
 
   if (!message) {

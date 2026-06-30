@@ -1,9 +1,9 @@
-import { Sequelize } from "sequelize-typescript";
+﻿import { Sequelize } from "sequelize-typescript";
 import Campaign from "../../models/Campaign";
 import CampaignContacts from "../../models/CampaignContacts";
 
 interface Request {
-  tenantId: string | number;
+  tenantId: number;
   isActive?: string | boolean | null;
 }
 

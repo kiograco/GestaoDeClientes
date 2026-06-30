@@ -73,7 +73,7 @@ const AdminCreateTenantService = async (data: Request): Promise<Tenant> => {
         maxConnections: data.maxConnections || 5,
         businessType: data.businessType || "generic",
         enabledModules: { delivery: data.businessType === "food_delivery" }
-      },
+      } as LegacyAny,
       { transaction }
     );
 
@@ -86,7 +86,7 @@ const AdminCreateTenantService = async (data: Request): Promise<Tenant> => {
         tenantId: tenant.id,
         status: "offline",
         isOnline: false
-      },
+      } as LegacyAny,
       { transaction }
     );
 
@@ -96,7 +96,7 @@ const AdminCreateTenantService = async (data: Request): Promise<Tenant> => {
         key,
         value,
         tenantId: tenant.id
-      })),
+      })) as LegacyAny,
       { transaction }
     );
 

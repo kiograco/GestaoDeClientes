@@ -1,10 +1,10 @@
-import { QueryTypes } from "sequelize";
+﻿import { QueryTypes } from "sequelize";
 import sequelize from "../../database";
 
 interface Request {
   startDate: string;
   endDate: string;
-  tenantId: string | number;
+  tenantId: number;
   userId: string | number;
   userProfile: string;
 }

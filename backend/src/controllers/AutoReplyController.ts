@@ -1,4 +1,4 @@
-import * as Yup from "yup";
+﻿import * as Yup from "yup";
 import { Request, Response } from "express";
 
 import CreateAutoReplyService from "../services/AutoReplyServices/CreateAutoReplyService";
@@ -10,7 +10,7 @@ import DeleteAutoReplyService from "../services/AutoReplyServices/DeleteAutoRepl
 interface AutoReplyData {
   name: string;
   action: number;
-  userId: number;
+  userId: string | number;
   isActive: boolean;
   celularTeste?: string;
   tenantId: number | string;

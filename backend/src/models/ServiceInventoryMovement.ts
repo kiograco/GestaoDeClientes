@@ -1,4 +1,4 @@
-import {
+﻿import {
   Table,
   Column,
   CreatedAt,
@@ -61,7 +61,7 @@ class ServiceInventoryMovement extends Model<ServiceInventoryMovement> {
 
   @ForeignKey(() => User)
   @Column
-  userId: number;
+  userId: string | number;
 
   @BelongsTo(() => User)
   user: User;

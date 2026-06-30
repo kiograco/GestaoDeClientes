@@ -85,7 +85,7 @@ const CreateBillingPaymentService = async ({
       gateway: "asaas",
       externalCustomerId,
       status: "pending"
-    });
+    } as LegacyAny);
   } else {
     await subscription.update({
       planId,
@@ -137,7 +137,7 @@ const CreateBillingPaymentService = async ({
       requestedMethod: method,
       pixUnavailableReason
     }
-  });
+  } as LegacyAny);
 
   // TODO: Pix Automático requires controlled Asaas access. Keep one charge per renewal for now.
   if (effectiveMethod === "PIX") {

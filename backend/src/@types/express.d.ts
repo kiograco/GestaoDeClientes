@@ -3,7 +3,7 @@ declare namespace Express {
     user: {
       id: string;
       profile: string;
-      tenantId: string | number;
+      tenantId: number;
       permissions?: string[];
     };
     APIAuth: { apiId: string; sessionId: number; tenantId: number };

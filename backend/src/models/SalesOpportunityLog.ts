@@ -1,4 +1,4 @@
-import {
+﻿import {
   Table,
   Column,
   CreatedAt,
@@ -29,7 +29,7 @@ class SalesOpportunityLog extends Model<SalesOpportunityLog> {
 
   @ForeignKey(() => User)
   @Column
-  userId: number;
+  userId: string | number;
 
   @BelongsTo(() => User)
   user: User;

@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+﻿import { Op } from "sequelize";
 import socketEmit from "../../helpers/socketEmit";
 import Contact from "../../models/Contact";
 import Message from "../../models/Message";
@@ -6,7 +6,7 @@ import Ticket from "../../models/Ticket";
 
 const MessengerMarkRead = async (
   messageObj: LegacyAny,
-  tenantId: string | number
+  tenantId: number
 ): Promise<void> => {
   const messages = await Message.findAll({
     where: {

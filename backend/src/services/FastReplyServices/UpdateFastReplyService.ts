@@ -1,10 +1,10 @@
-import AppError from "../../errors/AppError";
+﻿import AppError from "../../errors/AppError";
 import FastReply from "../../models/FastReply";
 
 interface FastReplyData {
   key: string;
   message: string;
-  userId: number;
+  userId: string | number;
   tenantId: number | string;
 }
 

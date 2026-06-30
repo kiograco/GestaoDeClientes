@@ -1,7 +1,7 @@
-import Tag from "../../models/Tag";
+﻿import Tag from "../../models/Tag";
 
 interface Request {
-  tenantId: string | number;
+  tenantId: number;
   isActive?: string | boolean | null;
 }
 

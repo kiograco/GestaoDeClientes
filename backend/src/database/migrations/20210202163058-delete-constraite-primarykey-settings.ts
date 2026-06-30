@@ -9,7 +9,8 @@ module.exports = {
 
   down: (queryInterface: QueryInterface) => {
     return Promise.all([
-      queryInterface.addConstraint("Settings", ["key"], {
+      queryInterface.addConstraint("Settings", {
+        fields: ["key"],
         name: "Settings_pkey",
         type: "unique"
       })

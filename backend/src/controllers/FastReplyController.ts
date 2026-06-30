@@ -1,4 +1,4 @@
-import * as Yup from "yup";
+﻿import * as Yup from "yup";
 import { Request, Response } from "express";
 import AppError from "../errors/AppError";
 
@@ -10,7 +10,7 @@ import UpdateFastReplyService from "../services/FastReplyServices/UpdateFastRepl
 interface FastReplyData {
   key: string;
   message: string;
-  userId: number;
+  userId: string | number;
   tenantId: number | string;
 }
 

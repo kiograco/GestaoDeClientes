@@ -55,7 +55,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     });
     await NotifyDeliveryOrderStatusService(
       req.user.tenantId,
-      req.user.id,
+      Number(req.user.id),
       order
     );
   }
@@ -86,7 +86,7 @@ export const updateStatus = async (
     });
     await NotifyDeliveryOrderStatusService(
       req.user.tenantId,
-      req.user.id,
+      Number(req.user.id),
       order
     );
   }

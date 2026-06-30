@@ -50,7 +50,7 @@ const wbotMonitor = async (
       }
 
       try {
-        await whatsapp.update({ battery, plugged });
+        await whatsapp.update({ battery, plugged } as LegacyAny);
       } catch (err) {
         logger.error(err);
       }

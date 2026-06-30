@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+﻿import { Request, Response } from "express";
 import { Op } from "sequelize";
 // import GetWbotMessage from "../helpers/GetWbotMessage";
 import { getIO } from "../libs/socket";
@@ -30,9 +30,9 @@ type IndexQuery = {
 interface TicketData {
   contactId: number;
   status: string;
-  userId: number;
+  userId: string | number;
   isActiveDemand: boolean;
-  tenantId: string | number;
+  tenantId: number;
   channel: string;
   channelId?: number;
   attendanceTypeId?: number | null;
@@ -162,7 +162,7 @@ export const update = async (
   const ticketData: TicketData = { ...req.body, tenantId };
 
   const { ticket } = await UpdateTicketService({
-    ticketData,
+    ticketData: ticketData as LegacyAny,
     ticketId,
     isTransference,
     userIdRequest

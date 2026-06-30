@@ -1,4 +1,4 @@
-import AppError from "../../errors/AppError";
+﻿import AppError from "../../errors/AppError";
 import GetWbotMessage from "../../helpers/GetWbotMessage";
 import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
@@ -7,7 +7,7 @@ import { getIO } from "../../libs/socket";
 const DeleteWhatsAppMessage = async (
   id: string,
   messageId: string,
-  tenantId: string | number
+  tenantId: number
 ): Promise<void> => {
   if (!messageId || messageId === "null") {
     await Message.update(

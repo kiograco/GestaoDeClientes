@@ -150,7 +150,7 @@ export const createState = async (data: StateData): Promise<State> =>
     uf: data.uf.toUpperCase(),
     name: data.name,
     status: data.status || "active"
-  });
+  } as LegacyAny);
 
 export const updateState = async (
   stateId: string | number,
@@ -184,7 +184,7 @@ export const createCity = async (data: CityData): Promise<City> => {
     name: data.name,
     uf: state.uf,
     status: data.status || "active"
-  });
+  } as LegacyAny);
 };
 
 export const updateCity = async (

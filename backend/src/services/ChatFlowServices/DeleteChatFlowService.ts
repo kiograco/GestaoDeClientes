@@ -1,4 +1,4 @@
-/* eslint-disable no-restricted-syntax */
+﻿/* eslint-disable no-restricted-syntax */
 import { promisify } from "util";
 import { writeFile } from "fs";
 import ChatFlow from "../../models/ChatFlow";
@@ -8,7 +8,7 @@ const writeFileAsync = promisify(writeFile);
 
 interface Request {
   id: string | number;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const DeleteChatFlowService = async ({

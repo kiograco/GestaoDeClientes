@@ -36,7 +36,7 @@ const CreateLogTicketService = async ({
     ticketId,
     type,
     queueId
-  });
+  } as LegacyAny);
 
   // socketEmit({
   //   tenantId,

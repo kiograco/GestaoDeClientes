@@ -1,4 +1,4 @@
-import { Op, Transaction } from "sequelize";
+﻿import { Op, Transaction } from "sequelize";
 import crypto from "crypto";
 import PDFDocument from "pdfkit";
 import sequelize from "../../database";
@@ -184,7 +184,7 @@ const staleCutoffDate = (days?: number | string | null): Date => {
 };
 
 const ensureContact = async (
-  tenantId: string | number,
+  tenantId: number,
   contactId: number,
   transaction?: Transaction
 ): Promise<void> => {
@@ -196,7 +196,7 @@ const ensureContact = async (
 };
 
 const ensureOwner = async (
-  tenantId: string | number,
+  tenantId: number,
   ownerUserId?: number | null,
   transaction?: Transaction
 ): Promise<void> => {
@@ -209,7 +209,7 @@ const ensureOwner = async (
 };
 
 const ensureAttendant = async (
-  tenantId: string | number,
+  tenantId: number,
   attendantId?: number | null,
   transaction?: Transaction
 ): Promise<void> => {
@@ -227,7 +227,7 @@ const stageDates = (stage: string): Record<string, Date | null> => ({
 });
 
 const buildOpportunityPayload = (
-  tenantId: string | number,
+  tenantId: number,
   data: SalesOpportunityData
 ): Record<string, unknown> => {
   const stage = ensureStage(data.stage);
@@ -269,7 +269,7 @@ const normalizeProposalItems = (
 };
 
 const buildProposalPayload = (
-  tenantId: string | number,
+  tenantId: number,
   opportunity: SalesOpportunity,
   userId: string | number,
   data: SalesProposalData,
@@ -301,7 +301,7 @@ const buildProposalPayload = (
 };
 
 const resolveAttendanceType = async (
-  tenantId: string | number,
+  tenantId: number,
   data: {
     attendanceTypeId?: number | null;
     serviceType?: string | null;
@@ -329,7 +329,7 @@ const resolveAttendanceType = async (
 };
 
 const buildPerformanceGoalPayload = (
-  tenantId: string | number,
+  tenantId: number,
   data: PerformanceGoalData
 ): Record<string, unknown> => {
   const roleType = ensureRoleType(data.roleType);
@@ -368,13 +368,13 @@ const logOpportunity = async (
       description,
       oldValue,
       newValue
-    },
+    } as LegacyAny,
     { transaction }
   );
 };
 
 const loadOpportunity = async (
-  tenantId: string | number,
+  tenantId: number,
   opportunityId: string | number
 ): Promise<SalesOpportunity> => {
   const opportunity = await SalesOpportunity.findOne({
@@ -387,7 +387,7 @@ const loadOpportunity = async (
 };
 
 export const listOpportunities = async (
-  tenantId: string | number,
+  tenantId: number,
   filters: LegacyAny
 ): Promise<SalesOpportunity[]> => {
   const search = String(filters.search || "").trim();
@@ -421,7 +421,7 @@ export const listOpportunities = async (
 };
 
 export const getDashboard = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<Record<string, unknown>> => {
   const opportunities = await SalesOpportunity.findAll({
     where: { tenantId },
@@ -481,12 +481,12 @@ export const getDashboard = async (
 };
 
 export const showOpportunity = (
-  tenantId: string | number,
+  tenantId: number,
   opportunityId: string
 ): Promise<SalesOpportunity> => loadOpportunity(tenantId, opportunityId);
 
 export const createOpportunity = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string | number,
   data: SalesOpportunityData
 ): Promise<SalesOpportunity> => {
@@ -512,7 +512,7 @@ export const createOpportunity = async (
 };
 
 export const updateOpportunity = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string | number,
   opportunityId: string,
   data: SalesOpportunityData
@@ -552,7 +552,7 @@ export const updateOpportunity = async (
 };
 
 const loadProposal = async (
-  tenantId: string | number,
+  tenantId: number,
   proposalId: string | number
 ): Promise<SalesProposal> => {
   const proposal = await SalesProposal.findOne({
@@ -574,7 +574,7 @@ const loadProposal = async (
 };
 
 export const listProposals = async (
-  tenantId: string | number,
+  tenantId: number,
   opportunityId: string
 ): Promise<SalesProposal[]> => {
   await loadOpportunity(tenantId, opportunityId);
@@ -594,7 +594,7 @@ export const listProposals = async (
 };
 
 export const createProposal = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string | number,
   opportunityId: string,
   data: SalesProposalData
@@ -622,7 +622,7 @@ export const createProposal = async (
           attendanceType
         ),
         publicToken: publicToken()
-      },
+      } as LegacyAny,
       { transaction }
     );
     await opportunity.update(
@@ -644,7 +644,7 @@ export const createProposal = async (
 };
 
 export const updateProposal = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string | number,
   proposalId: string,
   data: SalesProposalData
@@ -694,7 +694,7 @@ export const updateProposal = async (
 };
 
 export const listStaleOpportunities = async (
-  tenantId: string | number,
+  tenantId: number,
   filters: LegacyAny = {}
 ): Promise<SalesOpportunity[]> =>
   SalesOpportunity.findAll({
@@ -708,7 +708,7 @@ export const listStaleOpportunities = async (
   });
 
 export const runAutomaticFollowUps = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string | number,
   data: FollowUpData = {}
 ): Promise<Record<string, unknown>> => {
@@ -825,7 +825,7 @@ export const approvePortalProposal = async (
         description: "Proposta aprovada no portal do cliente",
         oldValue: null,
         newValue: { proposalId: current.id, approvedAt: current.approvedAt }
-      },
+      } as LegacyAny,
       { transaction }
     );
     return current;
@@ -853,7 +853,7 @@ export const showPortalServiceOrder = async (
 };
 
 export const listPerformanceGoals = async (
-  tenantId: string | number,
+  tenantId: number,
   filters: LegacyAny = {}
 ): Promise<PerformanceGoal[]> => {
   const goals = await PerformanceGoal.findAll({
@@ -881,7 +881,7 @@ export const listPerformanceGoals = async (
 };
 
 export const savePerformanceGoal = async (
-  tenantId: string | number,
+  tenantId: number,
   data: PerformanceGoalData
 ): Promise<PerformanceGoal> => {
   const payload = buildPerformanceGoalPayload(tenantId, data);
@@ -913,7 +913,7 @@ export const savePerformanceGoal = async (
 };
 
 export const getPerformanceGoalsDashboard = async (
-  tenantId: string | number,
+  tenantId: number,
   filters: LegacyAny = {}
 ): Promise<Record<string, unknown>> => {
   const periodMonth = normalizePeriodMonth(
@@ -999,7 +999,7 @@ export const getPerformanceGoalsDashboard = async (
 };
 
 export async function generateProposalDocument(
-  tenantId: string | number,
+  tenantId: number,
   proposalId: string
 ): Promise<Buffer> {
   const proposal = await loadProposal(tenantId, proposalId);
@@ -1131,7 +1131,7 @@ export const generatePortalProposalDocument = async (
 };
 
 export const convertProposalToServiceOrder = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string | number,
   proposalId: string,
   data: ConvertOpportunityData
@@ -1184,11 +1184,11 @@ export const convertProposalToServiceOrder = async (
         internalObservation:
           cleanText(data.internalObservation) ||
           `Gerada pela proposta #${proposal.id}`
-      },
+      } as LegacyAny,
       { transaction }
     );
     await ServiceOrderItem.bulkCreate(
-      (proposal.items || []).map(item => ({
+      (proposal.items || [] as LegacyAny).map(item => ({
         tenantId,
         serviceOrderId: order.id,
         itemType: "service",
@@ -1233,7 +1233,7 @@ export const convertProposalToServiceOrder = async (
 };
 
 export const convertOpportunityToServiceOrder = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string | number,
   opportunityId: string,
   data: ConvertOpportunityData
@@ -1281,7 +1281,7 @@ export const convertOpportunityToServiceOrder = async (
         internalObservation:
           cleanText(data.internalObservation) ||
           `Gerada pela oportunidade #${opportunity.id}`
-      },
+      } as LegacyAny,
       { transaction }
     );
     await opportunity.update(

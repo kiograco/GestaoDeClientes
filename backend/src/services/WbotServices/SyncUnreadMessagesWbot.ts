@@ -29,7 +29,7 @@ const SyncUnreadMessagesWbot = async (
             return;
           }
           const chatContact = await chat.getContact();
-          const contact = await VerifyContact(chatContact, tenantId);
+          const contact = await VerifyContact(chatContact, Number(tenantId));
           const ticket = await FindOrCreateTicketService({
             contact,
             whatsappId: wbot.id!,

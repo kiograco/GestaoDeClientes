@@ -1,10 +1,10 @@
-// import AppError from "../../errors/AppError";
+﻿// import AppError from "../../errors/AppError";
 import FastReply from "../../models/FastReply";
 
 interface Request {
   key: string;
   message: string;
-  userId: number;
+  userId: string | number;
   tenantId: number | string;
 }
 
@@ -19,7 +19,7 @@ const CreateFastReplyService = async ({
     message,
     userId,
     tenantId
-  });
+  } as LegacyAny);
 
   return fastReplyData;
 };

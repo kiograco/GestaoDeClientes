@@ -1,4 +1,4 @@
-import { writeFile } from "fs";
+﻿import { writeFile } from "fs";
 import { promisify } from "util";
 import { join } from "path";
 import { logger } from "../../utils/logger";
@@ -30,7 +30,7 @@ interface MessageRequest {
 
 interface Request {
   msg: MessageRequest;
-  tenantId: string | number;
+  tenantId: number;
   medias?: Express.Multer.File[];
   ticket: Ticket;
   userId: number | string;
@@ -128,7 +128,7 @@ const CreateMessageOffilineService = async ({
       const msgCreated = await MessageOffLine.create({
         ...messageData,
         mediaType: "chat"
-      });
+      } as LegacyAny);
 
       const messageCreated = await MessageOffLine.findByPk(msgCreated.id, {
         include: [

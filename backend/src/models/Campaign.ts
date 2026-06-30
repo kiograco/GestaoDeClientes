@@ -1,4 +1,4 @@
-import {
+﻿import {
   Table,
   Column,
   Model,
@@ -61,7 +61,7 @@ class Campaign extends Model<Campaign> {
 
   @ForeignKey(() => User)
   @Column
-  userId: number;
+  userId: string | number;
 
   @BelongsTo(() => User)
   user: User;

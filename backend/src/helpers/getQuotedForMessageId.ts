@@ -1,8 +1,8 @@
-import Message from "../models/Message";
+﻿import Message from "../models/Message";
 
 const getQuotedForMessageId = async (
   messageId: string,
-  tenantId: string | number
+  tenantId: number
 ): Promise<Message | null> => {
   const message = await Message.findOne({
     where: {

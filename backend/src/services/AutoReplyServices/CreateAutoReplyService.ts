@@ -1,10 +1,10 @@
-// import AppError from "../../errors/AppError";
+﻿// import AppError from "../../errors/AppError";
 import AutoReply from "../../models/AutoReply";
 
 interface Request {
   name: string;
   action: number;
-  userId: number;
+  userId: string | number;
   tenantId: number | string;
 }
 
@@ -19,7 +19,7 @@ const CreateAutoReplyService = async ({
     action,
     userId,
     tenantId
-  });
+  } as LegacyAny);
 
   return autoReply;
 };

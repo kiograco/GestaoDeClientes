@@ -5,6 +5,7 @@
     "outDir": "./dist",
     "strict": true,
     "noImplicitAny": false,
+    "strictNullChecks": false,
     "strictPropertyInitialization": false,
     "esModuleInterop": true,
     "experimentalDecorators": true,

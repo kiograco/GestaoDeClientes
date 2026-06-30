@@ -1,4 +1,4 @@
-import * as Yup from "yup";
+﻿import * as Yup from "yup";
 import { Request, Response } from "express";
 import AppError from "../errors/AppError";
 
@@ -10,7 +10,7 @@ import UpdateQueueService from "../services/QueueServices/UpdateQueueService";
 interface QueueData {
   queue: string;
   isActive: boolean;
-  userId: number;
+  userId: string | number;
   tenantId: number | string;
 }
 

@@ -1,10 +1,10 @@
-import { Contact as WbotContact } from "whatsapp-web.js";
+﻿import { Contact as WbotContact } from "whatsapp-web.js";
 import Contact from "../../../models/Contact";
 import CreateOrUpdateContactService from "../../ContactServices/CreateOrUpdateContactService";
 
 const VerifyContact = async (
   msgContact: WbotContact,
-  tenantId: string | number
+  tenantId: number
 ): Promise<Contact> => {
   let profilePicUrl;
   try {

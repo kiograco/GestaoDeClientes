@@ -1,4 +1,4 @@
-import * as Yup from "yup";
+﻿import * as Yup from "yup";
 import { Op } from "sequelize";
 
 import AppError from "../../errors/AppError";
@@ -27,7 +27,7 @@ interface UserData {
 interface Request {
   userData: UserData;
   userId: string | number;
-  tenantId: string | number;
+  tenantId: number;
   requestUserId?: string | number;
 }
 

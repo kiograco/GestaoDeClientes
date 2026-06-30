@@ -1,4 +1,4 @@
-import AppError from "../../errors/AppError";
+﻿import AppError from "../../errors/AppError";
 import GetDefaultWhatsApp from "../../helpers/GetDefaultWhatsApp";
 import { getWbot } from "../../libs/wbot";
 import { logger } from "../../utils/logger";
@@ -6,7 +6,7 @@ import { logger } from "../../utils/logger";
 
 const CheckIsValidContact = async (
   number: string,
-  tenantId: string | number
+  tenantId: number
 ): Promise<LegacyAny> => {
   const defaultWhatsapp = await GetDefaultWhatsApp(tenantId);
 

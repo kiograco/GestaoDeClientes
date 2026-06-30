@@ -1,4 +1,4 @@
-import AppError from "../../errors/AppError";
+﻿import AppError from "../../errors/AppError";
 import { getIO } from "../../libs/socket";
 import Whatsapp from "../../models/Whatsapp";
 import { logger } from "../../utils/logger";
@@ -7,7 +7,7 @@ interface Request {
   name: string;
   status?: string;
   isDefault?: boolean;
-  tenantId: string | number;
+  tenantId: number;
   wabaBSP?: string;
   tokenAPI?: string;
   fbPageId?: string;
@@ -72,7 +72,7 @@ const CreateWhatsAppService = async ({
       tokenAPI,
       fbPageId,
       farewellMessage
-    });
+    } as LegacyAny);
     const io = getIO();
     io.emit(`${tenantId}:whatsapp`, {
       action: "update",

@@ -1,10 +1,10 @@
-import AppError from "../../errors/AppError";
+﻿import AppError from "../../errors/AppError";
 import Setting from "../../models/Setting";
 
 interface Request {
   key: string;
   value: string;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const UpdateSettingService = async ({

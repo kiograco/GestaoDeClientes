@@ -1,4 +1,4 @@
-import {
+﻿import {
   Table,
   Column,
   CreatedAt,
@@ -30,7 +30,7 @@ class FastReply extends Model<FastReply> {
 
   @ForeignKey(() => User)
   @Column
-  userId: number;
+  userId: string | number;
 
   @BelongsTo(() => User)
   user: User;

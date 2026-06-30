@@ -1,4 +1,4 @@
-import AppError from "../../errors/AppError";
+﻿import AppError from "../../errors/AppError";
 import CheckContactOpenTickets from "../../helpers/CheckContactOpenTickets";
 import GetDefaultWhatsApp from "../../helpers/GetDefaultWhatsApp";
 import socketEmit from "../../helpers/socketEmit";
@@ -11,8 +11,8 @@ import ShowTicketService from "./ShowTicketService";
 interface Request {
   contactId: number;
   status: string;
-  userId: number;
-  tenantId: string | number;
+  userId: string | number;
+  tenantId: number;
   channel: string;
   channelId?: number;
   attendanceTypeId?: number | null;

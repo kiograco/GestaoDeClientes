@@ -1,11 +1,11 @@
-// import AppError from "../../errors/AppError";
+﻿// import AppError from "../../errors/AppError";
 import StepsReplyAction from "../../../models/StepsReplyAction";
 
 interface Request {
   stepReplyId: number;
   words: string;
   action: number;
-  userId: number;
+  userId: string | number;
   queueId?: number;
   userIdDestination?: number;
   nextStepId?: number;
@@ -31,7 +31,7 @@ const CreateStepsReplyActionService = async ({
     userIdDestination,
     nextStepId,
     replyDefinition
-  });
+  } as LegacyAny);
 
   return stepsReplyAction;
 };

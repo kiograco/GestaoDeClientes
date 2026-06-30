@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+﻿import { Op } from "sequelize";
 import AppError from "../../errors/AppError";
 import Contact from "../../models/Contact";
 import ContactWallet from "../../models/ContactWallet";
@@ -7,7 +7,7 @@ import User from "../../models/User";
 interface Request {
   wallets: number[] | string[];
   contactId: string;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 interface Wallet {
@@ -66,7 +66,7 @@ const UpdateContactWalletsService = async ({
     tenantId
   }));
 
-  await ContactWallet.bulkCreate(contactWallets);
+  await ContactWallet.bulkCreate(contactWallets as LegacyAny);
 
   await contact.reload({
     attributes: ["id", "name", "number", "email", "profilePicUrl"],

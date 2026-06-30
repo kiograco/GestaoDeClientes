@@ -1,4 +1,4 @@
-import { differenceInHours, parseJSON } from "date-fns";
+﻿import { differenceInHours, parseJSON } from "date-fns";
 import Message from "../models/Message";
 import Ticket from "../models/Ticket";
 import { getTbot } from "../libs/tbot";
@@ -10,7 +10,7 @@ import { getIO } from "../libs/socket";
 const DeleteMessageSystem = async (
   id: string,
   messageId: string,
-  tenantId: string | number
+  tenantId: number
 ): Promise<void> => {
   const message = await Message.findOne({
     where: { id },

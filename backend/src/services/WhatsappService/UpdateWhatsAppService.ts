@@ -1,4 +1,4 @@
-import * as Yup from "yup";
+﻿import * as Yup from "yup";
 import { Op } from "sequelize";
 
 import AppError from "../../errors/AppError";
@@ -28,7 +28,7 @@ interface WhatsappData {
 interface Request {
   whatsappData: WhatsappData;
   whatsappId: string;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 interface Response {

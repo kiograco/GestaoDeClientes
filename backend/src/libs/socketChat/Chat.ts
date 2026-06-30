@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-types */
+﻿/* eslint-disable @typescript-eslint/ban-types */
 /* eslint-disable no-prototype-builtins */
 import { Socket } from "socket.io";
 import {
@@ -177,7 +177,7 @@ const SpawnOpenChatWindows = (socket: Socket) => {
 };
 
 const spawnChatWindow = (socket: Socket) => {
-  socket.on("spawnChatWindow", async (userId: number) => {
+  socket.on("spawnChatWindow", async (userId: string | number) => {
     const { tenantId } = socket.handshake.auth.user;
     // Get user
     const user = await User.findOne({

@@ -1,4 +1,4 @@
-import * as Yup from "yup";
+﻿import * as Yup from "yup";
 
 import AppError from "../../errors/AppError";
 import {
@@ -12,7 +12,7 @@ interface Request {
   email: string;
   password: string;
   name: string;
-  tenantId: string | number;
+  tenantId: number;
   profile?: string;
 }
 
@@ -64,7 +64,7 @@ const CreateUserService = async ({
     name,
     profile,
     tenantId
-  });
+  } as LegacyAny);
 
   const serializedUser = {
     id: user.id,

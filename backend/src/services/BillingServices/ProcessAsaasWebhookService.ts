@@ -42,7 +42,7 @@ const ProcessAsaasWebhookService = async (
       externalEventId,
       eventType: payload.event,
       externalPaymentId,
-      rawPayload: payload
+      rawPayload: payload as unknown as Record<string, unknown>
     }
   });
   if (webhookEvent.processedAt || !externalPaymentId) return;
@@ -76,7 +76,7 @@ const ProcessAsaasWebhookService = async (
                 oldStatus,
                 newStatus: "CONFIRMED",
                 changedBy: null
-              },
+              } as LegacyAny,
               { transaction }
             );
             updatedOrder = orderPayment.order;

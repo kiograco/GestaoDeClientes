@@ -1,4 +1,4 @@
-import { Op, Filterable } from "sequelize";
+﻿import { Op, Filterable } from "sequelize";
 import { parseISO, startOfDay, endOfDay } from "date-fns";
 import Ticket from "../../models/Ticket";
 import UsersQueues from "../../models/UsersQueues";
@@ -12,7 +12,7 @@ interface Request {
   status?: string[];
   userId: string;
   queuesIds?: string[];
-  tenantId: string | number;
+  tenantId: number;
   showAll?: string | boolean;
 }
 

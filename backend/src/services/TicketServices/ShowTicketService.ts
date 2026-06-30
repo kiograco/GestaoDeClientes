@@ -1,4 +1,4 @@
-import Ticket from "../../models/Ticket";
+﻿import Ticket from "../../models/Ticket";
 import AppError from "../../errors/AppError";
 import Contact from "../../models/Contact";
 import User from "../../models/User";
@@ -6,7 +6,7 @@ import AttendanceType from "../../models/AttendanceType";
 
 interface Request {
   id: string | number;
-  tenantId: string | number;
+  tenantId: number;
 }
 const ShowTicketService = async ({
   id,

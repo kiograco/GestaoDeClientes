@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+﻿import { Request, Response } from "express";
 import * as Yup from "yup";
 import AppError from "../errors/AppError";
 import EnsureDeliveryModule from "../helpers/EnsureDeliveryModule";
@@ -40,7 +40,7 @@ const validate = async (schema: LegacyAny, data: LegacyAny) => {
 };
 
 const emitOrder = (
-  tenantId: string | number,
+  tenantId: number,
   action: string,
   order: LegacyAny
 ) => {
@@ -94,6 +94,6 @@ export const updateStatus = async (
     status
   );
   emitOrder(req.user.tenantId, "update", order);
-  await NotifyDeliveryOrderStatusService(req.user.tenantId, req.user.id, order);
+  await NotifyDeliveryOrderStatusService(req.user.tenantId, Number(req.user.id), order);
   return res.json(order);
 };

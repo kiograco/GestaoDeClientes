@@ -69,7 +69,7 @@ const CreateCampaignContactsService = async ({
   }
 
   try {
-    await CampaignContacts.bulkCreate(filterData);
+    await CampaignContacts.bulkCreate(filterData as LegacyAny);
   } catch (error) {
     throw new AppError(error.message);
   }

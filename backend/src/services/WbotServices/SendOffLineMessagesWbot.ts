@@ -57,7 +57,7 @@ const SendOffLineMessagesWbot = async (
                 messageId: sendMessage.id.id,
                 userId: message.userId,
                 ticketId: message.ticketId
-              });
+              } as LegacyAny);
             }
           } catch (error) {
             logger.error(`Error criar log mensagem ${error}`);

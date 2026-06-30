@@ -30,7 +30,7 @@ const UpdateBusinessHoursService = async ({
 
   await tenantModel.update({
     businessHours
-  });
+  } as LegacyAny);
 
   await tenantModel.reload({
     attributes: ["businessHours", "messageBusinessHours"]

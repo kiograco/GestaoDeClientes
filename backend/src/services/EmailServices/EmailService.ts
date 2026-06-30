@@ -1,4 +1,4 @@
-import path from "path";
+﻿import path from "path";
 import * as Yup from "yup";
 import EmailLog from "../../models/EmailLog";
 import Tenant from "../../models/Tenant";
@@ -13,7 +13,7 @@ const DEFAULT_REPLY_TO = "atendimento@ebenezersaudeambiental.com.br";
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 
 export interface SendEmailData {
-  tenantId: string | number;
+  tenantId: number;
   to: string;
   subject: string;
   template: EmailTemplateName;
@@ -103,7 +103,7 @@ export const sendEmail = async (data: SendEmailData): Promise<string> => {
         status: providerMessageId ? "sent" : "failed",
         providerMessageId,
         errorMessage: errorMessage?.slice(0, 2000) || null
-      });
+      } as LegacyAny);
     } catch (logError) {
       logger.error(`Email log persistence failed: ${logError}`);
     }
@@ -111,7 +111,7 @@ export const sendEmail = async (data: SendEmailData): Promise<string> => {
 };
 
 export const sendPasswordRecovery = async (
-  tenantId: string | number,
+  tenantId: number,
   email: string,
   resetUrl: string
 ): Promise<string> =>

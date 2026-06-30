@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 import { Op } from "sequelize";
 import sequelize from "../../database";
 import AppError from "../../errors/AppError";
@@ -106,7 +106,7 @@ const clientInclude = [
 ];
 
 const findClient = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: string
 ): Promise<Client> => {
   const client = await Client.findOne({
@@ -128,7 +128,7 @@ const findClient = async (
 };
 
 const ensureUniqueDocument = async (
-  tenantId: string | number,
+  tenantId: number,
   document?: string | null,
   clientId?: string
 ) => {
@@ -145,7 +145,7 @@ const ensureUniqueDocument = async (
 };
 
 const addressPayload = (
-  tenantId: string | number,
+  tenantId: number,
   clientId: number,
   address: AddressData
 ) => ({
@@ -165,7 +165,7 @@ const addressPayload = (
 });
 
 const contactPayload = (
-  tenantId: string | number,
+  tenantId: number,
   clientId: number,
   contact: ContactData
 ) => ({
@@ -190,7 +190,7 @@ const primaryContactData = (
 };
 
 const resolveClientContactNumber = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: number,
   preferredNumber: string | null,
   currentContactId: number | null,
@@ -225,7 +225,7 @@ const resolveClientContactNumber = async (
 };
 
 const ensureClientContact = async (
-  tenantId: string | number,
+  tenantId: number,
   client: Client,
   transaction: LegacyAny,
   data?: CustomerData
@@ -263,13 +263,13 @@ const ensureClientContact = async (
     return existingContact;
   }
 
-  const contact = await Contact.create(payload, { transaction });
+  const contact = await Contact.create(payload as LegacyAny, { transaction });
   await client.update({ contactId: contact.id }, { transaction });
   return contact;
 };
 
 const areaPayload = (
-  tenantId: string | number,
+  tenantId: number,
   clientId: number,
   addressId: number,
   area: AreaData
@@ -284,7 +284,7 @@ const areaPayload = (
 });
 
 const sectorPayload = (
-  tenantId: string | number,
+  tenantId: number,
   areaId: number,
   sector: SectorData
 ) => ({
@@ -302,7 +302,7 @@ const areaInclude = [
 ];
 
 async function deleteAreaChildren(
-  tenantId: string | number,
+  tenantId: number,
   areaIds: number[],
   transaction: LegacyAny
 ) {
@@ -318,7 +318,7 @@ async function deleteAreaChildren(
 }
 
 const syncAddresses = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: number,
   addresses: AddressData[] = [],
   transaction: LegacyAny
@@ -380,7 +380,7 @@ const syncAddresses = async (
 };
 
 const syncContacts = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: number,
   contacts: ContactData[] = [],
   syncedAddressIds: number[],
@@ -444,7 +444,7 @@ const syncContacts = async (
 };
 
 const syncAreaServices = async (
-  tenantId: string | number,
+  tenantId: number,
   areaId: number,
   services: string[] = [],
   transaction: LegacyAny
@@ -468,7 +468,7 @@ const syncAreaServices = async (
 };
 
 const syncSectors = async (
-  tenantId: string | number,
+  tenantId: number,
   areaId: number,
   sectors: SectorData[] = [],
   transaction: LegacyAny
@@ -492,7 +492,7 @@ const syncSectors = async (
       }
       await ClientSector.create(sectorPayload(tenantId, areaId, sector), {
         transaction
-      });
+      } as LegacyAny);
     })
   );
 
@@ -508,7 +508,7 @@ const syncSectors = async (
 };
 
 const syncAreas = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: number,
   areas: AreaData[] = [],
   syncedAddressIds: number[],
@@ -573,7 +573,7 @@ const syncAreas = async (
   }
 };
 
-const baseClientPayload = (tenantId: string | number, data: CustomerData) => ({
+const baseClientPayload = (tenantId: number, data: CustomerData) => ({
   tenantId,
   registrationType: data.registrationType,
   legalName: data.legalName.trim(),
@@ -587,7 +587,7 @@ const baseClientPayload = (tenantId: string | number, data: CustomerData) => ({
 });
 
 export const listCustomers = async (
-  tenantId: string | number,
+  tenantId: number,
   searchParam = ""
 ): Promise<Client[]> => {
   const search = searchParam.trim();
@@ -631,7 +631,7 @@ export const listCustomers = async (
 };
 
 export const showCustomer = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: string
 ): Promise<Client> => {
   const client = await findClient(tenantId, clientId);
@@ -643,12 +643,12 @@ export const showCustomer = async (
 };
 
 export const createCustomer = async (
-  tenantId: string | number,
+  tenantId: number,
   data: CustomerData
 ): Promise<Client> => {
   await ensureUniqueDocument(tenantId, data.document);
   const client = await sequelize.transaction(async transaction => {
-    const created = await Client.create(baseClientPayload(tenantId, data), {
+    const created = await Client.create(baseClientPayload(tenantId, data) as LegacyAny, {
       transaction
     });
     const addressIds = await syncAddresses(
@@ -672,7 +672,7 @@ export const createCustomer = async (
 };
 
 export const updateCustomer = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: string,
   data: CustomerData
 ): Promise<Client> => {
@@ -702,7 +702,7 @@ export const updateCustomer = async (
 };
 
 export const deleteCustomer = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: string
 ): Promise<void> => {
   const client = await Client.findOne({ where: { id: clientId, tenantId } });
@@ -735,7 +735,7 @@ export const deleteCustomer = async (
 };
 
 const ensureClientAddress = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: string | number,
   addressId: string | number
 ): Promise<ClientAddress> => {
@@ -747,7 +747,7 @@ const ensureClientAddress = async (
 };
 
 const showArea = async (
-  tenantId: string | number,
+  tenantId: number,
   areaId: string | number
 ): Promise<ClientArea> => {
   const area = await ClientArea.findOne({
@@ -759,7 +759,7 @@ const showArea = async (
 };
 
 export const listAreas = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: string,
   addressId?: string
 ): Promise<ClientArea[]> => {
@@ -781,7 +781,7 @@ export const listAreas = async (
 };
 
 export const createArea = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: string,
   data: AreaData
 ): Promise<ClientArea> => {
@@ -800,7 +800,7 @@ export const createArea = async (
 };
 
 export const updateArea = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: string,
   areaId: string,
   data: AreaData
@@ -823,7 +823,7 @@ export const updateArea = async (
 };
 
 export const deleteArea = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: string,
   areaId: string
 ): Promise<void> => {

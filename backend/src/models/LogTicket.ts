@@ -1,4 +1,4 @@
-import {
+﻿import {
   Table,
   Column,
   CreatedAt,
@@ -45,7 +45,7 @@ class LogTicket extends Model<LogTicket> {
   @Default(null)
   @AllowNull
   @Column
-  userId: number;
+  userId: string | number;
 
   @BelongsTo(() => User)
   user: User;

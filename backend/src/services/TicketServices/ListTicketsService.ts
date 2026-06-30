@@ -1,4 +1,4 @@
-/* eslint-disable eqeqeq */
+﻿/* eslint-disable eqeqeq */
 import { QueryTypes } from "sequelize";
 // import { startOfDay, endOfDay, parseISO } from "date-fns";
 
@@ -21,7 +21,7 @@ interface Request {
   isNotAssignedUser?: string;
   queuesIds?: string[];
   includeNotQueueDefined?: string;
-  tenantId: string | number;
+  tenantId: number;
   profile: string;
 }
 

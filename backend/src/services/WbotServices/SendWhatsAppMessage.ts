@@ -59,7 +59,7 @@ const SendWhatsAppMessage = async ({
           messageId: sendMessage.id.id,
           userId,
           ticketId: ticket.id
-        });
+        } as LegacyAny);
       }
     } catch (error) {
       logger.error(`Error criar log mensagem ${error}`);

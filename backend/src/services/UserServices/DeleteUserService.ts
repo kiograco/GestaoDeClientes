@@ -1,11 +1,11 @@
-import User from "../../models/User";
+﻿import User from "../../models/User";
 import AppError from "../../errors/AppError";
 import Ticket from "../../models/Ticket";
 import UpdateDeletedUserOpenTicketsStatus from "../../helpers/UpdateDeletedUserOpenTicketsStatus";
 
 const DeleteUserService = async (
   id: string | number,
-  tenantId: string | number,
+  tenantId: number,
   userIdRequest: string | number
 ): Promise<void> => {
   const user = await User.findOne({

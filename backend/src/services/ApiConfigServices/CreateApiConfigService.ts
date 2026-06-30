@@ -1,4 +1,4 @@
-// import AppError from "../../errors/AppError";
+﻿// import AppError from "../../errors/AppError";
 import { sign } from "jsonwebtoken";
 import ApiConfig from "../../models/ApiConfig";
 import authConfig from "../../config/auth";
@@ -10,7 +10,7 @@ interface Request {
   urlMessageStatus?: string;
   authToken?: string;
   userId: string | number;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const CreateApiConfigService = async ({
@@ -32,7 +32,7 @@ const CreateApiConfigService = async ({
     urlMessageStatus,
     userId,
     tenantId
-  });
+  } as LegacyAny);
 
   const token = sign(
     {

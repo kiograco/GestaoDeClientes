@@ -19,7 +19,7 @@ const CreateStepsReplyService = async ({
     idAutoReply,
     userId,
     initialStep
-  });
+  } as LegacyAny);
 
   return stepsReply;
 };

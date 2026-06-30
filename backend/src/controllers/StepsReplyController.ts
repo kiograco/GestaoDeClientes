@@ -1,4 +1,4 @@
-import * as Yup from "yup";
+﻿import * as Yup from "yup";
 import { Request, Response } from "express";
 
 import CreateStepsReplyService from "../services/AutoReplyServices/StepsReplyServices/CreateStepsReplyService";
@@ -9,7 +9,7 @@ import DeleteStepsReplyService from "../services/AutoReplyServices/StepsReplySer
 interface StepsReplyData {
   reply: string;
   idAutoReply: number;
-  userId: number;
+  userId: string | number;
   initialStep: boolean;
 }
 
@@ -33,7 +33,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     throw new AppError(error.message);
   }
 
-  const stepsReply = await CreateStepsReplyService(newStepsReply);
+  const stepsReply = await CreateStepsReplyService(newStepsReply as LegacyAny);
 
   return res.status(200).json(stepsReply);
 };

@@ -32,7 +32,7 @@ const AutoReplyWelcome = async (instance: Ticket): Promise<void> => {
   await instance.update({
     autoReplyId: stepAutoReply.autoReply.id,
     stepAutoReplyId: stepAutoReply.id
-  });
+  } as LegacyAny);
 
   await CreateLogTicketService({
     ticketId: instance.id,

@@ -1,10 +1,10 @@
-import AppError from "../../errors/AppError";
+﻿import AppError from "../../errors/AppError";
 import AutoReply from "../../models/AutoReply";
 
 interface AutoReplyData {
   name: string;
   action: number;
-  userId: number;
+  userId: string | number;
   isActive: boolean;
   celularTeste?: string;
 }
@@ -12,7 +12,7 @@ interface AutoReplyData {
 interface Request {
   autoReplyData: AutoReplyData;
   autoReplyId: string;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const UpdateAutoReplyService = async ({

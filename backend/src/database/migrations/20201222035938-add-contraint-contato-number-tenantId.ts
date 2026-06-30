@@ -3,7 +3,8 @@ import { QueryInterface } from "sequelize";
 module.exports = {
   up: (queryInterface: QueryInterface) => {
     return Promise.all([
-      queryInterface.addConstraint("Contacts", ["number", "tenantId"], {
+      queryInterface.addConstraint("Contacts", {
+        fields: ["number", "tenantId"],
         type: "unique",
         name: "unique_constraint_contact_number_tenant"
       })

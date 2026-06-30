@@ -1,4 +1,4 @@
-import { pupa } from "../../utils/pupa";
+﻿import { pupa } from "../../utils/pupa";
 import { logger } from "../../utils/logger";
 import Ticket from "../../models/Ticket";
 import Message from "../../models/Message";
@@ -16,7 +16,7 @@ interface MessageData {
   timestamp?: number;
   internalId?: string;
   userId?: string | number;
-  tenantId: string | number;
+  tenantId: number;
   quotedMsgId?: string;
   // status?: string;
   scheduleDate?: string | Date;
@@ -40,7 +40,7 @@ interface MessageRequest {
 
 interface Request {
   msg: MessageRequest;
-  tenantId: string | number;
+  tenantId: number;
   ticket: Ticket;
   userId?: number | string;
 }
@@ -83,7 +83,7 @@ const BuildSendMessageService = async ({
           : "chat"
       };
 
-      const msgCreated = await Message.create(message);
+      const msgCreated = await Message.create(message as LegacyAny);
 
       const messageCreated = await Message.findByPk(msgCreated.id, {
         include: [
@@ -140,7 +140,7 @@ const BuildSendMessageService = async ({
         ...messageData,
         body: msg.data.message,
         mediaType: "chat"
-      });
+      } as LegacyAny);
 
       const messageCreated = await Message.findByPk(msgCreated.id, {
         include: [

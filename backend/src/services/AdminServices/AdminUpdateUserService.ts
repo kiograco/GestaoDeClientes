@@ -1,4 +1,4 @@
-import * as Yup from "yup";
+﻿import * as Yup from "yup";
 import AppError from "../../errors/AppError";
 import {
   ADMIN_USER_PROFILES,
@@ -24,7 +24,7 @@ interface Response {
   name: string;
   email: string;
   profile: string;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const AdminUpdateUserService = async ({

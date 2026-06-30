@@ -1,10 +1,10 @@
-import AppError from "../../errors/AppError";
+﻿import AppError from "../../errors/AppError";
 import Queue from "../../models/Queue";
 
 interface QueueData {
   queue: string;
   isActive: boolean;
-  userId: number;
+  userId: string | number;
   tenantId: number | string;
 }
 

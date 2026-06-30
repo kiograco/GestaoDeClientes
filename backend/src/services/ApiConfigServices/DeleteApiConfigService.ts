@@ -1,9 +1,9 @@
-import AppError from "../../errors/AppError";
+﻿import AppError from "../../errors/AppError";
 import ApiConfig from "../../models/ApiConfig";
 
 interface Request {
   apiId: string | number;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const DeleteApiConfigService = async ({

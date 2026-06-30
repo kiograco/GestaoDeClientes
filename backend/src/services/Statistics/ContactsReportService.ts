@@ -1,4 +1,4 @@
-import { endOfDay, parseISO, startOfDay } from "date-fns";
+﻿import { endOfDay, parseISO, startOfDay } from "date-fns";
 import { Includeable, Op, Sequelize } from "sequelize";
 import Contact from "../../models/Contact";
 import Tag from "../../models/Tag";
@@ -40,11 +40,11 @@ const dddsPorEstado = [
 interface Request {
   startDate: string;
   endDate: string;
-  tenantId: string | number;
+  tenantId: number;
   tags?: number[] | string[];
   wallets?: number[] | string[];
   ddds?: number[] | string[];
-  userId: number;
+  userId: string | number;
   profile: string;
   searchParam?: string;
 }

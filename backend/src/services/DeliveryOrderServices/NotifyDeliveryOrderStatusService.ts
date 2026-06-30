@@ -1,4 +1,4 @@
-import { logger } from "../../utils/logger";
+﻿import { logger } from "../../utils/logger";
 import CreateMessageSystemService from "../MessageServices/CreateMessageSystemService";
 import ShowTicketService from "../TicketServices/ShowTicketService";
 import Order from "../../models/Order";
@@ -14,8 +14,8 @@ const statusMessages: Record<string, string> = {
 };
 
 const NotifyDeliveryOrderStatusService = async (
-  tenantId: string | number,
-  userId: string | number | undefined,
+  tenantId: number,
+  userId: number | undefined,
   order: Order
 ): Promise<void> => {
   const template = statusMessages[order.status];

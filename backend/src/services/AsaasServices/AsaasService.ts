@@ -58,7 +58,7 @@ const createClient = (): AxiosInstance => {
       "Content-Type": "application/json",
       "User-Agent": "NCProgrammers CRM"
     }
-  });
+  } as LegacyAny);
 };
 
 const requestAsaas = async <T>(request: () => Promise<T>): Promise<T> => {

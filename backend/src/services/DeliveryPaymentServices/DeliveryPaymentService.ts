@@ -1,4 +1,4 @@
-import { addDays, format } from "date-fns";
+﻿import { addDays, format } from "date-fns";
 import AppError from "../../errors/AppError";
 import Order from "../../models/Order";
 import OrderPayment from "../../models/OrderPayment";
@@ -18,7 +18,7 @@ interface CreatePaymentData {
 }
 
 export const createOrderPayment = async (
-  tenantId: string | number,
+  tenantId: number,
   orderId: string,
   data: CreatePaymentData
 ): Promise<OrderPayment> => {
@@ -37,7 +37,7 @@ export const createOrderPayment = async (
       method: data.method,
       status: "PENDING",
       amount: order.total
-    });
+    } as LegacyAny);
   }
   if (!data.customer)
     throw new AppError("ERR_ORDER_PAYMENT_CUSTOMER_REQUIRED", 400);
@@ -70,11 +70,11 @@ export const createOrderPayment = async (
     pixQrCode: pix.encodedImage,
     pixCopyPaste: pix.payload,
     rawPayload: asaasPayment
-  });
+  } as LegacyAny);
 };
 
 export const updateOrderPaymentStatus = async (
-  tenantId: string | number,
+  tenantId: number,
   paymentId: string,
   status: "PENDING" | "PAID" | "FAILED" | "REFUNDED"
 ): Promise<OrderPayment> => {

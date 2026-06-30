@@ -54,7 +54,7 @@ const SyncContactsWhatsappInstanceService = async (
         type: QueryTypes.INSERT
       });
       // await Contact.bulkCreate(dataArray, {
-      //   fields: ["number", "name", "tenantId"],
+      //   fields: ["number", "name", "tenantId"] as LegacyAny,
       //   updateOnDuplicate: ["number", "name"],
       //   logging: console.log
       // });

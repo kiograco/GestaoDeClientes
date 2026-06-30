@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+﻿import { Op } from "sequelize";
 import socketEmit from "../../helpers/socketEmit";
 import Contact from "../../models/Contact";
 import Message from "../../models/Message";
@@ -9,7 +9,7 @@ interface Request {
   message: Message;
   contact: Contact;
   userId?: number | string;
-  tenantId: string | number;
+  tenantId: number;
   ticketIdOrigin: number;
 }
 
@@ -49,7 +49,7 @@ const CreateForwardMessageService = async ({
       lastMessage: message.body,
       lastMessageAt: new Date().getTime(),
       answered: true
-    });
+    } as LegacyAny);
   }
 
   // preparar dados para criação da mensagem

@@ -17,7 +17,7 @@ const CreateAutoReplyLogService = async (
     ticketId: ticket.id,
     contactId: ticket.contactId
   };
-  const autoReplyLog = await AutoReplyLogs.create(log);
+  const autoReplyLog = await AutoReplyLogs.create(log as LegacyAny);
 
   return autoReplyLog;
 };

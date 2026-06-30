@@ -1,8 +1,8 @@
-import CampaignContacts from "../../models/CampaignContacts";
+﻿import CampaignContacts from "../../models/CampaignContacts";
 import Contact from "../../models/Contact";
 
 interface Request {
-  tenantId: string | number;
+  tenantId: number;
   campaignId: string | number;
 }
 

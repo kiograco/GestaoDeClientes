@@ -1,8 +1,8 @@
-import Tenant from "../../models/Tenant";
+﻿import Tenant from "../../models/Tenant";
 import AppError from "../../errors/AppError";
 
 interface Request {
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const ShowBusinessHoursAndMessageService = async ({

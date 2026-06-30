@@ -1,4 +1,4 @@
-import AppError from "../../errors/AppError";
+﻿import AppError from "../../errors/AppError";
 import socketEmit from "../../helpers/socketEmit";
 import Contact from "../../models/Contact";
 import ContactWallet from "../../models/ContactWallet";
@@ -20,7 +20,7 @@ interface Request {
   email?: string;
   profilePicUrl?: string;
   extraInfo?: ExtraInfo[];
-  tenantId: string | number;
+  tenantId: number;
   wallets?: null | number[] | string[];
 }
 
@@ -47,7 +47,7 @@ const CreateContactService = async ({
       email,
       extraInfo,
       tenantId
-    },
+    } as LegacyAny,
     {
       include: [
         "extraInfo",
@@ -78,7 +78,7 @@ const CreateContactService = async ({
       });
     });
 
-    await ContactWallet.bulkCreate(contactWallets);
+    await ContactWallet.bulkCreate(contactWallets as LegacyAny);
   }
 
   await contact.reload({

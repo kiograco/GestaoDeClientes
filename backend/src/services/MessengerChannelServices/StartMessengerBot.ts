@@ -1,4 +1,4 @@
-/* eslint-disable camelcase */
+﻿/* eslint-disable camelcase */
 import { MessengerClient } from "messaging-api-messenger";
 import AppError from "../../errors/AppError";
 import { initMessengerBot } from "../../libs/messengerBot";
@@ -15,7 +15,7 @@ const checkingMessenger: LegacyAny = {};
 
 const messengerCheckMessages = async (
   messengerBot: Session,
-  tenantId: string | number
+  tenantId: number
 ) => {
   if (checkingMessenger[tenantId]) return;
   checkingMessenger[tenantId] = true;

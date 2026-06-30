@@ -1,4 +1,4 @@
-import * as Yup from "yup";
+﻿import * as Yup from "yup";
 
 import AppError from "../../errors/AppError";
 import Whatsapp from "../../models/Whatsapp";
@@ -7,7 +7,7 @@ interface Request {
   name: string;
   status?: string;
   isDefault?: boolean;
-  tenantId: string | number;
+  tenantId: number;
   tokenTelegram?: string;
   instagramUser?: string;
   instagramKey?: string;
@@ -78,7 +78,7 @@ const AdminCreateChannelService = async ({
     tokenTelegram,
     instagramUser,
     instagramKey
-  });
+  } as LegacyAny);
 
   return { whatsapp, oldDefaultWhatsapp };
 };

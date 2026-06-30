@@ -1,11 +1,11 @@
-import Ticket from "../../models/Ticket";
+﻿import Ticket from "../../models/Ticket";
 import AppError from "../../errors/AppError";
 import ShowTicketService from "./ShowTicketService";
 import CreateLogTicketService from "./CreateLogTicketService";
 
 interface Request {
   id: string | number;
-  tenantId: string | number;
+  tenantId: number;
   userId: string | number;
 }
 

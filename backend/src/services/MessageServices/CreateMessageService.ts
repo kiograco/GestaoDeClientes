@@ -1,4 +1,4 @@
-import Message from "../../models/Message";
+﻿import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
 import socketEmit from "../../helpers/socketEmit";
 
@@ -16,7 +16,7 @@ interface MessageData {
 }
 interface Request {
   messageData: MessageData;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const CreateMessageService = async ({
@@ -27,7 +27,7 @@ const CreateMessageService = async ({
     where: { messageId: messageData.messageId, tenantId }
   });
   if (!msg) {
-    await Message.create({ ...messageData, tenantId });
+    await Message.create({ ...messageData, tenantId } as LegacyAny);
   } else {
     await msg.update(messageData);
   }

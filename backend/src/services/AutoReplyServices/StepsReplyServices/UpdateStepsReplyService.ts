@@ -1,9 +1,9 @@
-import AppError from "../../../errors/AppError";
+﻿import AppError from "../../../errors/AppError";
 import StepsReply from "../../../models/StepsReply";
 
 interface StepsReplyData {
   reply: string;
-  userId: number;
+  userId: string | number;
   initialStep: boolean;
 }
 

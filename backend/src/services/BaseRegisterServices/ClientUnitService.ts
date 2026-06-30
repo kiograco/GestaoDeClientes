@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+﻿import { Op } from "sequelize";
 import AppError from "../../errors/AppError";
 import Client from "../../models/Client";
 import ClientUnit from "../../models/ClientUnit";
@@ -38,7 +38,7 @@ const paginationParams = (params: ClientUnitListParams) => {
 };
 
 const ensureClientBelongsToTenant = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: string | number
 ): Promise<void> => {
   const client = await Client.findOne({ where: { id: clientId, tenantId } });
@@ -46,7 +46,7 @@ const ensureClientBelongsToTenant = async (
 };
 
 export const list = async (
-  tenantId: string | number,
+  tenantId: number,
   params: ClientUnitListParams
 ): Promise<{
   count: number;
@@ -85,7 +85,7 @@ export const list = async (
 };
 
 export const listForExport = async (
-  tenantId: string | number,
+  tenantId: number,
   params: ClientUnitListParams
 ): Promise<ClientUnit[]> => {
   const result = await list(tenantId, { ...params, rowsPerPage: 100 });
@@ -116,7 +116,7 @@ export const listForExport = async (
 };
 
 export const create = async (
-  tenantId: string | number,
+  tenantId: number,
   data: ClientUnitData
 ): Promise<ClientUnit> => {
   await ensureClientBelongsToTenant(tenantId, data.clientId);
@@ -125,11 +125,11 @@ export const create = async (
     tenantId,
     code: data.code || null,
     status: data.status || "active"
-  });
+  } as LegacyAny);
 };
 
 export const update = async (
-  tenantId: string | number,
+  tenantId: number,
   unitId: string | number,
   data: ClientUnitData
 ): Promise<ClientUnit> => {
@@ -141,7 +141,7 @@ export const update = async (
 };
 
 export const remove = async (
-  tenantId: string | number,
+  tenantId: number,
   unitId: string | number
 ): Promise<void> => {
   const unit = await ClientUnit.findOne({ where: { id: unitId, tenantId } });

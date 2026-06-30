@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+﻿import { Op } from "sequelize";
 import AuditLog from "../models/AuditLog";
 import User from "../models/User";
 import { logger } from "../utils/logger";
@@ -25,7 +25,7 @@ const createAuditLog = async (data: AuditLogData): Promise<void> => {
       ip: data.ip || null,
       userAgent: data.userAgent || null,
       metadata: data.metadata || null
-    });
+    } as LegacyAny);
   } catch (error) {
     logger.error(`Audit log failed: ${error}`);
   }
@@ -37,7 +37,7 @@ export const listAuditLogs = async ({
   resources,
   limit = 100
 }: {
-  tenantId: string | number;
+  tenantId: number;
   resource?: string;
   resources?: string[];
   limit?: number;
@@ -63,7 +63,7 @@ export const listAuditLogs = async ({
   const usersById = new Map(users.map(user => [user.id, user] as const));
 
   return logs.map(log => {
-    const user = usersById.get(log.userId);
+    const user = usersById.get(Number(log.userId));
     return {
       id: log.id,
       tenantId: log.tenantId,

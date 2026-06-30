@@ -1,4 +1,4 @@
-// import * as Yup from "yup";
+﻿// import * as Yup from "yup";
 import { Request, Response } from "express";
 
 import CreateChatFlowService from "../services/ChatFlowServices/CreateChatFlowService";
@@ -56,7 +56,7 @@ interface Flow {
 interface ChatFlowData {
   flow: Flow;
   name: string;
-  userId: number;
+  userId: string | number;
   isActive: boolean;
   celularTeste?: string;
   tenantId: number | string;

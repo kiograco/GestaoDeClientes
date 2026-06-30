@@ -1,4 +1,4 @@
-import * as Yup from "yup";
+﻿import * as Yup from "yup";
 import AppError from "../../errors/AppError";
 import sequelize from "../../database";
 import Tenant from "../../models/Tenant";
@@ -6,7 +6,7 @@ import User from "../../models/User";
 import { extendTenantAccessExpiration } from "../../helpers/TenantAccess";
 
 interface Request {
-  tenantId: string | number;
+  tenantId: number;
   status?: string;
   paidDays?: number;
   name?: string;

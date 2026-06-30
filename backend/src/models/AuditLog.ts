@@ -1,4 +1,4 @@
-import {
+﻿import {
   Table,
   Column,
   CreatedAt,
@@ -19,7 +19,7 @@ class AuditLog extends Model<AuditLog> {
   tenantId: number;
 
   @Column
-  userId: number;
+  userId: string | number;
 
   @Column
   action: string;

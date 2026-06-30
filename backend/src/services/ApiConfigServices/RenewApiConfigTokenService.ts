@@ -1,4 +1,4 @@
-// import AppError from "../../errors/AppError";
+﻿// import AppError from "../../errors/AppError";
 import { sign } from "jsonwebtoken";
 import ApiInstance from "../../models/ApiConfig";
 import authConfig from "../../config/auth";
@@ -8,7 +8,7 @@ interface Request {
   apiId: string;
   sessionId: string | number;
   userId: string | number;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const RenewApiConfigTokenService = async ({

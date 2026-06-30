@@ -1,4 +1,4 @@
-import { MessengerClient } from "messaging-api-messenger";
+﻿import { MessengerClient } from "messaging-api-messenger";
 import Contact from "../../models/Contact";
 import CreateOrUpdateContactService from "../ContactServices/CreateOrUpdateContactService";
 import { EventSender } from "./MessengerTypes";
@@ -22,7 +22,7 @@ import { EventSender } from "./MessengerTypes";
 const MessengerVerifyContact = async (
   contact: EventSender,
   messagerBot: MessengerClient,
-  tenantId: string | number
+  tenantId: number
 ): Promise<Contact> => {
   const senderUser: LegacyAny = await messagerBot.getPersona(contact.id);
 

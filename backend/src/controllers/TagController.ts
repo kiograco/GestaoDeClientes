@@ -1,4 +1,4 @@
-import * as Yup from "yup";
+﻿import * as Yup from "yup";
 import { Request, Response } from "express";
 import AppError from "../errors/AppError";
 
@@ -11,7 +11,7 @@ interface TagData {
   tag: string;
   color: string;
   isActive: boolean;
-  userId: number;
+  userId: string | number;
   tenantId: number | string;
 }
 

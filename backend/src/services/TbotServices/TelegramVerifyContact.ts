@@ -1,10 +1,10 @@
-import { Context } from "telegraf/typings/context";
+﻿import { Context } from "telegraf/typings/context";
 import Contact from "../../models/Contact";
 import CreateOrUpdateContactService from "../ContactServices/CreateOrUpdateContactService";
 
 const VerifyContact = async (
   ctx: Context,
-  tenantId: string | number
+  tenantId: number
 ): Promise<Contact> => {
   let profilePicUrl;
   const chatInfo: LegacyAny = await ctx.getChat();

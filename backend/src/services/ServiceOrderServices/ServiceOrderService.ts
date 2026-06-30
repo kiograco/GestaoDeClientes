@@ -1,4 +1,4 @@
-import {
+﻿import {
   col,
   Includeable,
   Op,
@@ -318,7 +318,7 @@ const canSeeInternalObservation = (profile: string): boolean =>
   internalProfiles.includes(profile);
 
 const resolveAttendanceType = async (
-  tenantId: string | number,
+  tenantId: number,
   data: { attendanceTypeId?: number | null; serviceType?: string | null },
   transaction?: Transaction
 ): Promise<AttendanceType | null> => {
@@ -342,7 +342,7 @@ const resolveAttendanceType = async (
 };
 
 const resolveServiceOrderStatus = async (
-  tenantId: string | number,
+  tenantId: number,
   status?: string | null,
   transaction?: Transaction
 ): Promise<string> => {
@@ -457,7 +457,7 @@ const scrubOrder = (
   serviceOrder: ServiceOrder,
   profile: string
 ): Record<string, unknown> => {
-  const data = serviceOrder.toJSON() as Record<string, unknown>;
+  const data = serviceOrder.toJSON() as unknown as Record<string, unknown>;
   if (!canSeeInternalObservation(profile)) {
     delete data.internalObservation;
   }
@@ -773,7 +773,7 @@ export const expandServiceOrderOccurrences = (
 };
 
 const ensureCustomer = async (
-  tenantId: string | number,
+  tenantId: number,
   contactId: number,
   transaction?: Transaction
 ): Promise<Contact> => {
@@ -817,7 +817,7 @@ const ensureCustomer = async (
         : preferredNumber,
       email: cleanText(primaryContact?.email)?.toLowerCase() || null,
       profilePicUrl: ""
-    },
+    } as LegacyAny,
     { transaction }
   );
   await client.update({ contactId: createdContact.id }, { transaction });
@@ -825,7 +825,7 @@ const ensureCustomer = async (
 };
 
 const ensureAttendant = async (
-  tenantId: string | number,
+  tenantId: number,
   attendantId?: number | null,
   transaction?: Transaction
 ): Promise<ServiceAttendant | null> => {
@@ -840,7 +840,7 @@ const ensureAttendant = async (
 };
 
 const ensureServiceTeam = async (
-  tenantId: string | number,
+  tenantId: number,
   serviceTeamId?: number | null,
   transaction?: Transaction
 ): Promise<ServiceTeam | null> => {
@@ -855,7 +855,7 @@ const ensureServiceTeam = async (
 };
 
 const ensureServiceType = async (
-  tenantId: string | number,
+  tenantId: number,
   serviceTypeId?: number | null,
   transaction?: Transaction
 ): Promise<void> => {
@@ -868,7 +868,7 @@ const ensureServiceType = async (
 };
 
 const ensureInventoryItem = async (
-  tenantId: string | number,
+  tenantId: number,
   inventoryItemId?: number | null,
   transaction?: Transaction
 ): Promise<ServiceInventoryItem | null> => {
@@ -888,7 +888,7 @@ const ensureInventoryItem = async (
 };
 
 const ensureInventoryBatch = async (
-  tenantId: string | number,
+  tenantId: number,
   inventoryItemId?: number | null,
   inventoryBatchId?: number | null,
   transaction?: Transaction
@@ -1059,7 +1059,7 @@ const normalizeRecurrence = (
 };
 
 const ensureNoScheduleConflict = async (
-  tenantId: string | number,
+  tenantId: number,
   attendantId?: number | null,
   scheduledStart?: Date | null,
   scheduledEnd?: Date | null,
@@ -1102,7 +1102,7 @@ const ensureNoScheduleConflict = async (
   const conflict = candidates.some(
     order =>
       expandServiceOrderOccurrences(
-        [order.toJSON() as Record<string, unknown>],
+        [order.toJSON() as unknown as Record<string, unknown>],
         scheduledStart,
         scheduledEnd
       ).length > 0
@@ -1143,13 +1143,13 @@ const logOrder = async (
       oldValue,
       newValue,
       description
-    },
+    } as LegacyAny,
     { transaction }
   );
 };
 
 const loadOrder = async (
-  tenantId: string | number,
+  tenantId: number,
   serviceOrderId: string | number,
   transaction?: Transaction
 ): Promise<ServiceOrder> => {
@@ -1274,7 +1274,7 @@ const productTechnicalDetails = (item: ServiceOrderItem): string => {
 };
 
 const sendServiceOrderMessage = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string | number,
   serviceOrder: ServiceOrder,
   channels: Array<"internal" | "email" | "whatsapp">,
@@ -1369,7 +1369,7 @@ const sendServiceOrderMessage = async (
 };
 
 export const listAttendants = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<ServiceAttendant[]> =>
   ServiceAttendant.findAll({
     where: { tenantId },
@@ -1377,7 +1377,7 @@ export const listAttendants = async (
   });
 
 export const createAttendant = async (
-  tenantId: string | number,
+  tenantId: number,
   data: ServiceAttendantData
 ): Promise<ServiceAttendant> =>
   ServiceAttendant.create({
@@ -1388,10 +1388,10 @@ export const createAttendant = async (
     specialty: cleanText(data.specialty),
     active: data.active !== false,
     workingHours: data.workingHours || null
-  });
+  } as LegacyAny);
 
 export const updateAttendant = async (
-  tenantId: string | number,
+  tenantId: number,
   attendantId: string,
   data: ServiceAttendantData
 ): Promise<ServiceAttendant> => {
@@ -1411,7 +1411,7 @@ export const updateAttendant = async (
 };
 
 export const listServiceTeams = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<ServiceTeam[]> =>
   ServiceTeam.findAll({
     where: { tenantId },
@@ -1423,7 +1423,7 @@ export const listServiceTeams = async (
   });
 
 export const createServiceTeam = async (
-  tenantId: string | number,
+  tenantId: number,
   data: ServiceTeamData
 ): Promise<ServiceTeam> =>
   sequelize.transaction(async transaction => {
@@ -1437,7 +1437,7 @@ export const createServiceTeam = async (
         code: cleanText(data.code),
         responsibleId: data.responsibleId || null,
         isActive: data.isActive !== false
-      },
+      } as LegacyAny,
       { transaction }
     );
     const attendantIds = [...new Set(data.attendantIds || [])];
@@ -1450,7 +1450,7 @@ export const createServiceTeam = async (
             serviceTeamId: serviceTeam.id,
             serviceAttendantId: attendantId,
             isActive: true
-          },
+          } as LegacyAny,
           { transaction }
         );
       })
@@ -1459,7 +1459,7 @@ export const createServiceTeam = async (
   });
 
 export const updateServiceTeam = async (
-  tenantId: string | number,
+  tenantId: number,
   serviceTeamId: string,
   data: ServiceTeamData
 ): Promise<ServiceTeam> =>
@@ -1496,7 +1496,7 @@ export const updateServiceTeam = async (
               serviceTeamId: serviceTeam.id,
               serviceAttendantId: attendantId,
               isActive: true
-            },
+            } as LegacyAny,
             { transaction }
           );
         })
@@ -1528,7 +1528,7 @@ const normalizeStringArray = (value?: string[]): string[] =>
     : [];
 
 const buildInventoryPayload = (
-  tenantId: string | number,
+  tenantId: number,
   data: ServiceInventoryItemData
 ): Record<string, unknown> => ({
   tenantId,
@@ -1561,7 +1561,7 @@ const buildInventoryPayload = (
 });
 
 const buildBatchPayload = (
-  tenantId: string | number,
+  tenantId: number,
   inventoryItemId: number,
   data: ServiceInventoryBatchData
 ): Record<string, unknown> => ({
@@ -1576,7 +1576,7 @@ const buildBatchPayload = (
 });
 
 const buildPestRecommendationPayload = (
-  tenantId: string | number,
+  tenantId: number,
   inventoryItemId: number,
   data: ServiceInventoryPestRecommendationData
 ): Record<string, unknown> => ({
@@ -1591,7 +1591,7 @@ const buildPestRecommendationPayload = (
 });
 
 const replaceInventoryChildren = async (
-  tenantId: string | number,
+  tenantId: number,
   inventoryItemId: number,
   data: ServiceInventoryItemData,
   transaction: Transaction
@@ -1665,7 +1665,7 @@ const inventoryInclude = [
 ];
 
 export const listInventoryItems = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<ServiceInventoryItem[]> =>
   ServiceInventoryItem.findAll({
     where: { tenantId },
@@ -1674,7 +1674,7 @@ export const listInventoryItems = async (
   });
 
 export const listLowStockInventoryItems = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<ServiceInventoryItem[]> =>
   ServiceInventoryItem.findAll({
     where: {
@@ -1693,7 +1693,7 @@ export const listLowStockInventoryItems = async (
   });
 
 export const getInventoryItem = async (
-  tenantId: string | number,
+  tenantId: number,
   itemId: string
 ): Promise<ServiceInventoryItem | null> =>
   ServiceInventoryItem.findOne({
@@ -1702,7 +1702,7 @@ export const getInventoryItem = async (
   });
 
 export const listInventoryMovements = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<ServiceInventoryMovement[]> =>
   ServiceInventoryMovement.findAll({
     where: { tenantId },
@@ -1726,7 +1726,7 @@ const parseReportDate = (value: unknown): Date | undefined => {
 };
 
 const buildMovementWhere = (
-  tenantId: string | number,
+  tenantId: number,
   filters: LegacyAny = {}
 ): LegacyAny => {
   const where: LegacyAny = {
@@ -1745,7 +1745,7 @@ const buildMovementWhere = (
 };
 
 export const getInventoryConsumptionReport = async (
-  tenantId: string | number,
+  tenantId: number,
   filters: LegacyAny = {}
 ): Promise<Record<string, unknown>> => {
   const movements = await ServiceInventoryMovement.findAll({
@@ -1795,7 +1795,7 @@ export const getInventoryConsumptionReport = async (
 };
 
 export const getInventoryBatchReport = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<Record<string, unknown>> => {
   const today = new Date();
   const soon = new Date();
@@ -1844,7 +1844,7 @@ const addCost = (
 };
 
 export const getInventoryCostReport = async (
-  tenantId: string | number,
+  tenantId: number,
   filters: LegacyAny = {}
 ): Promise<Record<string, unknown>> => {
   const movements = await ServiceInventoryMovement.findAll({
@@ -1884,7 +1884,7 @@ export const getInventoryCostReport = async (
 };
 
 export const createInventoryItem = async (
-  tenantId: string | number,
+  tenantId: number,
   data: ServiceInventoryItemData
 ): Promise<ServiceInventoryItem> => {
   const created = await sequelize.transaction(async transaction => {
@@ -1904,7 +1904,7 @@ export const createInventoryItem = async (
 };
 
 export const updateInventoryItem = async (
-  tenantId: string | number,
+  tenantId: number,
   itemId: string,
   data: ServiceInventoryItemData
 ): Promise<ServiceInventoryItem> => {
@@ -1926,7 +1926,7 @@ export const updateInventoryItem = async (
 };
 
 export const deleteInventoryItem = async (
-  tenantId: string | number,
+  tenantId: number,
   itemId: string
 ): Promise<void> => {
   const item = await ServiceInventoryItem.findOne({
@@ -1937,7 +1937,7 @@ export const deleteInventoryItem = async (
 };
 
 export const adjustInventoryItem = async (
-  tenantId: string | number,
+  tenantId: number,
   itemId: string,
   userId: string | number,
   data: ServiceInventoryAdjustmentData
@@ -1982,7 +1982,7 @@ export const adjustInventoryItem = async (
           previousQuantity,
           newQuantity,
           observation: cleanText(data.observation)
-        },
+        } as LegacyAny,
         { transaction }
       );
       return item;
@@ -1990,7 +1990,7 @@ export const adjustInventoryItem = async (
   );
 
 const buildPestPayload = (
-  tenantId: string | number,
+  tenantId: number,
   data: PestData
 ): Record<string, unknown> => ({
   tenantId,
@@ -1999,7 +1999,7 @@ const buildPestPayload = (
 });
 
 const ensureUniquePest = async (
-  tenantId: string | number,
+  tenantId: number,
   data: PestData,
   pestId?: string
 ): Promise<void> => {
@@ -2021,7 +2021,7 @@ const ensureUniquePest = async (
 };
 
 export const listPests = async (
-  tenantId: string | number,
+  tenantId: number,
   filters: LegacyAny = {}
 ): Promise<Pest[]> => {
   const search = cleanText(filters.search);
@@ -2042,7 +2042,7 @@ export const listPests = async (
 };
 
 export const createPest = async (
-  tenantId: string | number,
+  tenantId: number,
   data: PestData
 ): Promise<Pest> => {
   await ensureUniquePest(tenantId, data);
@@ -2050,7 +2050,7 @@ export const createPest = async (
 };
 
 export const updatePest = async (
-  tenantId: string | number,
+  tenantId: number,
   pestId: string,
   data: PestData
 ): Promise<Pest> => {
@@ -2062,7 +2062,7 @@ export const updatePest = async (
 };
 
 export const deletePest = async (
-  tenantId: string | number,
+  tenantId: number,
   pestId: string
 ): Promise<void> => {
   const pest = await Pest.findOne({ where: { id: pestId, tenantId } });
@@ -2071,7 +2071,7 @@ export const deletePest = async (
 };
 
 const buildServiceTypePayload = (
-  tenantId: string | number,
+  tenantId: number,
   data: ServiceTypeData,
   code?: string
 ): Record<string, unknown> => ({
@@ -2116,7 +2116,7 @@ const serviceCodeFromId = (id: number): string =>
   `SRV-${String(id).padStart(5, "0")}`;
 
 const replaceServiceTypeChildren = async (
-  tenantId: string | number,
+  tenantId: number,
   serviceTypeId: number,
   data: ServiceTypeData,
   transaction: Transaction
@@ -2207,14 +2207,14 @@ const replaceServiceTypeChildren = async (
         unit: cleanText(data.warranty.unit) || "dias",
         observation: cleanText(data.warranty.observation),
         rules: cleanText(data.warranty.rules)
-      },
+      } as LegacyAny,
       { transaction }
     );
   }
 };
 
 export const listServiceTypes = async (
-  tenantId: string | number,
+  tenantId: number,
   filters: LegacyAny = {}
 ): Promise<ServiceType[]> => {
   const include: Includeable[] = [
@@ -2283,7 +2283,7 @@ export const listServiceTypes = async (
 };
 
 export const createServiceType = async (
-  tenantId: string | number,
+  tenantId: number,
   data: ServiceTypeData
 ): Promise<ServiceType> =>
   sequelize.transaction(async transaction => {
@@ -2309,7 +2309,7 @@ export const createServiceType = async (
   });
 
 export const updateServiceType = async (
-  tenantId: string | number,
+  tenantId: number,
   serviceTypeId: string,
   data: ServiceTypeData
 ): Promise<ServiceType> => {
@@ -2338,7 +2338,7 @@ export const updateServiceType = async (
 };
 
 export const deleteServiceType = async (
-  tenantId: string | number,
+  tenantId: number,
   serviceTypeId: string
 ): Promise<void> => {
   const serviceType = await ServiceType.findOne({
@@ -2349,7 +2349,7 @@ export const deleteServiceType = async (
 };
 
 export const duplicateServiceType = async (
-  tenantId: string | number,
+  tenantId: number,
   serviceTypeId: string
 ): Promise<ServiceType> => {
   const serviceType = await ServiceType.findOne({
@@ -2358,7 +2358,7 @@ export const duplicateServiceType = async (
   });
   if (!serviceType) throw new AppError("ERR_SERVICE_TYPE_NOT_FOUND", 404);
 
-  const source = serviceType.toJSON() as LegacyAny;
+  const source = serviceType.toJSON() as unknown as LegacyAny;
   return createServiceType(tenantId, {
     ...source,
     id: undefined,
@@ -2383,7 +2383,7 @@ export const duplicateServiceType = async (
 };
 
 export const listOrders = async (
-  tenantId: string | number,
+  tenantId: number,
   profile: string,
   filters: LegacyAny
 ): Promise<Record<string, unknown>[] | Record<string, unknown>> => {
@@ -2504,7 +2504,7 @@ export const listOrders = async (
 };
 
 export const getDashboard = async (
-  tenantId: string | number,
+  tenantId: number,
   filters: LegacyAny
 ): Promise<Record<string, unknown>> => {
   const where: LegacyAny = { tenantId };
@@ -2727,7 +2727,7 @@ export const getDashboard = async (
 const financialReportDateFields = ["paymentDueDate", "paidAt", "createdAt"];
 
 export const getFinancialReport = async (
-  tenantId: string | number,
+  tenantId: number,
   filters: LegacyAny
 ): Promise<Record<string, unknown>> => {
   const where: LegacyAny = { tenantId };
@@ -2869,7 +2869,7 @@ const sortedMetricEntries = (
     .slice(0, limit);
 
 export const getMonthlyFinancialClosing = async (
-  tenantId: string | number,
+  tenantId: number,
   filters: LegacyAny
 ): Promise<Record<string, unknown>> => {
   const { start, end, key } = monthRange(filters.month);
@@ -3013,14 +3013,14 @@ export const getMonthlyFinancialClosing = async (
 };
 
 export const showOrder = async (
-  tenantId: string | number,
+  tenantId: number,
   profile: string,
   serviceOrderId: string
 ): Promise<Record<string, unknown>> =>
   scrubOrder(await loadOrder(tenantId, serviceOrderId), profile);
 
 const buildOrderPayload = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string | number,
   data: ServiceOrderData,
   transaction?: Transaction
@@ -3090,7 +3090,7 @@ const buildOrderPayload = async (
 };
 
 const buildOrderItemPayload = (
-  tenantId: string | number,
+  tenantId: number,
   serviceOrderId: number,
   item: ServiceOrderItemData
 ): Record<string, unknown> => {
@@ -3121,7 +3121,7 @@ const buildOrderItemPayload = (
 };
 
 const materializeRecurringOrders = async (
-  tenantId: string | number,
+  tenantId: number,
   parentOrder: ServiceOrder,
   userId: string | number,
   transaction: Transaction
@@ -3144,7 +3144,7 @@ const materializeRecurringOrders = async (
       Math.min(Number(parentOrder.recurrenceMaxOccurrences || 1), 730) * 31
     );
   const dates = recurrenceCursorDates(
-    parentOrder.toJSON() as Record<string, unknown>,
+    parentOrder.toJSON() as unknown as Record<string, unknown>,
     baseStart,
     upperBound
   ).slice(1);
@@ -3213,7 +3213,7 @@ const materializeRecurringOrders = async (
           attachmentUrls: parentOrder.attachmentUrls || [],
           cancelReason: null,
           isRaService: parentOrder.isRaService
-        },
+        } as LegacyAny,
         { transaction }
       );
       await ServiceOrderItem.bulkCreate(
@@ -3250,7 +3250,7 @@ const materializeRecurringOrders = async (
 };
 
 const replaceOrderItems = async (
-  tenantId: string | number,
+  tenantId: number,
   serviceOrderId: number,
   items: ServiceOrderItemData[] = [],
   transaction: Transaction
@@ -3293,7 +3293,7 @@ const replaceOrderItems = async (
 };
 
 const deductInventoryForServiceOrder = async (
-  tenantId: string | number,
+  tenantId: number,
   serviceOrderId: number,
   userId: string | number,
   transaction: Transaction
@@ -3480,7 +3480,7 @@ const deductInventoryForServiceOrder = async (
 };
 
 export const createOrder = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string | number,
   data: ServiceOrderData
 ): Promise<ServiceOrder> => {
@@ -3511,7 +3511,7 @@ export const createOrder = async (
         transaction,
         payload.serviceTeamId
       );
-      const serviceOrder = await ServiceOrder.create(payload, { transaction });
+      const serviceOrder = await ServiceOrder.create(payload as LegacyAny, { transaction });
       await replaceOrderItems(
         tenantId,
         serviceOrder.id,
@@ -3528,7 +3528,7 @@ export const createOrder = async (
             serviceTeamId: serviceOrder.serviceTeamId,
             status: "pending_definition",
             observations: serviceOrder.internalObservation
-          },
+          } as LegacyAny,
           { transaction }
         );
       }
@@ -3568,7 +3568,7 @@ export const createOrder = async (
 };
 
 export const updateOrderOccurrence = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string | number,
   serviceOrderId: string,
   data: ServiceOrderOccurrenceData
@@ -3603,7 +3603,7 @@ export const updateOrderOccurrence = async (
         throw new AppError("ERR_SERVICE_ORDER_OCCURRENCE_NOT_RECURRING", 409);
       }
       const validOccurrence = expandServiceOrderOccurrences(
-        [serviceOrder.toJSON() as Record<string, unknown>],
+        [serviceOrder.toJSON() as unknown as Record<string, unknown>],
         occurrenceStart,
         new Date(occurrenceStart.getTime() + 1)
       ).some(
@@ -3686,7 +3686,7 @@ export const updateOrderOccurrence = async (
       };
       const saved = existing
         ? await existing.update(payload, { transaction })
-        : await ServiceOrderOccurrenceException.create(payload, {
+        : await ServiceOrderOccurrenceException.create(payload as LegacyAny, {
             transaction
           });
       await logOrder(
@@ -3722,7 +3722,7 @@ export const updateOrderOccurrence = async (
   );
   return applyOccurrenceException(
     buildOccurrence(
-      serviceOrder.toJSON() as Record<string, unknown>,
+      serviceOrder.toJSON() as unknown as Record<string, unknown>,
       occurrenceStart,
       baseStart,
       baseEnd.getTime() - baseStart.getTime()
@@ -3732,7 +3732,7 @@ export const updateOrderOccurrence = async (
 };
 
 export const patchOrder = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string | number,
   serviceOrderId: string,
   data: ServiceOrderPatchData
@@ -3880,7 +3880,7 @@ export const patchOrder = async (
 };
 
 export const updateOrder = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string | number,
   profile: string,
   serviceOrderId: string,
@@ -4427,7 +4427,7 @@ function buildServiceOrderPdf({
 }
 
 export async function generatePublicDocument(
-  tenantId: string | number,
+  tenantId: number,
   serviceOrderId: string
 ): Promise<Buffer> {
   const serviceOrder = await loadOrder(tenantId, serviceOrderId);
@@ -4440,7 +4440,7 @@ export async function generatePublicDocument(
 }
 
 export const generateInternalDocument = async (
-  tenantId: string | number,
+  tenantId: number,
   profile: string,
   serviceOrderId: string
 ): Promise<Buffer> => {
@@ -4457,7 +4457,7 @@ export const generateInternalDocument = async (
 };
 
 export const notifyOrder = async (
-  tenantId: string | number,
+  tenantId: number,
   serviceOrderId: string,
   userId: string | number,
   data: ServiceOrderNotificationData
@@ -4494,7 +4494,7 @@ export const notifyOrder = async (
 };
 
 export const sendBillingReminder = async (
-  tenantId: string | number,
+  tenantId: number,
   serviceOrderId: string,
   userId: string | number,
   data: ServiceOrderBillingReminderData

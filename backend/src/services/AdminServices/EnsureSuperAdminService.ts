@@ -33,7 +33,7 @@ const EnsureSuperAdminService = async (): Promise<void> => {
     tenantId: tenant.id,
     status: "offline",
     isOnline: false
-  });
+  } as LegacyAny);
   logger.info("Super admin account created");
 };
 

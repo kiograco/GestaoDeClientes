@@ -1,4 +1,4 @@
-import {
+﻿import {
   assertEmailConfigured,
   sendPasswordRecovery
 } from "../services/EmailServices/EmailService";
@@ -6,7 +6,7 @@ import {
 export { assertEmailConfigured };
 
 export const SendPasswordResetEmail = async (
-  tenantId: string | number,
+  tenantId: number,
   email: string,
   token: string
 ): Promise<void> => {

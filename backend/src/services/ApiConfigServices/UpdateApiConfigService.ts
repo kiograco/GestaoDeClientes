@@ -1,4 +1,4 @@
-import AppError from "../../errors/AppError";
+﻿import AppError from "../../errors/AppError";
 import ApiConfig from "../../models/ApiConfig";
 
 interface ApiData {
@@ -7,7 +7,7 @@ interface ApiData {
   urlServiceStatus?: string;
   urlMessageStatus?: string;
   userId: string | number;
-  tenantId: string | number;
+  tenantId: number;
   authToken?: string;
   isActive?: boolean;
 }
@@ -15,7 +15,7 @@ interface ApiData {
 interface Request {
   apiData: ApiData;
   apiId: string;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const UpdateApiConfigService = async ({
@@ -49,7 +49,7 @@ const UpdateApiConfigService = async ({
     userId,
     authToken,
     isActive
-  });
+  } as LegacyAny);
 
   await api.reload();
 

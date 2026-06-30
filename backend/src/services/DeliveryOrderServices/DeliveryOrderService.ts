@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+﻿import { Op } from "sequelize";
 import sequelize from "../../database";
 import AppError from "../../errors/AppError";
 import Contact from "../../models/Contact";
@@ -57,7 +57,7 @@ const orderInclude = [
 const money = (value: number): number => Math.round(value * 100) / 100;
 
 const validateReferences = async (
-  tenantId: string | number,
+  tenantId: number,
   contactId: number,
   ticketId?: number | null
 ) => {
@@ -71,7 +71,7 @@ const validateReferences = async (
 };
 
 const buildItem = async (
-  tenantId: string | number,
+  tenantId: number,
   data: ItemData,
   transaction: LegacyAny
 ) => {
@@ -130,7 +130,7 @@ const buildItem = async (
 };
 
 export const listOrders = async (
-  tenantId: string | number,
+  tenantId: number,
   status?: string,
   searchParam?: string,
   contactId?: string,
@@ -149,7 +149,7 @@ export const listOrders = async (
 };
 
 export const createOrder = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string,
   data: CreateOrderData
 ): Promise<Order> => {
@@ -187,7 +187,7 @@ export const createOrder = async (
         deliveryFee,
         discount,
         total
-      },
+      } as LegacyAny,
       { transaction }
     );
     await Promise.all(
@@ -203,7 +203,7 @@ export const createOrder = async (
             quantity: itemData.quantity,
             notes: itemData.notes,
             total: prepared.total
-          },
+          } as LegacyAny,
           { transaction }
         );
         await OrderItemOption.bulkCreate(
@@ -222,7 +222,7 @@ export const createOrder = async (
         oldStatus: null,
         newStatus: "NEW",
         changedBy: userId
-      },
+      } as LegacyAny,
       { transaction }
     );
     return order.id;
@@ -233,7 +233,7 @@ export const createOrder = async (
 };
 
 export const updateOrderStatus = async (
-  tenantId: string | number,
+  tenantId: number,
   userId: string,
   orderId: string,
   status: string
@@ -247,7 +247,7 @@ export const updateOrderStatus = async (
   await sequelize.transaction(async transaction => {
     await order.update({ status }, { transaction });
     await OrderStatusHistory.create(
-      { orderId: order.id, oldStatus, newStatus: status, changedBy: userId },
+      { orderId: order.id, oldStatus, newStatus: status, changedBy: userId } as LegacyAny,
       { transaction }
     );
   });

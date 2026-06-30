@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+﻿import { Op } from "sequelize";
 import AttendanceType from "../models/AttendanceType";
 
 export interface AttendanceTypeListParams {
@@ -15,7 +15,7 @@ const paginationParams = (params: AttendanceTypeListParams) => {
 };
 
 const buildWhere = (
-  tenantId: string | number,
+  tenantId: number,
   params: AttendanceTypeListParams
 ): LegacyAny => {
   const searchParam = String(params.searchParam || "").trim();
@@ -37,7 +37,7 @@ const buildWhere = (
 };
 
 export const findAndCount = async (
-  tenantId: string | number,
+  tenantId: number,
   params: AttendanceTypeListParams
 ): Promise<{ count: number; rows: AttendanceType[] }> => {
   const { limit, offset } = paginationParams(params);
@@ -53,7 +53,7 @@ export const findAndCount = async (
 };
 
 export const findForExport = async (
-  tenantId: string | number,
+  tenantId: number,
   params: AttendanceTypeListParams
 ): Promise<AttendanceType[]> =>
   AttendanceType.findAll({
@@ -66,13 +66,13 @@ export const findForExport = async (
   });
 
 export const findById = async (
-  tenantId: string | number,
+  tenantId: number,
   id: string | number
 ): Promise<AttendanceType | null> =>
   AttendanceType.findOne({ where: { tenantId, id } });
 
 export const findByName = async (
-  tenantId: string | number,
+  tenantId: number,
   name: string,
   excludeId?: string | number
 ): Promise<AttendanceType | null> =>

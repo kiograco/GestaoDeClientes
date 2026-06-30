@@ -1,4 +1,4 @@
-import * as Yup from "yup";
+﻿import * as Yup from "yup";
 import { Request, Response } from "express";
 
 import CreateApiConfigService from "../services/ApiConfigServices/CreateApiConfigService";
@@ -15,7 +15,7 @@ interface ApiData {
   urlServiceStatus?: string;
   urlMessageStatus?: string;
   userId: string | number;
-  tenantId: string | number;
+  tenantId: number;
   authToken?: string;
   isActive?: boolean;
 }
@@ -23,7 +23,7 @@ interface ApiData {
 interface RenewData {
   sessionId: string | number;
   userId: string | number;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 export const store = async (req: Request, res: Response): Promise<Response> => {

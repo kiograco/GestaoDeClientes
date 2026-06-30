@@ -1,7 +1,7 @@
-import FastReply from "../../models/FastReply";
+﻿import FastReply from "../../models/FastReply";
 
 interface Request {
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const ListFastReplyService = async ({

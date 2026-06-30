@@ -1,10 +1,10 @@
-import AutoReply from "../../models/AutoReply";
+﻿import AutoReply from "../../models/AutoReply";
 import AppError from "../../errors/AppError";
 import Ticket from "../../models/Ticket";
 
 interface Request {
   id: string | number;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const DeleteAutoReplyService = async ({

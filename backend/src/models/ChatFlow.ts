@@ -1,4 +1,4 @@
-/* eslint-disable no-restricted-syntax */
+﻿/* eslint-disable no-restricted-syntax */
 import {
   Table,
   Column,
@@ -63,7 +63,7 @@ class ChatFlow extends Model<ChatFlow> {
 
   @ForeignKey(() => User)
   @Column
-  userId: number;
+  userId: string | number;
 
   @BelongsTo(() => User)
   user: User;

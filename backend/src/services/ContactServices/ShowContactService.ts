@@ -1,9 +1,9 @@
-import Contact from "../../models/Contact";
+﻿import Contact from "../../models/Contact";
 import AppError from "../../errors/AppError";
 
 interface Request {
   id: string | number;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 const ShowContactService = async ({

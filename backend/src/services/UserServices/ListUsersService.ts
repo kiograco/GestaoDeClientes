@@ -1,4 +1,4 @@
-import { Sequelize, Op } from "sequelize";
+﻿import { Sequelize, Op } from "sequelize";
 import Queue from "../../models/Queue";
 // import UsersQueues from "../../models/UsersQueues";
 import User from "../../models/User";
@@ -6,7 +6,7 @@ import User from "../../models/User";
 interface Request {
   searchParam?: string;
   pageNumber?: string | number;
-  tenantId: string | number;
+  tenantId: number;
 }
 
 interface Response {

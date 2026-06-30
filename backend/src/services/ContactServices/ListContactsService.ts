@@ -1,11 +1,11 @@
-import { QueryTypes } from "sequelize";
+﻿import { QueryTypes } from "sequelize";
 import Contact from "../../models/Contact";
 import sequelize from "../../database";
 
 interface Request {
   searchParam?: string;
   pageNumber?: string;
-  tenantId: string | number;
+  tenantId: number;
   profile: string;
   userId: string | number;
 }

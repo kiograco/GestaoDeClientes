@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+﻿import { Op } from "sequelize";
 import AppError from "../../errors/AppError";
 import BaseRegister from "../../models/BaseRegister";
 
@@ -47,7 +47,7 @@ const paginationParams = (params: BaseRegisterListParams) => {
 };
 
 export const list = async (
-  tenantId: string | number,
+  tenantId: number,
   moduleParam: string,
   params: BaseRegisterListParams
 ): Promise<{
@@ -86,7 +86,7 @@ export const list = async (
 };
 
 export const listForExport = async (
-  tenantId: string | number,
+  tenantId: number,
   moduleParam: string,
   params: BaseRegisterListParams
 ): Promise<Record<string, unknown>[]> => {
@@ -117,7 +117,7 @@ export const listForExport = async (
 };
 
 export const create = async (
-  tenantId: string | number,
+  tenantId: number,
   moduleParam: string,
   data: BaseRegisterData
 ): Promise<BaseRegister> => {
@@ -130,11 +130,11 @@ export const create = async (
     description: data.description || null,
     status: data.status || "active",
     data: data.data || {}
-  });
+  } as LegacyAny);
 };
 
 export const update = async (
-  tenantId: string | number,
+  tenantId: number,
   moduleParam: string,
   registerId: string | number,
   data: BaseRegisterData
@@ -157,7 +157,7 @@ export const update = async (
 };
 
 export const remove = async (
-  tenantId: string | number,
+  tenantId: number,
   moduleParam: string,
   registerId: string | number
 ): Promise<void> => {

@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+﻿import { Op } from "sequelize";
 import AppError from "../errors/AppError";
 import AttendanceType from "../models/AttendanceType";
 import SalesProposal from "../models/SalesProposal";
@@ -17,7 +17,7 @@ export interface AttendanceTypeData {
 }
 
 export const list = async (
-  tenantId: string | number,
+  tenantId: number,
   params: Repository.AttendanceTypeListParams
 ): Promise<{ count: number; hasMore: boolean; rows: AttendanceType[] }> => {
   const { count, rows } = await Repository.findAndCount(tenantId, params);
@@ -27,12 +27,12 @@ export const list = async (
 };
 
 export const listForExport = (
-  tenantId: string | number,
+  tenantId: number,
   params: Repository.AttendanceTypeListParams
 ): Promise<AttendanceType[]> => Repository.findForExport(tenantId, params);
 
 const ensureUniqueName = async (
-  tenantId: string | number,
+  tenantId: number,
   name: string,
   excludeId?: string | number
 ): Promise<void> => {
@@ -41,7 +41,7 @@ const ensureUniqueName = async (
 };
 
 export const show = async (
-  tenantId: string | number,
+  tenantId: number,
   id: string | number
 ): Promise<AttendanceType> => {
   const attendanceType = await Repository.findById(tenantId, id);
@@ -50,7 +50,7 @@ export const show = async (
 };
 
 export const create = async (
-  tenantId: string | number,
+  tenantId: number,
   data: AttendanceTypeData
 ): Promise<AttendanceType> => {
   await ensureUniqueName(tenantId, data.name);
@@ -59,11 +59,11 @@ export const create = async (
     name: data.name.trim(),
     description: data.description || null,
     isActive: data.isActive !== false
-  });
+  } as LegacyAny);
 };
 
 export const update = async (
-  tenantId: string | number,
+  tenantId: number,
   id: string | number,
   data: AttendanceTypeData
 ): Promise<AttendanceType> => {
@@ -78,7 +78,7 @@ export const update = async (
 };
 
 export const setActive = async (
-  tenantId: string | number,
+  tenantId: number,
   id: string | number,
   isActive: boolean
 ): Promise<AttendanceType> => {
@@ -88,7 +88,7 @@ export const setActive = async (
 };
 
 export const hasLinks = async (
-  tenantId: string | number,
+  tenantId: number,
   attendanceType: AttendanceType
 ): Promise<boolean> => {
   const [orders, proposals, tickets] = await Promise.all([
@@ -116,7 +116,7 @@ export const hasLinks = async (
 };
 
 export const remove = async (
-  tenantId: string | number,
+  tenantId: number,
   id: string | number
 ): Promise<"deleted" | "inactivated"> => {
   const attendanceType = await show(tenantId, id);
@@ -129,7 +129,7 @@ export const remove = async (
 };
 
 export const exportAttendanceTypes = async (
-  tenantId: string | number,
+  tenantId: number,
   params: Repository.AttendanceTypeListParams,
   format: ExportFormat
 ): Promise<{ buffer: Buffer; contentType: string; fileName: string }> => {

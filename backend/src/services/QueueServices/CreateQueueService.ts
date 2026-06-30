@@ -1,10 +1,10 @@
-// import AppError from "../../errors/AppError";
+﻿// import AppError from "../../errors/AppError";
 import Queue from "../../models/Queue";
 
 interface Request {
   queue: string;
   isActive: boolean;
-  userId: number;
+  userId: string | number;
   tenantId: number | string;
 }
 
@@ -19,7 +19,7 @@ const CreateQueueService = async ({
     isActive,
     userId,
     tenantId
-  });
+  } as LegacyAny);
 
   return queueData;
 };

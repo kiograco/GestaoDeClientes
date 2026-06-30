@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+﻿import { Op } from "sequelize";
 import sequelize from "../../database";
 import AppError from "../../errors/AppError";
 import Client from "../../models/Client";
@@ -154,7 +154,7 @@ const trapTypeInclude = [
 ];
 
 const ensureUniqueTrapCode = async (
-  tenantId: string | number,
+  tenantId: number,
   code: string,
   trapTypeId?: string
 ) => {
@@ -169,7 +169,7 @@ const ensureUniqueTrapCode = async (
 };
 
 const ensureFloorPlan = async (
-  tenantId: string | number,
+  tenantId: number,
   floorPlanId: number
 ): Promise<ClientFloorPlan> => {
   const floorPlan = await ClientFloorPlan.findOne({
@@ -180,7 +180,7 @@ const ensureFloorPlan = async (
 };
 
 const ensureUniquePointNumbers = async (
-  tenantId: string | number,
+  tenantId: number,
   addressId: number,
   pointNumbers: number[],
   pointId?: string
@@ -197,7 +197,7 @@ const ensureUniquePointNumbers = async (
 };
 
 const ensureTrapType = async (
-  tenantId: string | number,
+  tenantId: number,
   trapTypeId: number
 ): Promise<TrapType> => {
   const trapType = await TrapType.findOne({
@@ -218,7 +218,7 @@ const defaultMarkerColorFromTrapType = (trapType: TrapType): string => {
 };
 
 const ensurePests = async (
-  tenantId: string | number,
+  tenantId: number,
   pestIds: number[] = []
 ): Promise<void> => {
   if (!pestIds.length) return;
@@ -230,7 +230,7 @@ const ensurePests = async (
 };
 
 const syncTrapTypePests = async (
-  tenantId: string | number,
+  tenantId: number,
   trapTypeId: number,
   pestIds: number[] = [],
   transaction: LegacyAny
@@ -248,7 +248,7 @@ const syncTrapTypePests = async (
 };
 
 const showTrapType = async (
-  tenantId: string | number,
+  tenantId: number,
   trapTypeId: string | number
 ): Promise<TrapType> => {
   const trapType = await TrapType.findOne({
@@ -260,7 +260,7 @@ const showTrapType = async (
 };
 
 const ensureLocation = async (
-  tenantId: string | number,
+  tenantId: number,
   clientId: number,
   addressId: number,
   areaId: number,
@@ -283,7 +283,7 @@ const ensureLocation = async (
 };
 
 const showPoint = async (
-  tenantId: string | number,
+  tenantId: number,
   pointId: string | number
 ): Promise<MonitoringPoint> => {
   const point = await MonitoringPoint.findOne({
@@ -296,7 +296,7 @@ const showPoint = async (
 };
 
 const createHistory = (
-  tenantId: string | number,
+  tenantId: number,
   point: MonitoringPoint,
   action: string,
   transaction: LegacyAny,
@@ -317,12 +317,12 @@ const createHistory = (
         label: point.label,
         trapTypeId: point.trapTypeId
       }
-    },
+    } as LegacyAny,
     { transaction }
   );
 
 const createMapHistory = (
-  tenantId: string | number,
+  tenantId: number,
   point: MonitoringPoint,
   floorPlanId: number,
   changedByUserId: number | null,
@@ -342,7 +342,7 @@ const createMapHistory = (
       newPositionY: newPosition?.positionY ?? null,
       changedByUserId,
       notes: nullable(notes)
-    },
+    } as LegacyAny,
     { transaction }
   );
 
@@ -365,7 +365,7 @@ const monitoringActionForUpdate = ({
 };
 
 export const listTrapTypes = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<TrapType[]> =>
   TrapType.findAll({
     where: { tenantId },
@@ -374,7 +374,7 @@ export const listTrapTypes = async (
   });
 
 export const createTrapType = async (
-  tenantId: string | number,
+  tenantId: number,
   data: TrapTypeData
 ): Promise<TrapType> => {
   await ensureUniqueTrapCode(tenantId, data.code);
@@ -391,7 +391,7 @@ export const createTrapType = async (
         markerIconUrl: nullable(data.markerIconUrl),
         markerType: nullable(data.markerType) || "color",
         active: data.active !== false
-      },
+      } as LegacyAny,
       { transaction }
     );
     await syncTrapTypePests(tenantId, created.id, data.pestIds, transaction);
@@ -401,7 +401,7 @@ export const createTrapType = async (
 };
 
 export const updateTrapType = async (
-  tenantId: string | number,
+  tenantId: number,
   trapTypeId: string,
   data: TrapTypeData
 ): Promise<TrapType> => {
@@ -431,7 +431,7 @@ export const updateTrapType = async (
 };
 
 export const deleteTrapType = async (
-  tenantId: string | number,
+  tenantId: number,
   trapTypeId: string
 ): Promise<void> => {
   const trapType = await TrapType.findOne({
@@ -446,7 +446,7 @@ export const deleteTrapType = async (
 };
 
 export const listConditions = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<TrapCondition[]> => {
   const count = await TrapCondition.count({ where: { tenantId } });
   if (!count) {
@@ -461,17 +461,17 @@ export const listConditions = async (
 };
 
 export const createCondition = async (
-  tenantId: string | number,
+  tenantId: number,
   data: TrapCatalogData
 ): Promise<TrapCondition> =>
   TrapCondition.create({
     tenantId,
     name: data.name.trim(),
     active: data.active !== false
-  });
+  } as LegacyAny);
 
 export const updateCondition = async (
-  tenantId: string | number,
+  tenantId: number,
   conditionId: string,
   data: TrapCatalogData
 ): Promise<TrapCondition> => {
@@ -487,7 +487,7 @@ export const updateCondition = async (
 };
 
 export const listActions = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<TrapAction[]> => {
   const count = await TrapAction.count({ where: { tenantId } });
   if (!count) {
@@ -499,17 +499,17 @@ export const listActions = async (
 };
 
 export const createAction = async (
-  tenantId: string | number,
+  tenantId: number,
   data: TrapCatalogData
 ): Promise<TrapAction> =>
   TrapAction.create({
     tenantId,
     name: data.name.trim(),
     active: data.active !== false
-  });
+  } as LegacyAny);
 
 export const updateAction = async (
-  tenantId: string | number,
+  tenantId: number,
   actionId: string,
   data: TrapCatalogData
 ): Promise<TrapAction> => {
@@ -525,7 +525,7 @@ export const updateAction = async (
 };
 
 const ensureInspectionCatalog = async (
-  tenantId: string | number,
+  tenantId: number,
   conditionIds: number[] = [],
   actionIds: number[] = []
 ): Promise<void> => {
@@ -556,7 +556,7 @@ const ensureInspectionCatalog = async (
 };
 
 export const listInspections = async (
-  tenantId: string | number,
+  tenantId: number,
   filters: { monitoringPointId?: string } = {}
 ): Promise<TrapInspection[]> =>
   TrapInspection.findAll({
@@ -576,7 +576,7 @@ export const listInspections = async (
   });
 
 export const createInspection = async (
-  tenantId: string | number,
+  tenantId: number,
   defaultTechnicianId: number,
   data: TrapInspectionData
 ): Promise<TrapInspection> => {
@@ -599,7 +599,7 @@ export const createInspection = async (
         technicianId: data.technicianId || defaultTechnicianId,
         inspectionDate: data.inspectionDate || new Date(),
         notes: nullable(data.notes)
-      },
+      } as LegacyAny,
       { transaction }
     );
     await Promise.all([
@@ -644,7 +644,7 @@ export const createInspection = async (
 };
 
 export const listFloorPlans = async (
-  tenantId: string | number,
+  tenantId: number,
   filters: { clientId?: string; addressId?: string } = {}
 ): Promise<ClientFloorPlan[]> =>
   ClientFloorPlan.findAll({
@@ -661,7 +661,7 @@ export const listFloorPlans = async (
   });
 
 export const createFloorPlan = async (
-  tenantId: string | number,
+  tenantId: number,
   data: FloorPlanData
 ): Promise<ClientFloorPlan> => {
   await ensureLocation(tenantId, data.clientId, data.addressId, 0, 0).catch(
@@ -689,11 +689,11 @@ export const createFloorPlan = async (
     fileType: data.fileType,
     originalFilename: data.originalFilename,
     notes: nullable(data.notes)
-  });
+  } as LegacyAny);
 };
 
 export const updateFloorPlan = async (
-  tenantId: string | number,
+  tenantId: number,
   floorPlanId: string,
   data: Partial<FloorPlanData>
 ): Promise<ClientFloorPlan> => {
@@ -709,7 +709,7 @@ export const updateFloorPlan = async (
 };
 
 export const deleteFloorPlan = async (
-  tenantId: string | number,
+  tenantId: number,
   floorPlanId: string
 ): Promise<void> => {
   const floorPlan = await ClientFloorPlan.findOne({
@@ -732,7 +732,7 @@ export const deleteFloorPlan = async (
 };
 
 export const listPoints = async (
-  tenantId: string | number,
+  tenantId: number,
   filters: {
     clientId?: string;
     addressId?: string;
@@ -756,7 +756,7 @@ export const listPoints = async (
   });
 
 export const createPoints = async (
-  tenantId: string | number,
+  tenantId: number,
   data: MonitoringPointData
 ): Promise<MonitoringPoint[]> => {
   if (data.finalNumber < data.initialNumber) {
@@ -807,7 +807,7 @@ export const createPoints = async (
         markerType: nullable(data.markerType) || trapType.markerType || "color",
         notes: nullable(data.notes),
         active: true
-      })),
+      })) as LegacyAny,
       { transaction, returning: true }
     );
     await Promise.all(
@@ -826,7 +826,7 @@ export const createPoints = async (
 };
 
 export const updatePoint = async (
-  tenantId: string | number,
+  tenantId: number,
   pointId: string,
   data: MonitoringPointUpdateData
 ): Promise<MonitoringPoint> => {
@@ -871,7 +871,7 @@ export const updatePoint = async (
         label: data.label || point.label,
         notes: nullable(data.notes) || point.notes,
         active: data.active !== undefined ? data.active : point.active
-      },
+      } as LegacyAny,
       { transaction }
     );
     const movedArea = previous.areaId !== point.areaId;
@@ -906,7 +906,7 @@ const defaultMarkerColor = (point: MonitoringPoint): string => {
 };
 
 export const updatePointPosition = async (
-  tenantId: string | number,
+  tenantId: number,
   pointId: string,
   data: PointPositionData,
   changedByUserId?: number
@@ -955,7 +955,7 @@ export const updatePointPosition = async (
 };
 
 export const removePointPosition = async (
-  tenantId: string | number,
+  tenantId: number,
   pointId: string,
   changedByUserId?: number,
   notes?: string
@@ -998,7 +998,7 @@ export const removePointPosition = async (
 };
 
 export const removePoint = async (
-  tenantId: string | number,
+  tenantId: number,
   pointId: string,
   notes?: string
 ): Promise<void> => {

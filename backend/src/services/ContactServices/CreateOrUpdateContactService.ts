@@ -1,4 +1,4 @@
-import socketEmit from "../../helpers/socketEmit";
+﻿import socketEmit from "../../helpers/socketEmit";
 import Contact from "../../models/Contact";
 
 interface ExtraInfo {
@@ -13,7 +13,7 @@ interface Request {
   email?: string;
   profilePicUrl?: string;
   extraInfo?: ExtraInfo[];
-  tenantId: string | number;
+  tenantId: number;
   pushname: string;
   isUser: boolean;
   isWAContact: boolean;
@@ -70,7 +70,7 @@ const CreateOrUpdateContactService = async ({
       telegramId,
       instagramPK,
       messengerId
-    });
+    } as LegacyAny);
   } else {
     contact = await Contact.create({
       name,
@@ -86,7 +86,7 @@ const CreateOrUpdateContactService = async ({
       telegramId,
       instagramPK,
       messengerId
-    });
+    } as LegacyAny);
   }
 
   socketEmit({

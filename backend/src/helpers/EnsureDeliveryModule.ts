@@ -1,8 +1,8 @@
-import AppError from "../errors/AppError";
+﻿import AppError from "../errors/AppError";
 import Tenant from "../models/Tenant";
 
 const EnsureDeliveryModule = async (
-  tenantId: string | number
+  tenantId: number
 ): Promise<Tenant> => {
   const tenant = await Tenant.findByPk(tenantId, {
     attributes: ["id", "businessType", "enabledModules"]
