@@ -7,7 +7,8 @@
   PrimaryKey,
   ForeignKey,
   BelongsTo,
-  AutoIncrement
+  AutoIncrement,
+  DataType
 } from "sequelize-typescript";
 import User from "./User";
 import Queue from "./Queue";
@@ -27,7 +28,7 @@ class UsersQueues extends Model<UsersQueues> {
   queue: Queue;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

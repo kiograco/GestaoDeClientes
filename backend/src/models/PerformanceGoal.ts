@@ -33,7 +33,7 @@ class PerformanceGoal extends Model<PerformanceGoal> {
   roleType: string;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

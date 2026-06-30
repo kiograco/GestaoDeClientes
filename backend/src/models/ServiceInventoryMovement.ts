@@ -60,7 +60,7 @@ class ServiceInventoryMovement extends Model<ServiceInventoryMovement> {
   serviceOrderItem: ServiceOrderItem;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

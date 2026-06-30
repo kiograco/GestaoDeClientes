@@ -49,7 +49,7 @@ class ApiConfig extends Model<ApiConfig> {
   urlMessageStatus: string;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

@@ -105,7 +105,7 @@ export const forward = async (
 
   for (const message of data.messages) {
     await CreateForwardMessageService({
-      userId: user.id,
+      userId: Number(user.id),
       tenantId: user.tenantId,
       message,
       contact: data.contact,

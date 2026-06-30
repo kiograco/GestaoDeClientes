@@ -24,7 +24,7 @@ class UserMessagesLog extends Model<UserMessagesLog> {
   id: number;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

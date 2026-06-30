@@ -40,7 +40,7 @@ class StepsReplyActions extends Model<StepsReplyActions> {
   action: number;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

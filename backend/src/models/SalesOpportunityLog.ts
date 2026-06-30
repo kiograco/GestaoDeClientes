@@ -28,7 +28,7 @@ class SalesOpportunityLog extends Model<SalesOpportunityLog> {
   salesOpportunity: SalesOpportunity;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

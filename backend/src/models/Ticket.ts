@@ -87,7 +87,7 @@ class Ticket extends Model<Ticket> {
   startedAttendanceAt: number;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

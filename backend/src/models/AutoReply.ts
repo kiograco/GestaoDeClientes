@@ -39,7 +39,7 @@ class AutoReply extends Model<AutoReply> {
   action: number;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)
