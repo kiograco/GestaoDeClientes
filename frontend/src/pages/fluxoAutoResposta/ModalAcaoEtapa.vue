@@ -104,10 +104,6 @@
               >
                 <VEmojiPicker
                   style="width: 40vw"
-                  :showSearch="false"
-                  :emojisByRow="20"
-                  labelSearch="Localizar..."
-                  lang="pt-BR"
                   @select="onInsertSelectEmoji"
                 />
               </q-menu>
@@ -155,7 +151,8 @@
 <script>
 const userId = +localStorage.getItem('userId')
 import { CriarAcaoEtapa, EditarAcaoEtapa } from 'src/service/autoResposta'
-import { VEmojiPicker } from 'v-emoji-picker'
+import VEmojiPicker from 'vue3-emoji-picker'
+import 'vue3-emoji-picker/css'
 
 export default {
   name: 'ModalAcaoEtapa',
@@ -283,16 +280,16 @@ export default {
         cursorPos = startPos,
         tmpStr = tArea.value
       // filter:
-      if (!emoji.data) {
+      if (!emoji.i) {
         return
       }
       // insert:
       self.txtContent = this.acaoEtapa.replyDefinition
-      self.txtContent = tmpStr.substring(0, startPos) + emoji.data + tmpStr.substring(endPos, tmpStr.length)
+      self.txtContent = tmpStr.substring(0, startPos) + emoji.i + tmpStr.substring(endPos, tmpStr.length)
       this.acaoEtapa.replyDefinition = self.txtContent
       // move cursor:
       setTimeout(() => {
-        tArea.selectionStart = tArea.selectionEnd = cursorPos + emoji.data.length
+        tArea.selectionStart = tArea.selectionEnd = cursorPos + emoji.i.length
       }, 10)
     }
   }

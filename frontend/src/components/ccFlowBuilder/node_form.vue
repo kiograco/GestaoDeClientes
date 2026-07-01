@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="q-px-md q-py-sm">
     <div class="row justify-between col q-mb-sm">
       <q-btn
@@ -188,11 +188,11 @@
                   style="height: calc(100vh - 490px)"
                   class="row bg-grey-3 q-pa-sm scroll q-mt-md col justify-start"
                 >
-                  <template v-for="(condition, idx) in node.conditions">
+                  <template v-for="(condition, idx) in node.conditions" :key="condition.id">
                     <q-card
                       bordered
                       flat
-                      :key="condition.id"
+                      
                       class="full-width q-my-sm"
                       style="min-height: 250px;"
                     >
@@ -417,10 +417,6 @@
                       >
                         <VEmojiPicker
                           style="width: 40vw"
-                          :showSearch="false"
-                          :emojisByRow="20"
-                          labelSearch="Localizar..."
-                          lang="pt-BR"
                           @select="onInsertSelectEmojiSaudacao"
                         />
                       </q-menu>
@@ -486,10 +482,6 @@
                       >
                         <VEmojiPicker
                           style="width: 40vw"
-                          :showSearch="false"
-                          :emojisByRow="20"
-                          labelSearch="Localizar..."
-                          lang="pt-BR"
                           @select="onInsertSelectEmojiNotOptionsSelectMessage"
                         />
                       </q-menu>
@@ -761,7 +753,8 @@
 import { uid } from 'quasar'
 import MessageField from './messageField'
 import MediaField from './mediaField.vue'
-import { VEmojiPicker } from 'v-emoji-picker'
+import VEmojiPicker from 'vue3-emoji-picker'
+import 'vue3-emoji-picker/css'
 export default {
   components: {
     MessageField,
@@ -899,14 +892,14 @@ export default {
         endPos = tArea.selectionEnd,
         cursorPos = startPos,
         tmpStr = tArea.value
-      if (!emoji.data) {
+      if (!emoji.i) {
         return
       }
       self.txtContent = this.node.configurations.welcomeMessage.message
-      self.txtContent = tmpStr.substring(0, startPos) + emoji.data + tmpStr.substring(endPos, tmpStr.length)
+      self.txtContent = tmpStr.substring(0, startPos) + emoji.i + tmpStr.substring(endPos, tmpStr.length)
       this.node.configurations.welcomeMessage.message = self.txtContent
       setTimeout(() => {
-        tArea.selectionStart = tArea.selectionEnd = cursorPos + emoji.data.length
+        tArea.selectionStart = tArea.selectionEnd = cursorPos + emoji.i.length
       }, 10)
     },
     onInsertSelectEmojiNotOptionsSelectMessage (emoji) {
@@ -916,14 +909,14 @@ export default {
         endPos = tArea.selectionEnd,
         cursorPos = startPos,
         tmpStr = tArea.value
-      if (!emoji.data) {
+      if (!emoji.i) {
         return
       }
       self.txtContent = this.node.configurations.notOptionsSelectMessage.message
-      self.txtContent = tmpStr.substring(0, startPos) + emoji.data + tmpStr.substring(endPos, tmpStr.length)
+      self.txtContent = tmpStr.substring(0, startPos) + emoji.i + tmpStr.substring(endPos, tmpStr.length)
       this.node.configurations.notOptionsSelectMessage.message = self.txtContent
       setTimeout(() => {
-        tArea.selectionStart = tArea.selectionEnd = cursorPos + emoji.data.length
+        tArea.selectionStart = tArea.selectionEnd = cursorPos + emoji.i.length
       }, 10)
     },
     addLineStep (nextStepId, idx) {

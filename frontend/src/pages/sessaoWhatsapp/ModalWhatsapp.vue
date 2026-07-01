@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <q-dialog
     :value="modalWhatsapp"
     @hide="fecharModal"
@@ -203,7 +203,7 @@
 </template>
 
 <script>
-import { required, minLength, maxLength } from 'vuelidate/lib/validators'
+import { required, minLength, maxLength } from '@vuelidate/validators'
 import { UpdateWhatsapp, CriarWhatsapp } from 'src/service/sessoesWhatsapp'
 import cInput from 'src/components/cInput.vue'
 import { copyToClipboard, Notify } from 'quasar'
@@ -362,7 +362,7 @@ export default {
       }
     }
   },
-  destroyed () {
+  unmounted () {
     this.$v.whatsapp.$reset()
   }
 }

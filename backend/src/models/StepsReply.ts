@@ -38,7 +38,7 @@ class StepsReply extends Model<StepsReply> {
   autoReply: AutoReply;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

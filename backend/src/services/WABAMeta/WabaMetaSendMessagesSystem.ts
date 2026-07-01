@@ -8,6 +8,7 @@ import Ticket from "../../models/Ticket";
 import Whatsapp from "../../models/Whatsapp";
 import { logger } from "../../utils/logger";
 import SentMessageMeta from "./SentMessageMeta";
+import UploadMediaMeta from "./UploadMediaMeta";
 
 const buildMetaMessage = (
   message: Message,
@@ -115,12 +116,32 @@ const WabaMetaSendMessagesSystem = async (
   for (const messageItem of messages) {
     const { ticket } = messageItem;
 
-    const shouldWaitMediaUpload =
+    const needsMediaUpload =
       !["text", "chat"].includes(messageItem.mediaType) &&
       messageItem.mediaUrl &&
       !messageItem.wabaMediaId;
 
-    if (shouldWaitMediaUpload) {
+    if (needsMediaUpload) {
+      try {
+        const wabaMediaId = await UploadMediaMeta({
+          fileName: messageItem.mediaName,
+          accessToken: connection.tokenAPI,
+          phoneNumberId: connection.fbPageId
+        });
+        await messageItem.update({ wabaMediaId });
+      } catch (error) {
+        logger.error(
+          `Meta WABA media upload failed for message ${messageItem.id}`,
+          error
+        );
+      }
+    }
+
+    const isMissingMedia =
+      !["text", "chat"].includes(messageItem.mediaType) &&
+      !messageItem.wabaMediaId;
+
+    if (isMissingMedia) {
       logger.warn(
         `Meta WABA media message ${messageItem.id} without uploaded media id`
       );

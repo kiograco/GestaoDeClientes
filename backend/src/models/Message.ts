@@ -114,8 +114,8 @@ class Message extends Model<Message> {
   @ForeignKey(() => User)
   @Default(null)
   @AllowNull
-  @Column
-  userId: string | number;
+  @Column(DataType.INTEGER)
+  userId: number;
 
   @BelongsTo(() => User)
   user: User;

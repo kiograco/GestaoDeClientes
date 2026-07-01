@@ -1,4 +1,4 @@
-const usuario = JSON.parse(localStorage.getItem('usuario'))
+﻿const usuario = JSON.parse(localStorage.getItem('usuario'))
 import Router from 'src/router/index'
 import { socketIO } from '../utils/socket'
 import { ConsultarTickets } from 'src/service/tickets'
@@ -164,7 +164,7 @@ export default {
   mounted () {
     this.socketInitial()
   },
-  destroyed () {
+  unmounted () {
     socket && socket.disconnect()
   }
 }

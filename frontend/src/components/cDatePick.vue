@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <q-input
       class="full-width"
@@ -10,7 +10,7 @@
       v-bind="$attrs"
       :class="classAtrrs"
       :value="cValue"
-      v-on="$listeners"
+      v-on="$attrs"
       :error="cError"
       :error-message="cErrorMessage"
       :ruler="[val => dateIsValid(val) || 'Data inválida!' ]"
@@ -49,12 +49,10 @@
   </div>
 </template>
 <script>
-import { singleErrorExtractorMixin } from 'vuelidate-error-extractor'
 import { format, parse, isValid } from 'date-fns'
 
 export default {
   name: 'ccInputDate',
-  extends: singleErrorExtractorMixin,
   inheritAttrs: false,
   data () {
     return {

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="row col full-width q-pa-sm">
       <q-card
@@ -68,12 +68,12 @@
       </template>
     </q-banner>
     <div class="row full-width">
-      <template v-for="item in canais">
+      <template v-for="item in canais" :key="item.id">
         <q-card
           flat
           bordered
           class="col-xs-12 col-sm-5 col-md-4 col-lg-3 q-ma-sm"
-          :key="item.id"
+          
         >
           <q-item>
             <q-item-section avatar>
@@ -185,8 +185,8 @@
       </template>
     </div>
     <ModalWhatsapp
-      :modalWhatsapp.sync="modalWhatsapp"
-      :whatsAppEdit.sync="whatsappSelecionado"
+      v-model:modalWhatsapp="modalWhatsapp"
+      v-model:whatsAppEdit="whatsappSelecionado"
       @recarregar-lista="listarWhatsapps"
     />
     <q-inner-loading :showing="loading">

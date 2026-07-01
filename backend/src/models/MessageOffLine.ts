@@ -90,7 +90,7 @@ class MessagesOffLine extends Model<MessagesOffLine> {
   contact: Contact;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

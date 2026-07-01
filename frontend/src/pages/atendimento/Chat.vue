@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     class="chat-workspace no-scroll hide-scrollbar overflow-hidden"
     :style="style"
@@ -21,30 +21,15 @@
         enter-active-class="animated fadeIn"
         leave-active-class="animated fadeOut"
       >
-        <infinite-loading
-          v-if="cMessages.length"
-          @infinite="onLoadMore"
-          direction="top"
-          :identificador="ticketFocado.id"
-          spinner="spiral"
-        >
-          <div slot="no-results">
-            <div v-if="!cMessages.length">
-              Sem resultados :(
-            </div>
-          </div>
-          <div slot="no-more">
-            Nada mais a carregar :)
-          </div>
-        </infinite-loading>
+        <q-infinite-scroll @load="onLoadMore" reverse :key="ticketFocado && ticketFocado.id"><template #loading><div class="row justify-center q-my-md"><q-spinner-dots color="primary" size="40px" /></div></template></q-infinite-scroll>
       </transition>
       <MensagemChat
-        :replyingMessage.sync="replyingMessage"
+        v-model:replyingMessage="replyingMessage"
         :mensagens="cMessages"
         v-if="cMessages.length && ticketFocado.id"
         @mensagem-chat:encaminhar-mensagem="abrirModalEncaminharMensagem"
-        :ativarMultiEncaminhamento.sync="ativarMultiEncaminhamento"
-        :mensagensParaEncaminhar.sync="mensagensParaEncaminhar"
+        v-model:ativarMultiEncaminhamento="ativarMultiEncaminhamento"
+        v-model:mensagensParaEncaminhar="mensagensParaEncaminhar"
       />
       <div id="inicioListaMensagensChat"></div>
     </q-scroll-area>
@@ -218,7 +203,7 @@
       <InputMensagem
         v-if="!mensagensParaEncaminhar.length"
         :mensagensRapidas="mensagensRapidas"
-        :replyingMessage.sync="replyingMessage"
+        v-model:replyingMessage="replyingMessage"
       />
       <q-resize-observer @resize="onResizeInputMensagem" />
     </q-footer>
@@ -244,7 +229,7 @@
           <InputMensagem
             isScheduleDate
             :mensagensRapidas="mensagensRapidas"
-            :replyingMessage.sync="replyingMessage"
+            v-model:replyingMessage="replyingMessage"
           />
         </q-card-section>
 
@@ -273,7 +258,7 @@
         <q-card-section>
           <MensagemChat
             :isShowOptions="false"
-            :replyingMessage.sync="replyingMessage"
+            v-model:replyingMessage="replyingMessage"
             :mensagens="[mensagemEncaminhamento]"
           />
         </q-card-section>
@@ -339,7 +324,6 @@ import MensagemChat from './MensagemChat'
 import InputMensagem from './InputMensagem'
 import mixinAtualizarStatusTicket from './mixinAtualizarStatusTicket'
 import mixinSockets from './mixinSockets'
-import InfiniteLoading from 'vue-infinite-loading'
 import { ListarContatos } from 'src/service/contatos'
 import { EncaminharMensagem } from 'src/service/tickets'
 
@@ -352,8 +336,7 @@ export default {
   components: {
     InforCabecalhoChat,
     MensagemChat,
-    InputMensagem,
-    InfiniteLoading
+    InputMensagem
   },
   data () {
     return {
@@ -401,11 +384,11 @@ export default {
     async onResizeInputMensagem (size) {
       this.heigthInputMensagem = size.height
     },
-    async onLoadMore (infiniteState) {
+    async onLoadMore (index, done) {
       if (this.loading) return
 
       if (!this.hasMore || !this.ticketFocado?.id) {
-        return infiniteState.complete()
+        done(true); return
       }
 
       try {
@@ -414,9 +397,9 @@ export default {
         this.params.pageNumber += 1
         await this.$store.dispatch('LocalizarMensagensTicket', this.params)
         this.loading = false
-        infiniteState.loaded()
+        done()
       } catch (error) {
-        infiniteState.complete()
+        done(true)
       }
       this.loading = false
     },
@@ -482,7 +465,7 @@ export default {
   mounted () {
     this.socketMessagesList()
   },
-  destroyed () {
+  unmounted () {
     this.$root.$off('scrollToBottomMessageChat', this.scrollToBottom)
   }
 }

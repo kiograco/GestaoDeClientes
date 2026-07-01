@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     class="WAL atendimento-workspace position-relative"
     :style="style"
@@ -75,7 +75,7 @@
             flat
             class="app-icon-btn"
             icon="mdi-home"
-            @click="() => $router.push({ name: 'home-dashboard' })"
+            @click="retornarMenu"
           >
             <q-tooltip content-class="bg-padrao text-grey-9 text-bold">
               Retornar ao menu
@@ -291,13 +291,13 @@
               horizontal
           style="height: 40px; width: 300px;"
             >
-              <template v-for="item in whatsapps">
+              <template v-for="item in whatsapps" :key="item.id">
                 <q-btn
                   rounded
                   flat
                   dense
                   size="18px"
-                  :key="item.id"
+                  
                   class="q-mx-xs q-pa-none"
                   :style="`opacity: ${item.status === 'CONNECTED' ? 1 : 0.2}`"
                   :icon="`img:${item.type}-logo.png`"
@@ -679,7 +679,7 @@
         </q-scroll-area>
       </q-drawer>
 
-      <ModalNovoTicket :modalNovoTicket.sync="modalNovoTicket" />
+      <ModalNovoTicket v-model:modalNovoTicket="modalNovoTicket" />
       <ModalPedidoManual
         v-if="deliveryHabilitado && ticketFocado.id"
         v-model="modalPedidoDelivery"
@@ -687,7 +687,7 @@
       />
       <ContatoModal
         :contactId="selectedContactId"
-        :modalContato.sync="modalContato"
+        v-model:modalContato="modalContato"
         @contatoModal:contato-editado="contatoEditado"
       />
       <ClienteModal
@@ -698,8 +698,8 @@
 
       <ModalUsuario
         :isProfile="true"
-        :modalUsuario.sync="modalUsuario"
-        :usuarioEdicao.sync="usuario"
+        v-model:modalUsuario="modalUsuario"
+        v-model:usuarioEdicao="usuario"
       />
 
       <q-dialog
@@ -733,9 +733,9 @@
                 class="q-pl-sm "
                 :class="{ 'text-black': !$q.dark.isActive }"
               >
-                <template v-for="(log, idx) in logsTicket">
+                <template v-for="(log, idx) in logsTicket" :key="log && log.id || idx">
                   <q-timeline-entry
-                    :key="log && log.id || idx"
+                    
                     :subtitle="$formatarData(log.createdAt, 'dd/MM/yyyy HH:mm')"
                     :color="messagesLog[log.type] && messagesLog[log.type].color || ''"
                     :icon="messagesLog[log.type] && messagesLog[log.type].icon || ''"
@@ -798,6 +798,7 @@ import { messagesLog } from '../../utils/constants'
 import ModalPedidoManual from 'src/pages/delivery/ModalPedidoManual'
 import ClienteModal from 'src/pages/clientes/ClienteModal'
 import { clearAccessToken } from 'src/utils/authToken'
+import { defaultRouteByProfile } from 'src/router/access'
 export default {
   name: 'IndexAtendimento',
   mixins: [mixinSockets, socketInitial],
@@ -913,6 +914,15 @@ export default {
     }
   },
   methods: {
+    retornarMenu () {
+      const target = defaultRouteByProfile(localStorage.getItem('profile'))
+      if (this.$route.name === target.name) return
+      this.$router.push(target).catch(error => {
+        if (error?.name !== 'NavigationDuplicated') {
+          throw error
+        }
+      })
+    },
     handlerNotifications (data) {
       const options = {
         body: `${data.body} - ${format(new Date(), 'HH:mm')}`,
@@ -1168,7 +1178,7 @@ export default {
       this.$router.push({ name: 'chat-empty' })
     }
   },
-  destroyed () {
+  unmounted () {
     this.$root.$off('handlerNotifications', this.handlerNotifications)
     this.$root.$off('infor-cabecalo-chat:acao-menu', this.setValueMenu)
     this.$root.$on('update-ticket:info-contato', this.setValueMenuContact)

@@ -60,7 +60,7 @@ class Campaign extends Model<Campaign> {
   mediaType: string;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

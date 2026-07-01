@@ -44,7 +44,7 @@ class LogTicket extends Model<LogTicket> {
   @ForeignKey(() => User)
   @Default(null)
   @AllowNull
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

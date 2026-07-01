@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-page campanhas-page">
     <div class="app-page-header">
       <div>
@@ -55,7 +55,7 @@
       :columns="columns"
       :loading="loading"
       row-key="id"
-      :pagination.sync="pagination"
+      v-model:pagination="pagination"
       :rows-per-page-options="[0]"
     >
       <template v-slot:top>
@@ -150,8 +150,8 @@
     </q-table>
     <ModalCampanha
       v-if="modalCampanha"
-      :modalCampanha.sync="modalCampanha"
-      :campanhaEdicao.sync="campanhaEdicao"
+      v-model:modalCampanha="modalCampanha"
+      v-model:campanhaEdicao="campanhaEdicao"
       @modal-campanha:criada="campanhaCriada"
       @modal-campanha:editada="campanhaEditada"
     />

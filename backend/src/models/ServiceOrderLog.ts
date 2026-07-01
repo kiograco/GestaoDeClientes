@@ -28,7 +28,7 @@ class ServiceOrderLog extends Model<ServiceOrderLog> {
   serviceOrder: ServiceOrder;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

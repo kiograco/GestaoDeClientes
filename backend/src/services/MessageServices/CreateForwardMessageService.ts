@@ -8,7 +8,7 @@ import ShowTicketService from "../TicketServices/ShowTicketService";
 interface Request {
   message: Message;
   contact: Contact;
-  userId?: number | string;
+  userId?: number;
   tenantId: number;
   ticketIdOrigin: number;
 }

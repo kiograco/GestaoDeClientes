@@ -347,7 +347,7 @@ export default {
     selecionarProduto () {
       this.item.optionIdsByGroup = {}
       this.item.product.optionGroups.forEach(grupo => {
-        this.$set(this.item.optionIdsByGroup, grupo.id, [])
+        this.item.optionIdsByGroup[grupo.id] = []
       })
     },
     adicionarAoCarrinho () {

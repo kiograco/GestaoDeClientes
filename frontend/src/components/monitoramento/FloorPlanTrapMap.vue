@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="floor-plan-actions">
       <q-btn-toggle
@@ -88,7 +88,7 @@
         outline
         color="primary"
         icon="mdi-crosshairs-gps"
-        @dragstart.native="draggedPoint = point"
+        @dragstart="draggedPoint = point"
       >
         {{ point.label }}
       </q-chip>

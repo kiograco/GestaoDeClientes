@@ -8,7 +8,8 @@
   ForeignKey,
   BelongsTo,
   AutoIncrement,
-  AllowNull
+  AllowNull,
+  DataType
 } from "sequelize-typescript";
 import Tenant from "./Tenant";
 import User from "./User";
@@ -29,7 +30,7 @@ class FastReply extends Model<FastReply> {
   message: string;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

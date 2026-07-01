@@ -4,6 +4,7 @@ import Ticket from "../../models/Ticket";
 import Message from "../../models/Message";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import GetMediaWaba360 from "./GetMediaWaba360";
+import GetMediaWabaMeta from "../WABAMeta/GetMediaWabaMeta";
 import Whatsapp from "../../models/Whatsapp";
 
 const VerifyMediaMessage = async (
@@ -15,7 +16,12 @@ const VerifyMediaMessage = async (
   // const quotedMsg = await VerifyQuotedMessage(msg);
   let filename;
   try {
-    filename = await GetMediaWaba360({ channel, msg, ticket });
+    // A Meta usa um fluxo de download diferente da 360Dialog (busca a URL do
+    // arquivo antes de baixar), então cada BSP precisa do seu próprio serviço.
+    filename =
+      channel.wabaBSP === "meta"
+        ? await GetMediaWabaMeta({ channel, msg, ticket })
+        : await GetMediaWaba360({ channel, msg, ticket });
   } catch (error) {
     // Media is optional for webhook messages.
   }

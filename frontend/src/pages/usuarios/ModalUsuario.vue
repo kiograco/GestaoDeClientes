@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <q-dialog
     persistent
     :value="modalUsuario"
@@ -88,7 +88,7 @@
 </template>
 
 <script>
-import { required, email, minLength, maxLength } from 'vuelidate/lib/validators'
+import { required, email, minLength, maxLength } from '@vuelidate/validators'
 import { CriarUsuario, UpdateUsuarios } from 'src/service/user'
 import { Notify } from 'quasar'
 export default {

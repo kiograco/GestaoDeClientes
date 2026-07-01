@@ -18,7 +18,7 @@ class AuditLog extends Model<AuditLog> {
   @Column
   tenantId: number;
 
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @Column

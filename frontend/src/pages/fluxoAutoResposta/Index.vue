@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <q-card class="q-ma-md">
       <q-card-section class="q-pa-sm">
@@ -24,7 +24,7 @@
             :columns="columns"
             :loading="loading"
             row-key="id"
-            :pagination.sync="pagination"
+            v-model:pagination="pagination"
             :rows-per-page-options="[0]"
           >
             <template v-slot:top-right>
@@ -102,7 +102,7 @@
                     :columns="columnsEtapas"
                     :loading="loading"
                     row-key="id"
-                    :pagination.sync="pagination"
+                    v-model:pagination="pagination"
                     :rows-per-page-options="[0]"
                   >
                     <template v-slot:top-right>
@@ -181,7 +181,7 @@
                             :loading="loading"
                             row-key="id"
                             hide-bottom
-                            :pagination.sync="pagination"
+                            v-model:pagination="pagination"
                             :rows-per-page-options="[0]"
                           >
                             <template v-slot:top-right>
@@ -255,24 +255,24 @@
         </div>
       </div>
       <ModalAutoResposta
-        :modalAutoResposta.sync="modalAutoResposta"
-        :autoRespostaEdicao.sync="autoRespostaSelecionado"
+        v-model:modalAutoResposta="modalAutoResposta"
+        v-model:autoRespostaEdicao="autoRespostaSelecionado"
         @autoResposta:criada="autoRespostaCriada"
         @autoResposta:editado="autoRespostaEditada"
       />
       <ModalEtapaAutoResposta
-        :modalEtapaAutoResposta.sync="modalEtapaAutoResposta"
-        :etapaAutoRespostaEdicao.sync="etapaAutoRespostaEdicao"
+        v-model:modalEtapaAutoResposta="modalEtapaAutoResposta"
+        v-model:etapaAutoRespostaEdicao="etapaAutoRespostaEdicao"
         :autoReply="autoReply"
         @etapaAutoResposta:criada="etapaAutoRespostaCriada"
         @etapaAutoResposta:editada="etapaAutoRespostaEditada"
       />
       <ModalAcaoEtapa
-        :modalAcaoEtapa.sync="modalAcaoEtapa"
-        :acaoEtapaEdicao.sync="acaoEtapaEdicao"
+        v-model:modalAcaoEtapa="modalAcaoEtapa"
+        v-model:acaoEtapaEdicao="acaoEtapaEdicao"
         :filas="filas"
         :autoReply="autoReply"
-        :etapaAutoResposta.sync="etapaAutoRespostaEdicao"
+        v-model:etapaAutoResposta="etapaAutoRespostaEdicao"
         :usuarios="usuarios"
         @acaoEtapa:editada="acaoEditada"
         @acaoEtapa:criada="acaoCriada"

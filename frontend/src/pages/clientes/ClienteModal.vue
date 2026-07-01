@@ -476,7 +476,7 @@ export default {
           activitySector: this.cliente.activitySector || data.activitySector || ''
         }
         const endereco = this.cliente.addresses[0] || enderecoVazio()
-        this.$set(this.cliente.addresses, 0, {
+        this.cliente.addresses[0] = {
           ...endereco,
           linkedDocument: endereco.linkedDocument || cnpj,
           zipCode: endereco.zipCode || data.zipCode || '',
@@ -486,7 +486,7 @@ export default {
           district: endereco.district || data.district || '',
           city: endereco.city || data.city || '',
           state: endereco.state || data.state || ''
-        })
+        }
       } catch (error) {
         const status = error?.status || error?.response?.status
         const code = error?.data?.error || error?.response?.data?.error
@@ -512,7 +512,7 @@ export default {
       this.loadingCepIndex = index
       try {
         const { data } = await ConsultarCep(zipCode)
-        this.$set(this.cliente.addresses, index, {
+        this.cliente.addresses[index] = {
           ...endereco,
           zipCode,
           street: endereco.street || data.logradouro || '',
@@ -520,7 +520,7 @@ export default {
           city: endereco.city || data.localidade || '',
           state: endereco.state || data.uf || '',
           complement: endereco.complement || data.complemento || ''
-        })
+        }
       } catch (error) {
         this.$notificarErro('Nao foi possivel localizar o CEP.', error)
       } finally {

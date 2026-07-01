@@ -67,3 +67,17 @@ interface WabaContext {
   messages: WabaMessage[];
   contacts: WabaContact[];
 }
+
+interface WabaMetaStatusError {
+  code?: number;
+  title?: string;
+  message?: string;
+}
+
+interface WabaMetaMessageStatus {
+  id: string;
+  status: "sent" | "delivered" | "read" | "failed";
+  timestamp?: string;
+  recipient_id?: string;
+  errors?: WabaMetaStatusError[];
+}

@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import AppError from "../errors/AppError";
 import Whatsapp from "../models/Whatsapp";
 import HandleMessage360 from "../services/WABA360/HandleMessage360";
+import HandleWabaMetaStatus from "../services/WABAMeta/HandleWabaMetaStatus";
 
 const validate360Signature = (req: Request): void => {
   const secret = process.env.DIALOG360_WEBHOOK_SECRET;
@@ -107,6 +108,11 @@ export const ReceivedRequestWabaMeta = async (
       entries.flatMap((entry: LegacyAny) =>
         (entry.changes || []).map(async (change: LegacyAny) => {
           const { value } = change;
+
+          if (value?.statuses?.length) {
+            await HandleWabaMetaStatus(value.statuses);
+          }
+
           if (!value?.messages?.length) return;
 
           await HandleMessage360(

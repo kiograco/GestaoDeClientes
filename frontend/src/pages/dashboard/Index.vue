@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-page dashboard-page">
     <div class="app-page-header">
       <div>
@@ -158,7 +158,7 @@
           :data="ticketsPerUsersDetail"
           :columns="TicketsPerUsersDetailColumn"
           row-key="email"
-          :pagination.sync="paginationTableUser"
+          v-model:pagination="paginationTableUser"
           :rows-per-page-options="[0]"
           bordered
           flat
@@ -191,7 +191,7 @@ import {
   GetDashTicketsPerUsersDetail
 } from 'src/service/estatisticas'
 import { subDays, format, formatDuration, differenceInDays } from 'date-fns'
-import ApexChart from 'vue-apexcharts'
+import ApexChart from 'vue3-apexcharts'
 
 export default {
   name: 'IndexDashboard',

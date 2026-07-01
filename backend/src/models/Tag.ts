@@ -8,7 +8,8 @@
   ForeignKey,
   BelongsTo,
   AutoIncrement,
-  Default
+  Default,
+  DataType
 } from "sequelize-typescript";
 import Tenant from "./Tenant";
 import User from "./User";
@@ -37,7 +38,7 @@ class Tags extends Model<Tags> {
   updatedAt: Date;
 
   @ForeignKey(() => User)
-  @Column
+  @Column(DataType.INTEGER)
   userId: string | number;
 
   @BelongsTo(() => User)

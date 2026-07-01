@@ -104,7 +104,7 @@ export default {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.opened))
     },
     toggleOpen (key) {
-      this.$set(this.opened, key, this.opened[key] === false)
+      this.opened[key] = this.opened[key] === false
       this.persistOpenedState()
     },
     normalize (value) {

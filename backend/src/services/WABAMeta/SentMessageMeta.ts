@@ -1,6 +1,7 @@
 import AppError from "../../errors/AppError";
 import { logger } from "../../utils/logger";
 import { metaGraphBreaker } from "./metaGraphClient";
+import { withMetaRetry } from "./metaRetry";
 
 interface Request {
   message: Record<string, unknown>;
@@ -16,18 +17,20 @@ const SentMessageMeta = async ({
   phoneNumberId
 }: Request): Promise<WabaResponse> => {
   try {
-    const res = await metaGraphBreaker.fire({
-      method: "post",
-      url: `https://graph.facebook.com/${graphApiVersion}/${phoneNumberId}/messages`,
-      data: {
-        messaging_product: "whatsapp",
-        ...message
-      },
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json"
-      }
-    });
+    const res = await withMetaRetry(() =>
+      metaGraphBreaker.fire({
+        method: "post",
+        url: `https://graph.facebook.com/${graphApiVersion}/${phoneNumberId}/messages`,
+        data: {
+          messaging_product: "whatsapp",
+          ...message
+        },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        }
+      })
+    );
 
     return res.data;
   } catch (error) {

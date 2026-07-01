@@ -8,10 +8,12 @@ import expressInstance, {
   NextFunction
 } from "express";
 import * as Sentry from "@sentry/node";
+import swaggerUi from "swagger-ui-express";
 import routes from "../routes";
 import uploadConfig from "../config/upload";
 import AppError from "../errors/AppError";
 import { logger } from "../utils/logger";
+import { openApiSpec } from "../docs/openapi";
 
 export default async function modules(app: Application): Promise<void> {
   const { version } = JSON.parse(readFileSync("./package.json").toString());
@@ -53,6 +55,7 @@ export default async function modules(app: Application): Promise<void> {
   );
 
   app.use("/api/v1", routes);
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
   app.use(Sentry.Handlers.errorHandler());
 
   // error handle
