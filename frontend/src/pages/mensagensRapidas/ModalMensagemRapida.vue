@@ -47,10 +47,6 @@
               >
                 <VEmojiPicker
                   style="width: 40vw"
-                  :showSearch="false"
-                  :emojisByRow="20"
-                  labelSearch="Localizar..."
-                  lang="pt-BR"
                   @select="onInsertSelectEmoji"
                 />
               </q-menu>
@@ -95,7 +91,8 @@
 </template>
 
 <script>
-import { VEmojiPicker } from 'v-emoji-picker'
+import VEmojiPicker from 'vue3-emoji-picker'
+import 'vue3-emoji-picker/css'
 
 import { CriarMensagemRapida, AlterarMensagemRapida } from 'src/service/mensagensRapidas'
 export default {
@@ -131,16 +128,16 @@ export default {
         cursorPos = startPos,
         tmpStr = tArea.value
       // filter:
-      if (!emoji.data) {
+      if (!emoji.i) {
         return
       }
       // insert:
       self.txtContent = this.mensagemRapida.message
-      self.txtContent = tmpStr.substring(0, startPos) + emoji.data + tmpStr.substring(endPos, tmpStr.length)
+      self.txtContent = tmpStr.substring(0, startPos) + emoji.i + tmpStr.substring(endPos, tmpStr.length)
       this.mensagemRapida.message = self.txtContent
       // move cursor:
       setTimeout(() => {
-        tArea.selectionStart = tArea.selectionEnd = cursorPos + emoji.data.length
+        tArea.selectionStart = tArea.selectionEnd = cursorPos + emoji.i.length
       }, 10)
     },
     fecharModal () {

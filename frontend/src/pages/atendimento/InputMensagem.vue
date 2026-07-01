@@ -122,10 +122,6 @@
             >
               <VEmojiPicker
                 style="width: 40vw"
-                :showSearch="false"
-                :emojisByRow="20"
-                labelSearch="Localizar..."
-                lang="pt-BR"
                 @select="onInsertSelectEmoji"
               />
             </q-menu>
@@ -203,10 +199,6 @@
                 >
                   <VEmojiPicker
                     style="width: 40vw"
-                    :showSearch="false"
-                    :emojisByRow="20"
-                    labelSearch="Localizar..."
-                    lang="pt-BR"
                     @select="onInsertSelectEmoji"
                   />
                 </q-menu>
@@ -403,7 +395,8 @@
 import { LocalStorage, uid } from 'quasar'
 import mixinCommon from './mixinCommon'
 import { EnviarMensagemTexto } from 'src/service/tickets'
-import { VEmojiPicker } from 'v-emoji-picker'
+import VEmojiPicker from 'vue3-emoji-picker'
+import 'vue3-emoji-picker/css'
 import { mapGetters } from 'vuex'
 import RecordingTimer from './RecordingTimer'
 import MicRecorder from 'mic-recorder-to-mp3'
@@ -500,17 +493,17 @@ export default {
         tmpStr = tArea.value
 
       // filter:
-      if (!emoji.data) {
+      if (!emoji.i) {
         return
       }
 
       // insert:
       self.txtContent = this.textChat
-      self.txtContent = tmpStr.substring(0, startPos) + emoji.data + tmpStr.substring(endPos, tmpStr.length)
+      self.txtContent = tmpStr.substring(0, startPos) + emoji.i + tmpStr.substring(endPos, tmpStr.length)
       this.textChat = self.txtContent
       // move cursor:
       setTimeout(() => {
-        tArea.selectionStart = tArea.selectionEnd = cursorPos + emoji.data.length
+        tArea.selectionStart = tArea.selectionEnd = cursorPos + emoji.i.length
       }, 10)
     },
     abrirEnvioArquivo (event) {

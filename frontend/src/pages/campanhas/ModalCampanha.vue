@@ -149,10 +149,6 @@
                 >
                   <VEmojiPicker
                     style="width: 40vw"
-                    :showSearch="false"
-                    :emojisByRow="20"
-                    labelSearch="Localizar..."
-                    lang="pt-BR"
                     @select="(v) => onInsertSelectEmoji(v, 'message1')"
                   />
                 </q-menu>
@@ -199,10 +195,6 @@
                 >
                   <VEmojiPicker
                     style="width: 40vw"
-                    :showSearch="false"
-                    :emojisByRow="20"
-                    labelSearch="Localizar..."
-                    lang="pt-BR"
                     @select="(v) => onInsertSelectEmoji(v, 'message2')"
                   />
                 </q-menu>
@@ -249,10 +241,6 @@
                 >
                   <VEmojiPicker
                     style="width: 40vw"
-                    :showSearch="false"
-                    :emojisByRow="20"
-                    labelSearch="Localizar..."
-                    lang="pt-BR"
                     @select="(v) => onInsertSelectEmoji(v, 'message3')"
                   />
                 </q-menu>
@@ -336,7 +324,8 @@
 
 <script>
 import { required } from '@vuelidate/validators'
-import { VEmojiPicker } from 'v-emoji-picker'
+import VEmojiPicker from 'vue3-emoji-picker'
+import 'vue3-emoji-picker/css'
 import axios from 'axios'
 import cMolduraCelular from 'src/components/cMolduraCelular'
 import MensagemChat from 'src/pages/atendimento/MensagemChat'
@@ -481,16 +470,16 @@ export default {
         cursorPos = startPos,
         tmpStr = tArea.value
       // filter:
-      if (!emoji.data) {
+      if (!emoji.i) {
         return
       }
       // insert:
       self.txtContent = this.campanha[ref]
-      self.txtContent = tmpStr.substring(0, startPos) + emoji.data + tmpStr.substring(endPos, tmpStr.length)
+      self.txtContent = tmpStr.substring(0, startPos) + emoji.i + tmpStr.substring(endPos, tmpStr.length)
       this.campanha[ref] = self.txtContent
       // move cursor:
       setTimeout(() => {
-        tArea.selectionStart = tArea.selectionEnd = cursorPos + emoji.data.length
+        tArea.selectionStart = tArea.selectionEnd = cursorPos + emoji.i.length
       }, 10)
     },
     resetarCampanha () {
