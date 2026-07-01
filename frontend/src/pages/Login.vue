@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <q-layout class="vertical-center login-layout">
     <q-page-container>
       <q-page class="flex justify-center items-center">
@@ -83,9 +83,9 @@
               @click="fazerLogin"
             >
               Login
-              <span slot="loading">
+              <template #loading><span>
                 <q-spinner-puff class="on-left" />Logando...
-              </span>
+              </span></template>
             </q-btn>
           </q-card-actions>
           <q-btn
@@ -399,7 +399,7 @@
 </template>
 
 <script>
-import { required, email } from 'vuelidate/lib/validators'
+import { required, email } from '@vuelidate/validators'
 import {
   ConsultarIdentidadeVisual,
   CriarContaContratarPlano,

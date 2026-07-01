@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <q-table
       flat
@@ -11,7 +11,7 @@
       :columns="columns"
       :loading="loading"
       row-key="id"
-      :pagination.sync="pagination"
+      v-model:pagination="pagination"
       :rows-per-page-options="[0]"
     >
       <template v-slot:top-right>
@@ -59,8 +59,8 @@
       </template>
     </q-table>
     <ModalEtiqueta
-      :modalEtiqueta.sync="modalEtiqueta"
-      :etiquetaEdicao.sync="etiquetaEdicao"
+      v-model:modalEtiqueta="modalEtiqueta"
+      v-model:etiquetaEdicao="etiquetaEdicao"
       @modal-etiqueta:criada="etiquetaCriada"
       @modal-etiqueta:editada="etiquetaEditada"
     />

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <q-table
       flat
@@ -11,7 +11,7 @@
       :columns="columns"
       :loading="loading"
       row-key="id"
-      :pagination.sync="pagination"
+      v-model:pagination="pagination"
       :rows-per-page-options="[0]"
     >
       <template v-slot:top-right>
@@ -49,8 +49,8 @@
       </template>
     </q-table>
     <ModalFila
-      :modalFila.sync="modalFila"
-      :filaEdicao.sync="filaEdicao"
+      v-model:modalFila="modalFila"
+      v-model:filaEdicao="filaEdicao"
       @modal-fila:criada="filaCriada"
       @modal-fila:editada="filaEditada"
     />

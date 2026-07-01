@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <q-table
       class="my-sticky-dynamic"
@@ -11,7 +11,7 @@
       virtual-scroll
       :virtual-scroll-item-size="48"
       :virtual-scroll-sticky-size-start="48"
-      :pagination.sync="pagination"
+      v-model:pagination="pagination"
       :rows-per-page-options="[0]"
       @virtual-scroll="onScroll"
       :bordered="isChatContact"
@@ -172,7 +172,7 @@
     </q-table>
     <ContatoModal
       :contactId="selectedContactId"
-      :modalContato.sync="modalContato"
+      v-model:modalContato="modalContato"
       @contatoModal:contato-editado="UPDATE_CONTACTS"
       @contatoModal:contato-criado="UPDATE_CONTACTS"
     />

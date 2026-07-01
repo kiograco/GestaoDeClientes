@@ -5,33 +5,29 @@
       enter-active-class="animated fadeIn"
       leave-active-class="animated fadeOut"
     >
-      <template v-for="(mensagem, index) in       mensagens      ">
+      <template v-for="(mensagem, index) in mensagens" :key="mensagem.id || index">
         <hr
           v-if="isLineDate"
-          :key="'hr-' + index"
           class="hr-text q-mt-lg q-mb-md"
           :data-content="formatarData(mensagem.createdAt)"
           v-show="index === 0 || formatarData(mensagem.createdAt) !== formatarData(mensagens[index - 1].createdAt)"
         >
         <template v-if="mensagens.length && index === mensagens.length - 1">
           <div
-            :key="`ref-${mensagem.createdAt}`"
             ref="lastMessageRef"
             id="lastMessageRef"
             style="float: left; background: black; clear: both"
           />
         </template>
         <div
-          :key="`chat-message-${mensagem.id}`"
-          :id="`chat-message-${mensagem.id}`"
+          :id="'chat-message-' + mensagem.id"
         />
         <q-chat-message
-          :key="mensagem.id"
           :stamp="dataInWords(mensagem.createdAt)"
           :sent="mensagem.fromMe"
           class="text-weight-medium"
           :bg-color="mensagem.fromMe ? 'grey-2' : $q.dark.isActive ? 'blue-2' : 'blue-1'"
-          :class="{ pulseIdentications: identificarMensagem === `chat-message-${mensagem.id}` }"
+          :class="{ pulseIdentications: identificarMensagem === 'chat-message-' + mensagem.id }"
         >
           <!-- :bg-color="mensagem.fromMe ? 'grey-2' : 'secondary' " -->
           <div
@@ -40,13 +36,12 @@
           >
             <q-checkbox
               v-if="ativarMultiEncaminhamento"
-              :key="`cheked-chat-message-${mensagem.id}`"
               :class="{
                   'absolute-top-right checkbox-encaminhar-right': !mensagem.fromMe,
                   'absolute-top-left checkbox-encaminhar-left': mensagem.fromMe
                 }"
-              :ref="`box-chat-message-${mensagem.id}`"
-              @click.native="verificarEncaminharMensagem(mensagem)"
+              :ref="'box-chat-message-' + mensagem.id"
+              @click="verificarEncaminharMensagem(mensagem)"
               :value="false"
             />
 
@@ -113,8 +108,7 @@
               <MensagemRespondida
                 style="max-width: 240px; max-height: 150px"
                 class="row justify-center"
-                @mensagem-respondida:focar-mensagem="f
-                                                                                                                carMensagem"
+                @mensagem-respondida:focar-mensagem="focarMensagem"
                 :mensagem="mensagem.quotedMsg"
               />
             </div>
@@ -208,7 +202,7 @@
                 dense
                 class="q-px-sm text-center btn-rounded "
                 download="vCard"
-                :href=" `data:text/x-vcard;charset=utf-8;base64,${returnCardContato(mensagem.body)}` "
+                :href="'data:text/x-vcard;charset=utf-8;base64,' + returnCardContato(mensagem.body)"
               >
                 Download Contato
               </q-btn>
@@ -303,7 +297,7 @@
                 dense
                 class="q-px-sm text-center"
                 target="_blank"
-                :href="`http://docs.google.com/gview?url=${mensagem.mediaUrl}&embedded=true`"
+                :href="'http://docs.google.com/gview?url=' + mensagem.mediaUrl + '&embedded=true'"
               >
                 Visualizar
               </q-btn> -->
@@ -517,7 +511,7 @@ export default {
     //   element.playbackRate = 2
     // })
   },
-  destroyed () {
+  unmounted () {
   }
 }
 </script>

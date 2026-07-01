@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div :id="`pagePrint-${id}`">
 
     <body id="pageInit">
@@ -269,7 +269,7 @@ export default {
       window.addEventListener('afterprint', this.fecharModal)
     })
   },
-  beforeDestroy () {
+  beforeUnmount () {
     window.removeEventListener('afterprint', this.fecharModal)
     this.$emit('update:imprimirRelatorio', false)
   },

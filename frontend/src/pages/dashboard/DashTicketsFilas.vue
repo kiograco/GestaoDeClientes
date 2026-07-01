@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="row col q-pa-md justify-between items-center">
       <h1> Painel Atendimentos </h1>
@@ -71,9 +71,9 @@
 
     <div style="height: 85vh"
       class="scroll">
-      <template v-for="(items, key) in sets">
+      <template v-for="(items, key) in sets" :key="key">
         <div :style="{ height: 800 }"
-          :key="key"
+          
           class="row q-pa-md q-col-gutter-md q-mb-sm">
           <div :class="contentClass"
             v-for="(item, index) in items"
@@ -361,7 +361,7 @@ export default {
     })
     await this.consultarTickets()
   },
-  destroyed () {
+  unmounted () {
     socket.disconnect()
   }
 }

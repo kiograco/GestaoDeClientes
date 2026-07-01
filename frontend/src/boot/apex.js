@@ -1,8 +1,5 @@
-import VueApexCharts from 'vue-apexcharts'
+import VueApexCharts from 'vue3-apexcharts'
 
-export default ({
-  Vue
-}) => {
-  Vue.use(VueApexCharts)
-  Vue.component('apexchart', VueApexCharts)
+export default ({ app }) => {
+  app.use(VueApexCharts)
 }

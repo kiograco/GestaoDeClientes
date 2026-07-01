@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="row">
       <div class="col">
@@ -13,7 +13,7 @@
           :columns="columns"
           :loading="loading"
           row-key="id"
-          :pagination.sync="pagination"
+          v-model:pagination="pagination"
           :rows-per-page-options="[0]"
         >
           <template v-slot:top-right>
@@ -93,8 +93,8 @@
       </div>
     </div>
     <ModalChatFlow
-      :modalChatFlow.sync="modalChatFlow"
-      :chatFlowEdicao.sync="chatFlowSelecionado"
+      v-model:modalChatFlow="modalChatFlow"
+      v-model:chatFlowEdicao="chatFlowSelecionado"
       @chatFlow:criada="novoFluxoCriado"
       @chatFlow:editado="fluxoEditado"
     />

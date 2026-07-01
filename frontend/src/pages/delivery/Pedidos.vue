@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="q-pa-lg">
     <div class="row items-center q-mb-md">
       <div>
@@ -153,7 +153,7 @@ export default {
         return
       }
       const index = this.pedidos.findIndex(pedido => pedido.id === order.id)
-      if (index >= 0) this.$set(this.pedidos, index, order)
+      if (index >= 0) this.pedidos[index] = order
       if (action === 'create' && index < 0) this.pedidos.unshift(order)
     },
     async carregar () {
@@ -171,7 +171,7 @@ export default {
     socket.on(`${usuario.tenantId}:delivery:order`, this.atualizarPedido)
     this.carregar()
   },
-  beforeDestroy () {
+  beforeUnmount () {
     const usuario = JSON.parse(localStorage.getItem('usuario'))
     socket.off(`${usuario.tenantId}:delivery:order`, this.atualizarPedido)
   }

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <q-page class="app-page">
     <div class="app-page-header">
       <div>
@@ -42,7 +42,7 @@
         :columns="columns"
         row-key="id"
         :loading="loading"
-        :pagination.sync="pagination"
+        v-model:pagination="pagination"
         @request="onRequest"
       >
         <template v-slot:body-cell-status="props">

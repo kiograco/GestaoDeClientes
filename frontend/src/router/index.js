@@ -1,5 +1,4 @@
-import Vue from 'vue'
-import VueRouter from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import axios from 'axios'
 import { Notify } from 'quasar'
 import { getAccessToken, setAccessToken } from 'src/utils/authToken'
@@ -8,13 +7,10 @@ import { canAccessRoute, defaultRouteByProfile, routeAccessRules, routeDisplayNa
 
 import routes from './routes'
 
-Vue.use(VueRouter)
-
-const Router = new VueRouter({
-  scrollBehavior: () => ({ x: 0, y: 0 }),
+const Router = createRouter({
+  scrollBehavior: () => ({ left: 0, top: 0 }),
   routes,
-  mode: process.env.VUE_ROUTER_MODE,
-  base: process.env.VUE_ROUTER_BASE
+  history: createWebHashHistory(process.env.VUE_ROUTER_BASE)
 })
 
 const publicRouteNames = Object.keys(routeAccessRules).filter(name => routeAccessRules[name].public)

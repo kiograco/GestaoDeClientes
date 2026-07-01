@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <q-input
       ref="inputCustomCodar"
@@ -11,10 +11,10 @@
       outlined
       rounded
       :value="value"
-      v-on="$listeners"
+      v-on="$attrs"
       :error="cError"
       :error-message="cErrorMessage"
-      @input.native="valorInputSeEmpty"
+      @input="valorInputSeEmpty"
     >
       <template
         v-slot:before
@@ -41,9 +41,7 @@
   </div>
 </template>
 <script>
-import { singleErrorExtractorMixin } from 'vuelidate-error-extractor'
 export default {
-  extends: singleErrorExtractorMixin,
   name: 'ccInput',
   inheritAttrs: false,
   data () {

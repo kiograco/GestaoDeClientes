@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="timerBox">
       <span>{{ addZero(timer.minutes)}}:{{addZero(timer.seconds)}}</span>
@@ -43,7 +43,7 @@ export default {
   mounted () {
     this.interval()
   },
-  destroyed () {
+  unmounted () {
     this.stopInteval()
   }
 }

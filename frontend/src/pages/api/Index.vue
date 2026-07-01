@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <q-card class="q-ma-md">
       <q-card-section>
@@ -129,8 +129,8 @@
     </q-card>
 
     <ModalApi
-      :modalApi.sync="modalApi"
-      :apiEdicao.sync="apiEdicao"
+      v-model:modalApi="modalApi"
+      v-model:apiEdicao="apiEdicao"
       @modal-api:criada="apiCriada"
       @modal-api:editada="apiEditada"
     />

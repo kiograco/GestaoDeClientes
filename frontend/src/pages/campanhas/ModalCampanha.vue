@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <q-dialog
     persistent
     :value="modalCampanha"
@@ -335,7 +335,7 @@
 </template>
 
 <script>
-import { required } from 'vuelidate/lib/validators'
+import { required } from '@vuelidate/validators'
 import { VEmojiPicker } from 'v-emoji-picker'
 import axios from 'axios'
 import cMolduraCelular from 'src/components/cMolduraCelular'

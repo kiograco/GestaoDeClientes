@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <q-scroll-area
       ref="scrollAreaTickets"
@@ -266,7 +266,7 @@ export default {
       'searchParam'
     ])
   },
-  beforeDestroy () {
+  beforeUnmount () {
     if (this.socket) {
       this.socket.disconnect()
     }

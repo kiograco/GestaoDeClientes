@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <q-table
       class="my-sticky-dynamic q-ma-lg"
@@ -7,7 +7,7 @@
       :columns="columns"
       :loading="loading"
       row-key="id"
-      :pagination.sync="pagination"
+      v-model:pagination="pagination"
       :rows-per-page-options="[0]"
     >
       <template v-slot:top-right>
@@ -71,14 +71,14 @@
       </template>
     </q-table>
     <ModalUsuario
-      :modalUsuario.sync="modalUsuario"
+      v-model:modalUsuario="modalUsuario"
       @modalUsuario:usuario-editado="UPDATE_USUARIO"
       @modalUsuario:usuario-criado="usuarioCriado"
-      :usuarioEdicao.sync="usuarioSelecionado"
+      v-model:usuarioEdicao="usuarioSelecionado"
     />
     <ModalFilaUsuario
-      :modalFilaUsuario.sync="modalFilaUsuario"
-      :usuarioSelecionado.sync="usuarioSelecionado"
+      v-model:modalFilaUsuario="modalFilaUsuario"
+      v-model:usuarioSelecionado="usuarioSelecionado"
       :filas="filas"
       @modalFilaUsuario:sucesso="UPDATE_USUARIO"
     />

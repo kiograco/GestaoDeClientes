@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <q-layout view="hHh Lpr lFf">
 
     <q-header
@@ -292,7 +292,7 @@
       <SidebarMenu
         :menu="menuData"
         :profile="userProfile"
-        :collapsed.sync="sidebarCollapsed"
+        v-model:collapsed="sidebarCollapsed"
       />
     </q-drawer>
 
@@ -309,8 +309,8 @@
     </audio>
     <ModalUsuario
       :isProfile="true"
-      :modalUsuario.sync="modalUsuario"
-      :usuarioEdicao.sync="usuario"
+      v-model:modalUsuario="modalUsuario"
+      v-model:usuarioEdicao="usuario"
     />
     <OnboardingAdmin
       v-if="userProfile === 'admin'"
@@ -1258,7 +1258,7 @@ export default {
     }
     await this.conectarSocket(this.usuario)
   },
-  destroyed () {
+  unmounted () {
     window.removeEventListener('tenant-logo-updated', this.atualizarLogoCabecalho)
     document.removeEventListener('click', this.recolherSidebarAoClicarFora)
     socket.disconnect()

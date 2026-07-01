@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <q-page padding class="service-orders-page">
     <div class="row items-center q-col-gutter-md q-mb-md">
       <div class="col-12 col-md">
@@ -1984,7 +1984,7 @@ export default {
       const opcao = this.formatarOpcaoCliente(cliente)
       const index = this.clientes.findIndex(item => item.value === opcao.value)
       if (index === -1) this.clientes.unshift(opcao)
-      else this.$set(this.clientes, index, opcao)
+      else this.clientes[index] = opcao
       this.form.contactId = opcao.value
       this.aplicarDadosClienteNaOrdem(cliente, true)
     },
@@ -3331,7 +3331,7 @@ export default {
     await this.carregarTudo()
     this.conectarSocket()
   },
-  destroyed () {
+  unmounted () {
     socket.disconnect()
   }
 }

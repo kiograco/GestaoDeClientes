@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <q-card
       flat
@@ -29,7 +29,7 @@
       :columns="columns"
       :loading="loading"
       row-key="id"
-      :pagination.sync="pagination"
+      v-model:pagination="pagination"
       :rows-per-page-options="[0]"
       separator="cell"
     >
@@ -305,8 +305,8 @@
             :loading="loading"
             row-key="number"
             selection="multiple"
-            :selected.sync="selected"
-            :pagination.sync="pagination"
+            v-model:selected="selected"
+            v-model:pagination="pagination"
             :rows-per-page-options="[0]"
             separator="cell"
           >

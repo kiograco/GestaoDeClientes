@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <template v-if="ticketFocado.status !== 'pending'">
 
@@ -741,11 +741,11 @@ export default {
       this.handleSign(LocalStorage.getItem('sign'))
     }
   },
-  beforeDestroy () {
+  beforeUnmount () {
     const self = this
     window.removeEventListener('paste', self.handleInputPaste)
   },
-  destroyed () {
+  unmounted () {
     this.$root.$off('mensagem-chat:focar-input-mensagem')
   }
 }

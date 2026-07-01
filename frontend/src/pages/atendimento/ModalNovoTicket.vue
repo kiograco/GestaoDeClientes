@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <q-dialog
     :value="modalNovoTicket"
     persistent
@@ -79,7 +79,7 @@
       </q-card-actions>
     </q-card>
     <ContatoModal
-      :modalContato.sync="modalContato"
+      v-model:modalContato="modalContato"
       @contatoModal:contato-criado="contatoCriadoNotoTicket"
     />
   </q-dialog>
@@ -175,7 +175,7 @@ export default {
       this.loading = false
     }
   },
-  destroyed () {
+  unmounted () {
     this.contatoSelecionado = null
   }
 }
