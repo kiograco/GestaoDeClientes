@@ -22,16 +22,16 @@
           class="col-12"
           outlined
           v-model="contato.name"
-          :validator="$v.contato.name"
-          @blur="$v.contato.name.$touch"
+          :validator="v$.contato.name"
+          @blur="v$.contato.name.$touch"
           label="Nome"
         />
         <c-input
           class="col-12"
           outlined
           v-model="contato.number"
-          :validator="$v.contato.number"
-          @blur="$v.contato.number.$touch"
+          :validator="v$.contato.number"
+          @blur="v$.contato.number.$touch"
           mask="+#############"
           placeholder="+DDI DDD 99999 9999"
           fill-mask
@@ -44,8 +44,8 @@
           outlined
           dense
           rounded
-          :validator="$v.contato.email"
-          @blur="$v.contato.email.$touch"
+          :validator="v$.contato.email"
+          @blur="v$.contato.email.$touch"
           v-model="contato.email"
           label="E-mail"
         />
@@ -122,11 +122,15 @@
 </template>
 
 <script>
+import { useVuelidate } from '@vuelidate/core'
 import { required, email, minLength, maxLength } from '@vuelidate/validators'
 import { ObterContato, CriarContato, EditarContato } from 'src/service/contatos'
 import { ListarUsuarios } from 'src/service/user'
 export default {
   name: 'ContatoModal',
+  setup () {
+    return { v$: useVuelidate() }
+  },
   props: {
     modalContato: {
       type: Boolean,
@@ -149,11 +153,13 @@ export default {
       usuarios: []
     }
   },
-  validations: {
-    contato: {
-      name: { required, minLength: minLength(3), maxLength: maxLength(50) },
-      email: { email },
-      number: { required, minLength: minLength(8) }
+  validations () {
+    return {
+      contato: {
+        name: { required, minLength: minLength(3), maxLength: maxLength(50) },
+        email: { email },
+        number: { required, minLength: minLength(8) }
+      }
     }
   },
   methods: {
@@ -177,8 +183,8 @@ export default {
       this.contato = { ...newData }
     },
     async saveContact () {
-      this.$v.contato.$touch()
-      if (this.$v.contato.$error) {
+      this.v$.contato.$touch()
+      if (this.v$.contato.$error) {
         return this.$q.notify({
           type: 'warning',
           progress: true,
@@ -246,7 +252,7 @@ export default {
 
   },
   unmounted () {
-    this.$v.contato.$reset()
+    this.v$.contato.$reset()
   }
 }
 </script>

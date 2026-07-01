@@ -23,8 +23,8 @@
                 outlined
                 v-model="api.name"
                 label="Nome da API"
-                @blur="$v.api.name.$touch"
-                :error="$v.api.name.$error"
+                @blur="v$.api.name.$touch"
+                :error="v$.api.name.$error"
               />
             </div>
             <div class="col-xs-12 col-sm-6">
@@ -41,8 +41,8 @@
                 :input-debounce="700"
                 option-value="id"
                 option-label="name"
-                @blur="$v.api.sessionId.$touch"
-                :error="$v.api.sessionId.$error"
+                @blur="v$.api.sessionId.$touch"
+                :error="v$.api.sessionId.$error"
                 input-style="width: 280px; max-width: 280px;"
                 error-message="Obrigatório"
               />
@@ -59,8 +59,8 @@
                 dense
                 outlined
                 v-model="api.urlServiceStatus"
-                @blur="$v.api.urlServiceStatus.$touch"
-                :error="$v.api.urlServiceStatus.$error"
+                @blur="v$.api.urlServiceStatus.$touch"
+                :error="v$.api.urlServiceStatus.$error"
                 label="URL WebHook Status Sessão"
                 hint="Dispara a ação sempre que o status da sessão conectada ao whatsapp é alterado."
               />
@@ -71,8 +71,8 @@
                 dense
                 outlined
                 v-model="api.urlMessageStatus"
-                @blur="$v.api.urlMessageStatus.$touch"
-                :error="$v.api.urlMessageStatus.$error"
+                @blur="v$.api.urlMessageStatus.$touch"
+                :error="v$.api.urlMessageStatus.$error"
                 label="URL WebHook Status Mensagem"
                 hint="Dispara ação sempre que o status de uma mensagem é atualizado."
               />
@@ -121,11 +121,15 @@
 
 <script>
 import { mapGetters } from 'vuex'
+import { useVuelidate } from '@vuelidate/core'
 import { required, url } from '@vuelidate/validators'
 const isValidURL = (v) => url(v) || !v
 import { CriarAPI, EditarAPI } from 'src/service/api'
 export default {
   name: 'ModalFila',
+  setup () {
+    return { v$: useVuelidate() }
+  },
   props: {
     modalApi: {
       type: Boolean,
@@ -151,13 +155,15 @@ export default {
       }
     }
   },
-  validations: {
-    api: {
-      name: { required },
-      sessionId: { required },
-      authToken: {},
-      urlServiceStatus: { isValidURL },
-      urlMessageStatus: { isValidURL }
+  validations () {
+    return {
+      api: {
+        name: { required },
+        sessionId: { required },
+        authToken: {},
+        urlServiceStatus: { isValidURL },
+        urlMessageStatus: { isValidURL }
+      }
     }
   },
   computed: {
@@ -187,8 +193,8 @@ export default {
       }
     },
     async handleAPI () {
-      this.$v.api.$touch()
-      if (this.$v.api.$error) {
+      this.v$.api.$touch()
+      if (this.v$.api.$error) {
         this.$notificarErro('Verifique os campos obrigatórios e inconsistências.')
         return
       }

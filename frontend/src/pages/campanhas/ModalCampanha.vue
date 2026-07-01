@@ -24,8 +24,8 @@
             style="width: 500px"
             v-model="campanha.name"
             label="Nome da Campanha"
-            @blur="$v.campanha.name.$touch"
-            :error="$v.campanha.name.$error"
+            @blur="v$.campanha.name.$touch"
+            :error="v$.campanha.name.$error"
             error-message="Obrigatório"
           />
           <q-datetime-picker
@@ -41,8 +41,8 @@
             color="primary"
             format24h
             v-model="campanha.start"
-            @blur="$v.campanha.start.$touch"
-            :error="$v.campanha.start.$error"
+            @blur="v$.campanha.start.$touch"
+            :error="v$.campanha.start.$error"
             error-message="Não pode ser inferior ao dia atual"
           />
           <q-select
@@ -59,8 +59,8 @@
             option-value="id"
             option-label="name"
             input-style="width: 280px; max-width: 280px;"
-            @blur="$v.campanha.sessionId.$touch"
-            :error="$v.campanha.sessionId.$error"
+            @blur="v$.campanha.sessionId.$touch"
+            :error="v$.campanha.sessionId.$error"
             error-message="Obrigatório"
             style="width: 250px"
           />
@@ -160,9 +160,9 @@
                 style="min-height: 12.5vh; max-height: 12.5vh;"
                 class="q-pa-sm bg-white full-width rounded-all"
                 :class="{
-                  'bg-red-1': $v.campanha.message1.$error
+                  'bg-red-1': v$.campanha.message1.$error
                 }"
-                @blur="$v.campanha.message1.$touch"
+                @blur="v$.campanha.message1.$touch"
                 placeholder="Digite a mensagem"
                 autogrow
                 dense
@@ -210,9 +210,9 @@
                 dense
                 outlined
                 :class="{
-                  'bg-red-1': $v.campanha.message2.$error
+                  'bg-red-1': v$.campanha.message2.$error
                 }"
-                @blur="$v.campanha.message2.$touch"
+                @blur="v$.campanha.message2.$touch"
                 @input="(v) => campanha.message2 = v.target.value"
                 :value="campanha.message2"
               />
@@ -256,9 +256,9 @@
                 dense
                 outlined
                 :class="{
-                  'bg-red-1': $v.campanha.message3.$error
+                  'bg-red-1': v$.campanha.message3.$error
                 }"
-                @blur="$v.campanha.message3.$touch"
+                @blur="v$.campanha.message3.$touch"
                 @input="(v) => campanha.message3 = v.target.value"
                 :value="campanha.message3"
               />
@@ -323,6 +323,7 @@
 </template>
 
 <script>
+import { useVuelidate } from '@vuelidate/core'
 import { required } from '@vuelidate/validators'
 import VEmojiPicker from 'vue3-emoji-picker'
 import 'vue3-emoji-picker/css'
@@ -346,6 +347,9 @@ const downloadImageCors = axios.create({
 
 export default {
   name: 'ModalCampanha',
+  setup () {
+    return { v$: useVuelidate() }
+  },
   components: { VEmojiPicker, cMolduraCelular, MensagemChat },
   props: {
     modalCampanha: {
@@ -402,14 +406,16 @@ export default {
       arquivos: []
     }
   },
-  validations: {
-    campanha: {
-      name: { required },
-      start: { required, isValidDate },
-      message1: { required },
-      message2: {},
-      message3: {},
-      sessionId: { required }
+  validations () {
+    return {
+      campanha: {
+        name: { required },
+        start: { required, isValidDate },
+        message1: { required },
+        message2: {},
+        message3: {},
+        sessionId: { required }
+      }
     }
   },
   computed: {
@@ -543,8 +549,8 @@ export default {
       this.loading = false
     },
     async handleCampanha () {
-      this.$v.campanha.$touch()
-      if (this.$v.campanha.$error) {
+      this.v$.campanha.$touch()
+      if (this.v$.campanha.$error) {
         this.$q.notify({
           type: 'negative',
           message: 'Verifique se todas os campos obrigatórios estão preenchidos '

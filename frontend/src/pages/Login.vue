@@ -34,8 +34,8 @@
               rounded
               v-model="form.email"
               placeholder="meu@email.com"
-              @blur="$v.form.email.$touch(); consultarIdentidadeVisual()"
-              :error="$v.form.email.$error"
+              @blur="v$.form.email.$touch(); consultarIdentidadeVisual()"
+              :error="v$.form.email.$error"
               error-message="Deve ser um e-mail válido."
               outlined
               @keypress.enter="fazerLogin"
@@ -330,9 +330,9 @@
               outlined
               rounded
               label="E-mail"
-              :error="$v.emailRedefinicao.$error"
+              :error="v$.emailRedefinicao.$error"
               error-message="Informe um e-mail válido."
-              @blur="$v.emailRedefinicao.$touch"
+              @blur="v$.emailRedefinicao.$touch"
               @keypress.enter="solicitarRedefinicaoSenha"
             />
           </q-card-section>
@@ -399,6 +399,7 @@
 </template>
 
 <script>
+import { useVuelidate } from '@vuelidate/core'
 import { required, email } from '@vuelidate/validators'
 import {
   ConsultarIdentidadeVisual,
@@ -449,6 +450,9 @@ const cadastroInicial = () => ({
 
 export default {
   name: 'Login',
+  setup () {
+    return { v$: useVuelidate() }
+  },
   data () {
     return {
       modalEsqueciSenha: false,
@@ -485,12 +489,14 @@ export default {
       loading: false
     }
   },
-  validations: {
-    form: {
-      email: { required, email },
-      password: { required }
-    },
-    emailRedefinicao: { required, email }
+  validations () {
+    return {
+      form: {
+        email: { required, email },
+        password: { required }
+      },
+      emailRedefinicao: { required, email }
+    }
   },
   methods: {
     async abrirCadastro () {
@@ -612,7 +618,7 @@ export default {
       }
     },
     async consultarIdentidadeVisual () {
-      if (!this.form.email || this.$v.form.email.$invalid) return
+      if (!this.form.email || this.v$.form.email.$invalid) return
       try {
         const { data } = await ConsultarIdentidadeVisual(this.form.email)
         this.logoUrl = resolveTenantLogoUrl(data.logoUrl)
@@ -621,8 +627,8 @@ export default {
       }
     },
     fazerLogin () {
-      this.$v.form.$touch()
-      if (this.$v.form.$error) {
+      this.v$.form.$touch()
+      if (this.v$.form.$error) {
         this.$q.notify('Informe usuário e senha corretamente.')
         return
       }
@@ -641,15 +647,15 @@ export default {
         })
     },
     async solicitarRedefinicaoSenha () {
-      this.$v.emailRedefinicao.$touch()
-      if (this.$v.emailRedefinicao.$error) return
+      this.v$.emailRedefinicao.$touch()
+      if (this.v$.emailRedefinicao.$error) return
 
       this.loadingRedefinicao = true
       try {
         await SolicitarRedefinicaoSenha(this.emailRedefinicao)
         this.modalEsqueciSenha = false
         this.emailRedefinicao = null
-        this.$v.emailRedefinicao.$reset()
+        this.v$.emailRedefinicao.$reset()
         this.$q.notify({
           type: 'positive',
           message: 'Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.',
@@ -698,7 +704,7 @@ export default {
     clear () {
       this.form.email = ''
       this.form.password = ''
-      this.$v.form.$reset()
+      this.v$.form.$reset()
     }
   },
   mounted () {
