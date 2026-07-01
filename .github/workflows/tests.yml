@@ -53,6 +53,12 @@ jobs:
       - name: Lint backend
         run: npm run lint
         working-directory: backend
+      - name: Wait for database to be ready
+        run: |
+          until pg_isready -h localhost -p 5432 -U postgres; do
+            echo 'Waiting for database...'
+            sleep 2
+          done
       - name: Migrate test database
         run: npm run test:migrate
         working-directory: backend
