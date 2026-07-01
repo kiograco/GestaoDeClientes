@@ -15,16 +15,16 @@
             <c-input
               outlined
               v-model.trim="usuario.name"
-              :validator="$v.usuario.name"
-              @blur="$v.usuario.name.$touch"
+              :validator="v$.usuario.name"
+              @blur="v$.usuario.name.$touch"
               label="Nome"
             />
           </div>
           <div class="col-12">
             <c-input
               outlined
-              :validator="$v.usuario.email"
-              @blur="$v.usuario.email.$touch"
+              :validator="v$.usuario.email"
+              @blur="v$.usuario.email.$touch"
               v-model.trim="usuario.email"
               label="E-mail"
             />
@@ -35,8 +35,8 @@
             <c-input
               outlined
               v-model="usuario.password"
-              :validator="$v.usuario.password"
-              @blur="$v.usuario.password.$touch"
+              :validator="v$.usuario.password"
+              @blur="v$.usuario.password.$touch"
               :type="isPwd ? 'password' : 'text'"
               label="Senha"
             >
@@ -88,11 +88,15 @@
 </template>
 
 <script>
+import { useVuelidate } from '@vuelidate/core'
 import { required, email, minLength, maxLength } from '@vuelidate/validators'
 import { CriarUsuario, UpdateUsuarios } from 'src/service/user'
 import { Notify } from 'quasar'
 export default {
   name: 'ModalUsuario',
+  setup () {
+    return { v$: useVuelidate() }
+  },
   props: {
     modalUsuario: {
       type: Boolean,
@@ -166,11 +170,11 @@ export default {
         profile: 'user'
       }
       this.isPwd = false
-      this.$v.usuario.$reset()
+      this.v$.usuario.$reset()
     },
     async handleUsuario () {
-      this.$v.usuario.$touch()
-      if (this.$v.usuario.$error) {
+      this.v$.usuario.$touch()
+      if (this.v$.usuario.$error) {
         return this.$q.notify({
           type: 'warning',
           progress: true,

@@ -72,8 +72,8 @@
               label="Nome da conexao"
               dense
               v-model="whatsapp.name"
-              :validator="$v.whatsapp.name"
-              @blur="$v.whatsapp.name.$touch"
+              :validator="v$.whatsapp.name"
+              @blur="v$.whatsapp.name.$touch"
             />
           </div>
 
@@ -203,6 +203,7 @@
 </template>
 
 <script>
+import { useVuelidate } from '@vuelidate/core'
 import { required, minLength, maxLength } from '@vuelidate/validators'
 import { UpdateWhatsapp, CriarWhatsapp } from 'src/service/sessoesWhatsapp'
 import cInput from 'src/components/cInput.vue'
@@ -221,6 +222,9 @@ const emptyWhatsapp = () => ({
 export default {
   components: { cInput },
   name: 'ModalWhatsapp',
+  setup () {
+    return { v$: useVuelidate() }
+  },
   props: {
     modalWhatsapp: {
       type: Boolean,
@@ -246,10 +250,12 @@ export default {
       ]
     }
   },
-  validations: {
-    whatsapp: {
-      name: { required, minLength: minLength(3), maxLength: maxLength(50) },
-      isDefault: {}
+  validations () {
+    return {
+      whatsapp: {
+        name: { required, minLength: minLength(3), maxLength: maxLength(50) },
+        isDefault: {}
+      }
     }
   },
   methods: {
@@ -287,8 +293,8 @@ export default {
     },
 
     async handleSaveWhatsApp (whatsapp) {
-      this.$v.whatsapp.$touch()
-      if (this.$v.whatsapp.$error) {
+      this.v$.whatsapp.$touch()
+      if (this.v$.whatsapp.$error) {
         return this.$q.notify({
           type: 'warning',
           progress: true,
@@ -363,7 +369,7 @@ export default {
     }
   },
   unmounted () {
-    this.$v.whatsapp.$reset()
+    this.v$.whatsapp.$reset()
   }
 }
 </script>

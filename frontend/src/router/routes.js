@@ -128,16 +128,17 @@ const routes = [
     component: () => import('pages/portalCliente/Proposta.vue')
   },
 
-  // Always leave this as last one,
-  // but you can also remove it
-  {
-    path: '*',
-    component: () => import('pages/Error404.vue')
-  },
   {
     path: '/login',
     name: 'login',
     component: () => import('pages/Login.vue')
+  },
+
+  // Always leave this as last one,
+  // but you can also remove it
+  {
+    path: '/:catchAll(.*)*',
+    component: () => import('pages/Error404.vue')
   }
 ]
 
