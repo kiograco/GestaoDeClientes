@@ -19,7 +19,7 @@ describe("sales pipeline API", () => {
     const otherContact = await createContact({ tenantId: otherUser.tenantId });
 
     const created = await request(app)
-      .post("/sales/pipeline")
+      .post("/api/v1/sales/pipeline")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -46,7 +46,7 @@ describe("sales pipeline API", () => {
       });
 
     await request(app)
-      .post("/sales/pipeline")
+      .post("/api/v1/sales/pipeline")
       .set("Authorization", bearerTokenFor(otherUser))
       .send({
         contactId: otherContact.id,
@@ -71,7 +71,7 @@ describe("sales pipeline API", () => {
     );
 
     await request(app)
-      .get("/sales/pipeline-followups?days=7")
+      .get("/api/v1/sales/pipeline-followups?days=7")
       .set("Authorization", authorization)
       .expect(200)
       .expect(({ body }) => {
@@ -80,7 +80,7 @@ describe("sales pipeline API", () => {
       });
 
     await request(app)
-      .post("/sales/pipeline-followups/run")
+      .post("/api/v1/sales/pipeline-followups/run")
       .set("Authorization", authorization)
       .send({ days: 7 })
       .expect(200)
@@ -89,7 +89,7 @@ describe("sales pipeline API", () => {
       });
 
     await request(app)
-      .post("/sales/pipeline-followups/run")
+      .post("/api/v1/sales/pipeline-followups/run")
       .set("Authorization", authorization)
       .send({ days: 7 })
       .expect(200)
@@ -98,7 +98,7 @@ describe("sales pipeline API", () => {
       });
 
     await request(app)
-      .put(`/sales/pipeline/${created.body.id}`)
+      .put(`/api/v1/sales/pipeline/${created.body.id}`)
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -123,7 +123,7 @@ describe("sales pipeline API", () => {
       });
 
     await request(app)
-      .get("/sales/pipeline")
+      .get("/api/v1/sales/pipeline")
       .set("Authorization", authorization)
       .expect(200)
       .expect(({ body }) => {
@@ -132,7 +132,7 @@ describe("sales pipeline API", () => {
       });
 
     await request(app)
-      .get("/sales/pipeline-dashboard")
+      .get("/api/v1/sales/pipeline-dashboard")
       .set("Authorization", authorization)
       .expect(200)
       .expect(({ body }) => {
@@ -151,7 +151,7 @@ describe("sales pipeline API", () => {
       });
 
     const proposal = await request(app)
-      .post(`/sales/pipeline/${created.body.id}/proposals`)
+      .post(`/api/v1/sales/pipeline/${created.body.id}/proposals`)
       .set("Authorization", authorization)
       .send({
         title: "Proposta de manutencao mensal",
@@ -190,7 +190,7 @@ describe("sales pipeline API", () => {
       });
 
     await request(app)
-      .get(`/portal/proposals/${proposal.body.publicToken}`)
+      .get(`/api/v1/portal/proposals/${proposal.body.publicToken}`)
       .expect(200)
       .expect(({ body }) => {
         expect(body).toMatchObject({
@@ -201,7 +201,7 @@ describe("sales pipeline API", () => {
       });
 
     await request(app)
-      .post(`/portal/proposals/${proposal.body.publicToken}/approve`)
+      .post(`/api/v1/portal/proposals/${proposal.body.publicToken}/approve`)
       .expect(200)
       .expect(({ body }) => {
         expect(body.status).toBe("aprovada");
@@ -209,12 +209,12 @@ describe("sales pipeline API", () => {
       });
 
     await request(app)
-      .get(`/portal/proposals/${proposal.body.publicToken}/document`)
+      .get(`/api/v1/portal/proposals/${proposal.body.publicToken}/document`)
       .expect(200)
       .expect("Content-Type", /pdf/);
 
     await request(app)
-      .get(`/sales/pipeline/${created.body.id}/proposals`)
+      .get(`/api/v1/sales/pipeline/${created.body.id}/proposals`)
       .set("Authorization", authorization)
       .expect(200)
       .expect(({ body }) => {
@@ -226,7 +226,7 @@ describe("sales pipeline API", () => {
       });
 
     await request(app)
-      .get(`/sales/proposals/${proposal.body.id}/document`)
+      .get(`/api/v1/sales/proposals/${proposal.body.id}/document`)
       .set("Authorization", authorization)
       .expect(200)
       .expect("Content-Type", /pdf/)
@@ -235,7 +235,7 @@ describe("sales pipeline API", () => {
       });
 
     const proposalOrder = await request(app)
-      .post(`/sales/proposals/${proposal.body.id}/convert-service-order`)
+      .post(`/api/v1/sales/proposals/${proposal.body.id}/convert-service-order`)
       .set("Authorization", authorization)
       .send({
         serviceType: "Manutencao preventiva",
@@ -264,7 +264,7 @@ describe("sales pipeline API", () => {
     ).toBe(2);
 
     await request(app)
-      .get(`/portal/proposals/${proposal.body.publicToken}/service-order`)
+      .get(`/api/v1/portal/proposals/${proposal.body.publicToken}/service-order`)
       .expect(200)
       .expect(({ body }) => {
         expect(body).toMatchObject({
@@ -275,13 +275,13 @@ describe("sales pipeline API", () => {
       });
 
     await request(app)
-      .post(`/sales/proposals/${proposal.body.id}/convert-service-order`)
+      .post(`/api/v1/sales/proposals/${proposal.body.id}/convert-service-order`)
       .set("Authorization", authorization)
       .send({ serviceType: "Manutencao preventiva" })
       .expect(409);
 
     const directOpportunity = await request(app)
-      .post("/sales/pipeline")
+      .post("/api/v1/sales/pipeline")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -294,7 +294,7 @@ describe("sales pipeline API", () => {
       .expect(201);
 
     const converted = await request(app)
-      .post(`/sales/pipeline/${directOpportunity.body.id}/convert-service-order`)
+      .post(`/api/v1/sales/pipeline/${directOpportunity.body.id}/convert-service-order`)
       .set("Authorization", authorization)
       .send({
         serviceType: "Manutencao preventiva",
@@ -339,7 +339,7 @@ describe("sales pipeline API", () => {
 
     const periodMonth = new Date().toISOString().slice(0, 7);
     await request(app)
-      .post("/sales/performance-goals")
+      .post("/api/v1/sales/performance-goals")
       .set("Authorization", authorization)
       .send({
         roleType: "seller",
@@ -351,7 +351,7 @@ describe("sales pipeline API", () => {
       .expect(201);
 
     await request(app)
-      .post("/sales/performance-goals")
+      .post("/api/v1/sales/performance-goals")
       .set("Authorization", authorization)
       .send({
         roleType: "technician",
@@ -363,7 +363,7 @@ describe("sales pipeline API", () => {
       .expect(201);
 
     await request(app)
-      .get(`/sales/performance-goals-dashboard?periodMonth=${periodMonth}`)
+      .get(`/api/v1/sales/performance-goals-dashboard?periodMonth=${periodMonth}`)
       .set("Authorization", authorization)
       .expect(200)
       .expect(({ body }) => {
@@ -384,7 +384,7 @@ describe("sales pipeline API", () => {
       });
 
     await request(app)
-      .post(`/sales/pipeline/${directOpportunity.body.id}/convert-service-order`)
+      .post(`/api/v1/sales/pipeline/${directOpportunity.body.id}/convert-service-order`)
       .set("Authorization", authorization)
       .send({ serviceType: "Manutencao preventiva" })
       .expect(409);
@@ -404,7 +404,7 @@ describe("sales pipeline API", () => {
     expect(approvedProposal?.publicToken).toBe(proposal.body.publicToken);
 
     await request(app)
-      .get("/sales/pipeline-dashboard")
+      .get("/api/v1/sales/pipeline-dashboard")
       .set("Authorization", authorization)
       .expect(200)
       .expect(({ body }) => {

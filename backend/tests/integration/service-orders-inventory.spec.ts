@@ -91,7 +91,7 @@ describe("service orders inventory API", () => {
     });
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -109,7 +109,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -133,7 +133,7 @@ describe("service orders inventory API", () => {
     const otherContact = await createContact({ tenantId: otherUser.tenantId });
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -148,7 +148,7 @@ describe("service orders inventory API", () => {
       .expect(201);
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -173,7 +173,7 @@ describe("service orders inventory API", () => {
     });
 
     await request(app)
-      .get("/service/orders/export")
+      .get("/api/v1/service/orders/export")
       .query({ status: "agendada" })
       .set("Authorization", authorization)
       .expect(200)
@@ -193,7 +193,7 @@ describe("service orders inventory API", () => {
     const contact = await createContact({ tenantId: user.tenantId });
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -208,7 +208,7 @@ describe("service orders inventory API", () => {
       .expect(201);
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -223,7 +223,7 @@ describe("service orders inventory API", () => {
       .expect(201);
 
     await request(app)
-      .get("/service/orders")
+      .get("/api/v1/service/orders")
       .query({
         pageNumber: 1,
         rowsPerPage: 1,
@@ -267,46 +267,46 @@ describe("service orders inventory API", () => {
     };
 
     const created = await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", attendantAuthorization)
       .send(order)
       .expect(201);
 
     await request(app)
-      .put(`/service/orders/${created.body.id}`)
+      .put(`/api/v1/service/orders/${created.body.id}`)
       .set("Authorization", attendantAuthorization)
       .send({ ...order, status: "em_atendimento" })
       .expect(200);
 
     await request(app)
-      .get("/service/orders")
+      .get("/api/v1/service/orders")
       .set("Authorization", technicianAuthorization)
       .expect(200);
     await request(app)
-      .get("/service/orders-dashboard")
+      .get("/api/v1/service/orders-dashboard")
       .set("Authorization", attendantAuthorization)
       .expect(200);
     await request(app)
-      .get("/service/orders/export")
+      .get("/api/v1/service/orders/export")
       .set("Authorization", technicianAuthorization)
       .expect(403);
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", technicianAuthorization)
       .send({ ...order, title: "Criacao indevida" })
       .expect(403);
     await request(app)
-      .put(`/service/orders/${created.body.id}`)
+      .put(`/api/v1/service/orders/${created.body.id}`)
       .set("Authorization", technicianAuthorization)
       .send({ ...order, status: "concluida" })
       .expect(403);
     await request(app)
-      .post("/service/attendants")
+      .post("/api/v1/service/attendants")
       .set("Authorization", technicianAuthorization)
       .send({ name: "Tecnico indevido", active: true })
       .expect(403);
     await request(app)
-      .get("/service/orders")
+      .get("/api/v1/service/orders")
       .set("Authorization", bearerTokenFor(basicUser))
       .expect(403);
   });
@@ -320,12 +320,12 @@ describe("service orders inventory API", () => {
     const contact = await createContact({ tenantId: tenantUser.tenantId });
 
     await request(app)
-      .get("/service/orders")
+      .get("/api/v1/service/orders")
       .set("Authorization", authorization)
       .expect(200);
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -359,7 +359,7 @@ describe("service orders inventory API", () => {
     });
 
     const created = await request(app)
-      .post("/service/teams")
+      .post("/api/v1/service/teams")
       .set("Authorization", authorization)
       .send({
         name: "Equipe Norte",
@@ -385,7 +385,7 @@ describe("service orders inventory API", () => {
     ).toBe(1);
 
     await request(app)
-      .get("/service/teams")
+      .get("/api/v1/service/teams")
       .set("Authorization", authorization)
       .expect(200)
       .expect(({ body }) => {
@@ -423,7 +423,7 @@ describe("service orders inventory API", () => {
     });
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -440,7 +440,7 @@ describe("service orders inventory API", () => {
       .expect(201);
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -470,7 +470,7 @@ describe("service orders inventory API", () => {
       const contact = await createContact({ tenantId: user.tenantId });
 
       const created = await request(app)
-        .post("/service/orders")
+        .post("/api/v1/service/orders")
         .set("Authorization", authorization)
         .send({
           contactId: contact.id,
@@ -526,7 +526,7 @@ describe("service orders inventory API", () => {
     });
 
     const created = await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -586,13 +586,13 @@ describe("service orders inventory API", () => {
     };
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send(basePayload)
       .expect(201);
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         ...basePayload,
@@ -606,7 +606,7 @@ describe("service orders inventory API", () => {
       .expect(409);
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         ...basePayload,
@@ -638,7 +638,7 @@ describe("service orders inventory API", () => {
       active: true
     });
     const { body: recurringOrder } = await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -657,7 +657,7 @@ describe("service orders inventory API", () => {
       .expect(201);
 
     await request(app)
-      .patch(`/service/orders/${recurringOrder.id}/occurrence`)
+      .patch(`/api/v1/service/orders/${recurringOrder.id}/occurrence`)
       .set("Authorization", authorization)
       .send({
         occurrenceStart: "2026-07-01T09:00:00.000Z",
@@ -680,7 +680,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .get("/service/orders")
+      .get("/api/v1/service/orders")
       .query({
         start: "2026-07-01T00:00:00.000Z",
         end: "2026-07-02T00:00:00.000Z"
@@ -699,7 +699,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .get("/service/orders")
+      .get("/api/v1/service/orders")
       .query({
         start: "2026-07-01T00:00:00.000Z",
         end: "2026-07-02T00:00:00.000Z",
@@ -709,7 +709,7 @@ describe("service orders inventory API", () => {
       .expect(200)
       .expect(({ body }) => expect(body).toHaveLength(1));
     await request(app)
-      .get("/service/orders")
+      .get("/api/v1/service/orders")
       .query({
         start: "2026-07-01T00:00:00.000Z",
         end: "2026-07-02T00:00:00.000Z",
@@ -737,7 +737,7 @@ describe("service orders inventory API", () => {
       active: true
     });
     const { body: recurringOrder } = await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -756,7 +756,7 @@ describe("service orders inventory API", () => {
       .expect(201);
 
     await request(app)
-      .patch(`/service/orders/${recurringOrder.id}/occurrence`)
+      .patch(`/api/v1/service/orders/${recurringOrder.id}/occurrence`)
       .set("Authorization", authorization)
       .send({
         occurrenceStart: "2026-07-01T09:00:00.000Z",
@@ -768,7 +768,7 @@ describe("service orders inventory API", () => {
       .expect(200);
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -787,7 +787,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         contactId: contact.id,
@@ -832,7 +832,7 @@ describe("service orders inventory API", () => {
     });
 
     const { body: created } = await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         ...orderPayload(contact.id, inventoryItem.id, 1, "agendada"),
@@ -847,7 +847,7 @@ describe("service orders inventory API", () => {
       .expect(201);
 
     await request(app)
-      .patch(`/service/orders/${created.id}`)
+      .patch(`/api/v1/service/orders/${created.id}`)
       .set("Authorization", authorization)
       .send({
         attendantId: replacementAttendant.id,
@@ -881,7 +881,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .patch(`/service/orders/${created.id}`)
+      .patch(`/api/v1/service/orders/${created.id}`)
       .set("Authorization", authorization)
       .send({
         status: "em_atendimento",
@@ -910,13 +910,13 @@ describe("service orders inventory API", () => {
     });
 
     const { body: created } = await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send(orderPayload(contact.id, inventoryItem.id, 2, "agendada"))
       .expect(201);
 
     await request(app)
-      .patch(`/service/orders/${created.id}`)
+      .patch(`/api/v1/service/orders/${created.id}`)
       .set("Authorization", authorization)
       .send({
         status: "concluida",
@@ -966,13 +966,13 @@ describe("service orders inventory API", () => {
     });
 
     const { body: created } = await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send(orderPayload(contact.id, inventoryItem.id, 2, "agendada"))
       .expect(201);
 
     await request(app)
-      .patch(`/service/orders/${created.id}`)
+      .patch(`/api/v1/service/orders/${created.id}`)
       .set("Authorization", authorization)
       .send({
         status: "concluida",
@@ -1015,7 +1015,7 @@ describe("service orders inventory API", () => {
     const authorization = bearerTokenFor(user);
 
     const created = await request(app)
-      .post("/service/pests")
+      .post("/api/v1/service/pests")
       .set("Authorization", authorization)
       .send({
         commonName: "Barata Alemã",
@@ -1031,7 +1031,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .post("/service/pests")
+      .post("/api/v1/service/pests")
       .set("Authorization", authorization)
       .send({
         commonName: "barata alemã",
@@ -1040,7 +1040,7 @@ describe("service orders inventory API", () => {
       .expect(409);
 
     await request(app)
-      .post("/service/pests")
+      .post("/api/v1/service/pests")
       .set("Authorization", authorization)
       .send({
         commonName: "Barata de esgoto",
@@ -1049,7 +1049,7 @@ describe("service orders inventory API", () => {
       .expect(409);
 
     await request(app)
-      .post("/service/pests")
+      .post("/api/v1/service/pests")
       .set("Authorization", bearerTokenFor(otherUser))
       .send({
         commonName: "Barata Alemã",
@@ -1058,7 +1058,7 @@ describe("service orders inventory API", () => {
       .expect(201);
 
     await request(app)
-      .get("/service/pests")
+      .get("/api/v1/service/pests")
       .query({ search: "blattella" })
       .set("Authorization", authorization)
       .expect(200)
@@ -1072,7 +1072,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .put(`/service/pests/${created.body.id}`)
+      .put(`/api/v1/service/pests/${created.body.id}`)
       .set("Authorization", authorization)
       .send({
         commonName: "Barata Germânica",
@@ -1084,7 +1084,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .delete(`/service/pests/${created.body.id}`)
+      .delete(`/api/v1/service/pests/${created.body.id}`)
       .set("Authorization", authorization)
       .expect(204);
 
@@ -1100,7 +1100,7 @@ describe("service orders inventory API", () => {
     const authorization = bearerTokenFor(user);
 
     const { body: pest } = await request(app)
-      .post("/service/pests")
+      .post("/api/v1/service/pests")
       .set("Authorization", authorization)
       .send({
         commonName: "Camundongo",
@@ -1109,7 +1109,7 @@ describe("service orders inventory API", () => {
       .expect(201);
 
     await request(app)
-      .post("/service/inventory")
+      .post("/api/v1/service/inventory")
       .set("Authorization", authorization)
       .send({
         name: "Isca raticida sem praga cadastrada",
@@ -1126,7 +1126,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .post("/service/inventory")
+      .post("/api/v1/service/inventory")
       .set("Authorization", authorization)
       .send({
         name: "Isca raticida manual",
@@ -1147,7 +1147,7 @@ describe("service orders inventory API", () => {
       .expect(400);
 
     const { body: product } = await request(app)
-      .post("/service/inventory")
+      .post("/api/v1/service/inventory")
       .set("Authorization", authorization)
       .send({
         name: "Isca raticida",
@@ -1214,7 +1214,7 @@ describe("service orders inventory API", () => {
     ).toBe(1);
 
     await request(app)
-      .post("/service/types")
+      .post("/api/v1/service/types")
       .set("Authorization", authorization)
       .send({
         name: "Controle de roedores inválido",
@@ -1227,7 +1227,7 @@ describe("service orders inventory API", () => {
       });
 
     const { body: serviceType } = await request(app)
-      .post("/service/types")
+      .post("/api/v1/service/types")
       .set("Authorization", authorization)
       .send({
         name: "Controle de roedores",
@@ -1271,7 +1271,7 @@ describe("service orders inventory API", () => {
     ).toBe(1);
 
     await request(app)
-      .get("/service/types")
+      .get("/api/v1/service/types")
       .query({ pest: "mus musculus" })
       .set("Authorization", authorization)
       .expect(200)
@@ -1335,7 +1335,7 @@ describe("service orders inventory API", () => {
     });
 
     const { body } = await request(app)
-      .get("/service/inventory-low-stock")
+      .get("/api/v1/service/inventory-low-stock")
       .set("Authorization", authorization)
       .expect(200);
 
@@ -1365,7 +1365,7 @@ describe("service orders inventory API", () => {
     await createContact({ tenantId: user.tenantId });
 
     const { body: client } = await request(app)
-      .post("/clients")
+      .post("/api/v1/clients")
       .set("Authorization", authorization)
       .send({
         registrationType: "legal_entity",
@@ -1407,7 +1407,7 @@ describe("service orders inventory API", () => {
     });
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send(orderPayload(client.contactId, inventoryItem.id, 1))
       .expect(201)
@@ -1448,13 +1448,13 @@ describe("service orders inventory API", () => {
     });
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send(orderPayloadWithBatch(contact.id, inventoryItem.id, null, 2, "concluida"))
       .expect(400);
 
     await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send(
         orderPayloadWithBatch(
@@ -1504,7 +1504,7 @@ describe("service orders inventory API", () => {
     });
 
     const created = await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send({
         ...orderPayload(contact.id, inventoryItem.id, 2),
@@ -1527,13 +1527,13 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .put(`/service/orders/${created.body.id}`)
+      .put(`/api/v1/service/orders/${created.body.id}`)
       .set("Authorization", authorization)
       .send(orderPayload(contact.id, inventoryItem.id, 2, "concluida"))
       .expect(200);
 
     await request(app)
-      .put(`/service/orders/${created.body.id}`)
+      .put(`/api/v1/service/orders/${created.body.id}`)
       .set("Authorization", authorization)
       .send(orderPayload(contact.id, inventoryItem.id, 2, "concluida"))
       .expect(200);
@@ -1555,7 +1555,7 @@ describe("service orders inventory API", () => {
     });
 
     await request(app)
-      .get(`/service/orders/${created.body.id}/document`)
+      .get(`/api/v1/service/orders/${created.body.id}/document`)
       .set("Authorization", authorization)
       .expect(200)
       .expect("Content-Type", /pdf/)
@@ -1565,7 +1565,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .get(`/service/orders/${created.body.id}/document/internal`)
+      .get(`/api/v1/service/orders/${created.body.id}/document/internal`)
       .set("Authorization", authorization)
       .expect(200)
       .expect("Content-Type", /pdf/)
@@ -1575,7 +1575,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .get("/service/orders-dashboard")
+      .get("/api/v1/service/orders-dashboard")
       .set("Authorization", authorization)
       .expect(200)
       .expect(({ body }) => {
@@ -1603,7 +1603,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .get("/service/orders")
+      .get("/api/v1/service/orders")
       .query({ paymentMethod: "pix" })
       .set("Authorization", authorization)
       .expect(200)
@@ -1616,7 +1616,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .get("/service/orders")
+      .get("/api/v1/service/orders")
       .query({ financialView: "paid" })
       .set("Authorization", authorization)
       .expect(200)
@@ -1625,7 +1625,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .get("/service/orders")
+      .get("/api/v1/service/orders")
       .query({ financialView: "dueSoon" })
       .set("Authorization", authorization)
       .expect(200)
@@ -1638,7 +1638,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .post(`/service/orders/${created.body.id}/billing-reminder`)
+      .post(`/api/v1/service/orders/${created.body.id}/billing-reminder`)
       .set("Authorization", authorization)
       .send({ channels: ["internal"] })
       .expect(200)
@@ -1649,7 +1649,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .post(`/service/orders/${created.body.id}/billing-reminder`)
+      .post(`/api/v1/service/orders/${created.body.id}/billing-reminder`)
       .set("Authorization", authorization)
       .send({ channels: ["internal"] })
       .expect(409);
@@ -1672,7 +1672,7 @@ describe("service orders inventory API", () => {
     });
 
     await request(app)
-      .put(`/service/orders/${created.body.id}`)
+      .put(`/api/v1/service/orders/${created.body.id}`)
       .set("Authorization", authorization)
       .send({
         ...orderPayload(contact.id, inventoryItem.id, 2, "concluida"),
@@ -1716,7 +1716,7 @@ describe("service orders inventory API", () => {
     });
 
     await request(app)
-      .get("/service/orders")
+      .get("/api/v1/service/orders")
       .query({ financialView: "paid" })
       .set("Authorization", authorization)
       .expect(200)
@@ -1729,7 +1729,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .get("/service/orders-dashboard")
+      .get("/api/v1/service/orders-dashboard")
       .query({ financialView: "paid" })
       .set("Authorization", authorization)
       .expect(200)
@@ -1743,7 +1743,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .get("/service/financial-audit")
+      .get("/api/v1/service/financial-audit")
       .set("Authorization", authorization)
       .expect(200)
       .expect(({ body }) => {
@@ -1769,7 +1769,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .get("/service/orders-financial-report")
+      .get("/api/v1/service/orders-financial-report")
       .query({
         financialView: "paid",
         dateField: "paidAt",
@@ -1802,7 +1802,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .get("/service/orders-financial-report")
+      .get("/api/v1/service/orders-financial-report")
       .query({
         format: "csv",
         financialView: "paid",
@@ -1820,7 +1820,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .get("/service/orders-monthly-closing")
+      .get("/api/v1/service/orders-monthly-closing")
       .query({ month: "2026-06" })
       .set("Authorization", authorization)
       .expect(200)
@@ -1842,7 +1842,7 @@ describe("service orders inventory API", () => {
       });
 
     await request(app)
-      .get("/service/orders-monthly-closing")
+      .get("/api/v1/service/orders-monthly-closing")
       .query({ month: "2026-06", format: "csv" })
       .set("Authorization", authorization)
       .expect(200)
@@ -1871,13 +1871,13 @@ describe("service orders inventory API", () => {
     });
 
     const created = await request(app)
-      .post("/service/orders")
+      .post("/api/v1/service/orders")
       .set("Authorization", authorization)
       .send(orderPayload(contact.id, inventoryItem.id, 2))
       .expect(201);
 
     await request(app)
-      .put(`/service/orders/${created.body.id}`)
+      .put(`/api/v1/service/orders/${created.body.id}`)
       .set("Authorization", authorization)
       .send(orderPayload(contact.id, inventoryItem.id, 2, "concluida"))
       .expect(409)
@@ -1908,7 +1908,7 @@ describe("service orders inventory API", () => {
     );
 
     await request(app)
-      .get("/service/inventory-audit")
+      .get("/api/v1/service/inventory-audit")
       .set("Authorization", authorization)
       .expect(200)
       .expect(({ body }) => {
@@ -1929,11 +1929,11 @@ describe("service orders inventory API", () => {
 
     const agent = await createAgentUser({ tenantId: user.tenantId });
     await request(app)
-      .get("/service/inventory-audit")
+      .get("/api/v1/service/inventory-audit")
       .set("Authorization", bearerTokenFor(agent))
       .expect(403);
     await request(app)
-      .get("/service/financial-audit")
+      .get("/api/v1/service/financial-audit")
       .set("Authorization", bearerTokenFor(agent))
       .expect(403);
   });

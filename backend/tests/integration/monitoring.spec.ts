@@ -44,7 +44,7 @@ describe("monitoring API", () => {
     const authorization = bearerTokenFor(user);
 
     const client = await request(app)
-      .post("/clients")
+      .post("/api/v1/clients")
       .set("Authorization", authorization)
       .send(clientPayload())
       .expect(201);
@@ -54,7 +54,7 @@ describe("monitoring API", () => {
     const [sector, otherSector] = area.sectors;
 
     const trapType = await request(app)
-      .post("/monitoring/trap-types")
+      .post("/api/v1/monitoring/trap-types")
       .set("Authorization", authorization)
       .send({
         name: "Porta Isca",
@@ -80,7 +80,7 @@ describe("monitoring API", () => {
       });
 
     await request(app)
-      .post("/monitoring/trap-types")
+      .post("/api/v1/monitoring/trap-types")
       .set("Authorization", authorization)
       .send({
         name: "Codigo duplicado",
@@ -90,7 +90,7 @@ describe("monitoring API", () => {
       .expect(409);
 
     await request(app)
-      .post("/monitoring/points")
+      .post("/api/v1/monitoring/points")
       .set("Authorization", bearerTokenFor(otherUser))
       .send({
         clientId: client.body.id,
@@ -106,7 +106,7 @@ describe("monitoring API", () => {
       .expect(404);
 
     const createdPoints = await request(app)
-      .post("/monitoring/points")
+      .post("/api/v1/monitoring/points")
       .set("Authorization", authorization)
       .send({
         clientId: client.body.id,
@@ -142,7 +142,7 @@ describe("monitoring API", () => {
     ).toBe(3);
 
     await request(app)
-      .put(`/monitoring/points/${createdPoints.body[0].id}`)
+      .put(`/api/v1/monitoring/points/${createdPoints.body[0].id}`)
       .set("Authorization", authorization)
       .send({
         sectorId: otherSector.id,
@@ -160,7 +160,7 @@ describe("monitoring API", () => {
       });
 
     await request(app)
-      .post("/monitoring/floor-plans")
+      .post("/api/v1/monitoring/floor-plans")
       .set("Authorization", authorization)
       .field("clientId", String(client.body.id))
       .field("addressId", String(address.id))
@@ -190,7 +190,7 @@ describe("monitoring API", () => {
     const floorPlanId = Number(floorPlan?.id);
 
     await request(app)
-      .put(`/monitoring/points/${createdPoints.body[2].id}/position`)
+      .put(`/api/v1/monitoring/points/${createdPoints.body[2].id}/position`)
       .set("Authorization", authorization)
       .send({
         floorPlanId,
@@ -225,7 +225,7 @@ describe("monitoring API", () => {
     ).toBe(1);
 
     await request(app)
-      .delete(`/monitoring/points/${createdPoints.body[2].id}/position`)
+      .delete(`/api/v1/monitoring/points/${createdPoints.body[2].id}/position`)
       .set("Authorization", authorization)
       .send({ notes: "Reposicionar depois" })
       .expect(200)
@@ -245,7 +245,7 @@ describe("monitoring API", () => {
     ).toBe(2);
 
     await request(app)
-      .get(`/monitoring/floor-plans?clientId=${client.body.id}`)
+      .get(`/api/v1/monitoring/floor-plans?clientId=${client.body.id}`)
       .set("Authorization", authorization)
       .expect(200)
       .expect(({ body }) => {
@@ -253,7 +253,7 @@ describe("monitoring API", () => {
       });
 
     await request(app)
-      .get(`/monitoring/points?clientId=${client.body.id}`)
+      .get(`/api/v1/monitoring/points?clientId=${client.body.id}`)
       .set("Authorization", authorization)
       .expect(200)
       .expect(({ body }) => {
@@ -261,7 +261,7 @@ describe("monitoring API", () => {
       });
 
     await request(app)
-      .delete(`/monitoring/points/${createdPoints.body[1].id}`)
+      .delete(`/api/v1/monitoring/points/${createdPoints.body[1].id}`)
       .set("Authorization", authorization)
       .send({ notes: "Ponto removido" })
       .expect(204);
@@ -282,7 +282,7 @@ describe("monitoring API", () => {
     ).toBe(1);
 
     await request(app)
-      .delete(`/monitoring/trap-types/${trapType.body.id}`)
+      .delete(`/api/v1/monitoring/trap-types/${trapType.body.id}`)
       .set("Authorization", authorization)
       .expect(409);
 

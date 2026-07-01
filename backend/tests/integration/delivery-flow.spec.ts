@@ -23,13 +23,13 @@ describe("delivery API", () => {
     const contact = await createContact({ tenantId });
     const ticket = await createTicket({ tenantId, contactId: contact.id });
     const categoryResponse = await request(app)
-      .post("/delivery/categories")
+      .post("/api/v1/delivery/categories")
       .set("Authorization", bearerTokenFor(user))
       .send({ name: "Lanches", description: "Cardapio principal" })
       .expect(201);
 
     const productResponse = await request(app)
-      .post("/delivery/products")
+      .post("/api/v1/delivery/products")
       .set("Authorization", bearerTokenFor(user))
       .send({
         categoryId: categoryResponse.body.id,
@@ -50,7 +50,7 @@ describe("delivery API", () => {
       .expect(201);
 
     await request(app)
-      .post("/delivery/zones")
+      .post("/api/v1/delivery/zones")
       .set("Authorization", bearerTokenFor(user))
       .send({
         name: "Centro",
@@ -64,7 +64,7 @@ describe("delivery API", () => {
       .expect(201);
 
     const orderResponse = await request(app)
-      .post("/delivery/orders")
+      .post("/api/v1/delivery/orders")
       .set("Authorization", bearerTokenFor(user))
       .send({
         ...manualOrderPayload(contact.id, productResponse.body.id),
@@ -85,7 +85,7 @@ describe("delivery API", () => {
     );
 
     const preparing = await request(app)
-      .put(`/delivery/orders/${orderResponse.body.id}/status`)
+      .put(`/api/v1/delivery/orders/${orderResponse.body.id}/status`)
       .set("Authorization", bearerTokenFor(user))
       .send({ status: "PREPARING" })
       .expect(200);
@@ -101,7 +101,7 @@ describe("delivery API", () => {
     const productB = await createProduct({ tenantId: userB.tenantId });
 
     await request(app)
-      .post("/delivery/orders")
+      .post("/api/v1/delivery/orders")
       .set("Authorization", bearerTokenFor(userA))
       .send({
         contactId: contactA.id,

@@ -10,7 +10,7 @@ describe("security regressions", () => {
     const target = await createAdminUser({ tenantId: admin.tenantId });
 
     await request(app)
-      .put(`/users/${target.id}`)
+      .put(`/api/v1/users/${target.id}`)
       .set("Authorization", bearerTokenFor(admin))
       .send({ profile: "superadmin" })
       .expect(400);
@@ -21,7 +21,7 @@ describe("security regressions", () => {
     const admin = await createAdminUser();
 
     await request(app)
-      .put(`/users/${admin.id}`)
+      .put(`/api/v1/users/${admin.id}`)
       .set("Authorization", bearerTokenFor(admin))
       .send({ profile: "user" })
       .expect(403)

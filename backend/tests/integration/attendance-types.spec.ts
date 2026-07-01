@@ -18,25 +18,25 @@ describe("attendance types API", () => {
     const userB = await createAdminUser();
 
     const created = await request(app)
-      .post("/attendance-types")
+      .post("/api/v1/attendance-types")
       .set("Authorization", bearerTokenFor(userA))
       .send({ name: "Preventivo", description: "Visita preventiva" })
       .expect(201);
 
     await request(app)
-      .post("/attendance-types")
+      .post("/api/v1/attendance-types")
       .set("Authorization", bearerTokenFor(userB))
       .send({ name: "Preventivo" })
       .expect(201);
 
     await request(app)
-      .put(`/attendance-types/${created.body.id}`)
+      .put(`/api/v1/attendance-types/${created.body.id}`)
       .set("Authorization", bearerTokenFor(userA))
       .send({ name: "Preventivo Programado", isActive: true })
       .expect(200);
 
     const response = await request(app)
-      .get("/attendance-types")
+      .get("/api/v1/attendance-types")
       .set("Authorization", bearerTokenFor(userA))
       .expect(200);
 
@@ -55,13 +55,13 @@ describe("attendance types API", () => {
     const user = await createAdminUser();
 
     await request(app)
-      .post("/attendance-types")
+      .post("/api/v1/attendance-types")
       .set("Authorization", bearerTokenFor(user))
       .send({ name: "Garantia" })
       .expect(201);
 
     await request(app)
-      .post("/attendance-types")
+      .post("/api/v1/attendance-types")
       .set("Authorization", bearerTokenFor(user))
       .send({ name: "garantia" })
       .expect(409);
@@ -73,7 +73,7 @@ describe("attendance types API", () => {
     const user = await createAgentUser({ tenantId: tenant.id });
 
     await request(app)
-      .post("/attendance-types")
+      .post("/api/v1/attendance-types")
       .set("Authorization", bearerTokenFor(user))
       .send({ name: "Emergencial" })
       .expect(403);
@@ -100,7 +100,7 @@ describe("attendance types API", () => {
     });
 
     await request(app)
-      .delete(`/attendance-types/${attendanceType.id}`)
+      .delete(`/api/v1/attendance-types/${attendanceType.id}`)
       .set("Authorization", bearerTokenFor(user))
       .expect(200)
       .expect(({ body }) => {
@@ -142,7 +142,7 @@ describe("attendance types API", () => {
     });
 
     await request(app)
-      .delete(`/attendance-types/${attendanceType.id}`)
+      .delete(`/api/v1/attendance-types/${attendanceType.id}`)
       .set("Authorization", bearerTokenFor(user))
       .expect(200)
       .expect(({ body }) => {

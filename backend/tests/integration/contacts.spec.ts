@@ -24,7 +24,7 @@ describe("contacts API", () => {
     const authorization = bearerTokenFor(user);
 
     const created = await request(app)
-      .post("/contacts")
+      .post("/api/v1/contacts")
       .set("Authorization", authorization)
       .send({
         name: "Cliente API",
@@ -42,7 +42,7 @@ describe("contacts API", () => {
     );
 
     const listed = await request(app)
-      .get("/contacts")
+      .get("/api/v1/contacts")
       .set("Authorization", authorization)
       .expect(200);
 
@@ -53,13 +53,13 @@ describe("contacts API", () => {
     );
 
     await request(app)
-      .put(`/contacts/${created.body.id}`)
+      .put(`/api/v1/contacts/${created.body.id}`)
       .set("Authorization", authorization)
       .send({ name: "Cliente API Editado", number: "5511888880000" })
       .expect(200);
 
     await request(app)
-      .delete(`/contacts/${created.body.id}`)
+      .delete(`/api/v1/contacts/${created.body.id}`)
       .set("Authorization", authorization)
       .expect(200);
 
@@ -73,7 +73,7 @@ describe("contacts API", () => {
     const contactB = await createContact({ tenantId: userB.tenantId });
 
     await request(app)
-      .get(`/contacts/${contactB.id}`)
+      .get(`/api/v1/contacts/${contactB.id}`)
       .set("Authorization", bearerTokenFor(userA))
       .expect(404);
   });
@@ -85,7 +85,7 @@ describe("contacts API", () => {
     const contactA = await createContact({ tenantId: userA.tenantId });
 
     await request(app)
-      .put(`/contact-wallet/${contactA.id}`)
+      .put(`/api/v1/contact-wallet/${contactA.id}`)
       .set("Authorization", bearerTokenFor(userA))
       .send({ wallets: [userB.id] })
       .expect(404)
@@ -109,7 +109,7 @@ describe("contacts API", () => {
     });
 
     await request(app)
-      .put(`/contact-tags/${contactA.id}`)
+      .put(`/api/v1/contact-tags/${contactA.id}`)
       .set("Authorization", bearerTokenFor(userA))
       .send({ tags: [tagB.id] })
       .expect(404)

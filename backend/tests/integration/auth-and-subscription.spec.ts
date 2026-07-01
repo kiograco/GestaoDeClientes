@@ -11,7 +11,7 @@ describe("auth and subscription API", () => {
     const user = await createAdminUser({ password });
 
     const response = await request(app)
-      .post("/auth/login")
+      .post("/api/v1/auth/login")
       .send({ email: user.email, password })
       .expect(200);
 
@@ -32,7 +32,7 @@ describe("auth and subscription API", () => {
     const user = await createAdminUser({ tenantId: expiredTenant.id });
 
     await request(app)
-      .get("/contacts")
+      .get("/api/v1/contacts")
       .set("Authorization", bearerTokenFor(user))
       .expect(403)
       .expect(({ body }) => {
@@ -52,7 +52,7 @@ describe("auth and subscription API", () => {
     });
 
     await request(app)
-      .post("/auth/login")
+      .post("/api/v1/auth/login")
       .send({ email: user.email, password })
       .expect(403)
       .expect(({ body }) => {
@@ -68,7 +68,7 @@ describe("auth and subscription API", () => {
     await createContact({ tenantId: userB.tenantId, name: "Cliente B" });
 
     const response = await request(app)
-      .get("/contacts")
+      .get("/api/v1/contacts")
       .set("Authorization", bearerTokenFor(userA))
       .expect(200);
 

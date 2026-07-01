@@ -88,7 +88,7 @@ describe("clients API", () => {
     const authorization = bearerTokenFor(user);
 
     const created = await request(app)
-      .post("/clients")
+      .post("/api/v1/clients")
       .set("Authorization", authorization)
       .send(clientPayload())
       .expect(201)
@@ -129,19 +129,19 @@ describe("clients API", () => {
       });
 
     await request(app)
-      .post("/clients")
+      .post("/api/v1/clients")
       .set("Authorization", authorization)
       .send(clientPayload())
       .expect(409);
 
     await request(app)
-      .post("/clients")
+      .post("/api/v1/clients")
       .set("Authorization", bearerTokenFor(otherUser))
       .send(clientPayload())
       .expect(201);
 
     await request(app)
-      .post(`/clients/${created.body.id}/areas`)
+      .post(`/api/v1/clients/${created.body.id}/areas`)
       .set("Authorization", authorization)
       .send({
         addressId: created.body.addresses[1].id,
@@ -169,7 +169,7 @@ describe("clients API", () => {
       });
 
     await request(app)
-      .get(`/clients/${created.body.id}/areas`)
+      .get(`/api/v1/clients/${created.body.id}/areas`)
       .set("Authorization", authorization)
       .expect(200)
       .expect(({ body }) => {
@@ -180,7 +180,7 @@ describe("clients API", () => {
       where: { tenantId: user.tenantId, name: "Estoque" }
     });
     await request(app)
-      .put(`/clients/${created.body.id}/areas/${areaToUpdate?.id}`)
+      .put(`/api/v1/clients/${created.body.id}/areas/${areaToUpdate?.id}`)
       .set("Authorization", authorization)
       .send({
         addressId: created.body.addresses[1].id,
@@ -200,17 +200,17 @@ describe("clients API", () => {
       });
 
     await request(app)
-      .delete(`/clients/${created.body.id}/areas/${areaToUpdate?.id}`)
+      .delete(`/api/v1/clients/${created.body.id}/areas/${areaToUpdate?.id}`)
       .set("Authorization", authorization)
       .expect(204);
 
     await request(app)
-      .get(`/clients/${created.body.id}`)
+      .get(`/api/v1/clients/${created.body.id}`)
       .set("Authorization", bearerTokenFor(otherUser))
       .expect(404);
 
     await request(app)
-      .get("/clients?searchParam=Alfa")
+      .get("/api/v1/clients?searchParam=Alfa")
       .set("Authorization", authorization)
       .expect(200)
       .expect(({ body }) => {
@@ -219,7 +219,7 @@ describe("clients API", () => {
       });
 
     await request(app)
-      .put(`/clients/${created.body.id}`)
+      .put(`/api/v1/clients/${created.body.id}`)
       .set("Authorization", authorization)
       .send({
         ...clientPayload(),
@@ -254,12 +254,12 @@ describe("clients API", () => {
       });
 
     await request(app)
-      .delete(`/clients/${created.body.id}`)
+      .delete(`/api/v1/clients/${created.body.id}`)
       .set("Authorization", authorization)
       .expect(204);
 
     await request(app)
-      .get(`/clients/${created.body.id}`)
+      .get(`/api/v1/clients/${created.body.id}`)
       .set("Authorization", authorization)
       .expect(404);
 
@@ -329,7 +329,7 @@ describe("clients API", () => {
     });
 
     await request(app)
-      .get("/clients/cnpj/11222333000181")
+      .get("/api/v1/clients/cnpj/11222333000181")
       .set("Authorization", bearerTokenFor(user))
       .expect(200)
       .expect(({ body }) => {
@@ -352,7 +352,7 @@ describe("clients API", () => {
     jest.spyOn(axios, "get").mockRejectedValueOnce(notFoundError);
 
     await request(app)
-      .get("/clients/cnpj/50911840000184")
+      .get("/api/v1/clients/cnpj/50911840000184")
       .set("Authorization", bearerTokenFor(user))
       .expect(404)
       .expect(({ body }) => {

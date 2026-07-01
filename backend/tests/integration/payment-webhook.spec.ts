@@ -1,4 +1,5 @@
 import request from "supertest";
+import { createHmac } from "crypto";
 import Order from "../../src/models/Order";
 import OrderPayment from "../../src/models/OrderPayment";
 import PaymentWebhookEvent from "../../src/models/PaymentWebhookEvent";
@@ -23,14 +24,26 @@ describe("payment webhooks", () => {
       externalPaymentId: "pay_webhook_123"
     });
 
+    const rawBody = JSON.stringify({
+      id: "evt_webhook_123",
+      event: "PAYMENT_RECEIVED",
+      payment: { id: "pay_webhook_123", status: "RECEIVED" }
+    });
+    const timestamp = Date.now().toString();
+    const signature = createHmac(
+      "sha256",
+      process.env.ASAAS_WEBHOOK_SECRET as string
+    )
+      .update(`${timestamp}.${rawBody}`)
+      .digest("hex");
+
     await request(app)
-      .post("/webhooks/asaas")
+      .post("/api/v1/webhooks/asaas")
       .set("asaas-access-token", "test-asaas-webhook-token")
-      .send({
-        id: "evt_webhook_123",
-        event: "PAYMENT_RECEIVED",
-        payment: { id: "pay_webhook_123", status: "RECEIVED" }
-      })
+      .set("asaas-signature", signature)
+      .set("asaas-timestamp", timestamp)
+      .type("json")
+      .send(rawBody)
       .expect(200)
       .expect(({ body }) => {
         expect(body.received).toBe(true);
@@ -50,7 +63,7 @@ describe("payment webhooks", () => {
     const app = await makeTestApp();
 
     await request(app)
-      .post("/webhooks/asaas")
+      .post("/api/v1/webhooks/asaas")
       .send({
         id: "evt_webhook_invalid_token",
         event: "PAYMENT_RECEIVED",
