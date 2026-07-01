@@ -39,11 +39,7 @@ const validate = async (schema: LegacyAny, data: LegacyAny) => {
   }
 };
 
-const emitOrder = (
-  tenantId: number,
-  action: string,
-  order: LegacyAny
-) => {
+const emitOrder = (tenantId: number, action: string, order: LegacyAny) => {
   getIO().emit(`${tenantId}:delivery:order`, { action, order });
 };
 
@@ -94,6 +90,10 @@ export const updateStatus = async (
     status
   );
   emitOrder(req.user.tenantId, "update", order);
-  await NotifyDeliveryOrderStatusService(req.user.tenantId, Number(req.user.id), order);
+  await NotifyDeliveryOrderStatusService(
+    req.user.tenantId,
+    Number(req.user.id),
+    order
+  );
   return res.json(order);
 };

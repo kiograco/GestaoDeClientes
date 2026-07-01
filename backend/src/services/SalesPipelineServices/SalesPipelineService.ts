@@ -1188,7 +1188,7 @@ export const convertProposalToServiceOrder = async (
       { transaction }
     );
     await ServiceOrderItem.bulkCreate(
-      (proposal.items || [] as LegacyAny).map(item => ({
+      (proposal.items || ([] as LegacyAny)).map(item => ({
         tenantId,
         serviceOrderId: order.id,
         itemType: "service",

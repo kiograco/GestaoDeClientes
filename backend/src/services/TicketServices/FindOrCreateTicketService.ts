@@ -252,7 +252,10 @@ const FindOrCreateTicketService = async ({
     await CheckChatBotFlowWelcome(ticketCreated);
   }
 
-  ticket = await ShowTicketService({ id: ticketCreated.id, tenantId: Number(tenantId) });
+  ticket = await ShowTicketService({
+    id: ticketCreated.id,
+    tenantId: Number(tenantId)
+  });
   ticket.setDataValue("isCreated", true);
 
   socketEmit({

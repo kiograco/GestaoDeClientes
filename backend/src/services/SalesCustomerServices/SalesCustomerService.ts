@@ -648,9 +648,12 @@ export const createCustomer = async (
 ): Promise<Client> => {
   await ensureUniqueDocument(tenantId, data.document);
   const client = await sequelize.transaction(async transaction => {
-    const created = await Client.create(baseClientPayload(tenantId, data) as LegacyAny, {
-      transaction
-    });
+    const created = await Client.create(
+      baseClientPayload(tenantId, data) as LegacyAny,
+      {
+        transaction
+      }
+    );
     const addressIds = await syncAddresses(
       tenantId,
       created.id,

@@ -89,9 +89,7 @@ export const deleteCategory = async (
   await category.destroy();
 };
 
-export const listProducts = async (
-  tenantId: number
-): Promise<Product[]> =>
+export const listProducts = async (tenantId: number): Promise<Product[]> =>
   Product.findAll({
     where: { tenantId },
     include: productInclude,

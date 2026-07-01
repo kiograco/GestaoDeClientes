@@ -74,7 +74,11 @@ export const createAddress = async (
       await clearDefaultAddress(tenantId, data.contactId, transaction);
     }
     return CustomerAddress.create(
-      { ...data, zipCode: normalizeZipCode(data.zipCode), tenantId } as LegacyAny,
+      {
+        ...data,
+        zipCode: normalizeZipCode(data.zipCode),
+        tenantId
+      } as LegacyAny,
       { transaction }
     );
   });
@@ -114,9 +118,7 @@ export const deleteAddress = async (
   await address.destroy();
 };
 
-export const listZones = async (
-  tenantId: number
-): Promise<DeliveryZone[]> =>
+export const listZones = async (tenantId: number): Promise<DeliveryZone[]> =>
   DeliveryZone.findAll({ where: { tenantId }, order: [["name", "ASC"]] });
 
 export const createZone = async (

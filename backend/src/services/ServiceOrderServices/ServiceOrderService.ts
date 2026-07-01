@@ -3511,7 +3511,9 @@ export const createOrder = async (
         transaction,
         payload.serviceTeamId
       );
-      const serviceOrder = await ServiceOrder.create(payload as LegacyAny, { transaction });
+      const serviceOrder = await ServiceOrder.create(payload as LegacyAny, {
+        transaction
+      });
       await replaceOrderItems(
         tenantId,
         serviceOrder.id,

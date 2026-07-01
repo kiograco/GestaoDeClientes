@@ -247,7 +247,12 @@ export const updateOrderStatus = async (
   await sequelize.transaction(async transaction => {
     await order.update({ status }, { transaction });
     await OrderStatusHistory.create(
-      { orderId: order.id, oldStatus, newStatus: status, changedBy: userId } as LegacyAny,
+      {
+        orderId: order.id,
+        oldStatus,
+        newStatus: status,
+        changedBy: userId
+      } as LegacyAny,
       { transaction }
     );
   });

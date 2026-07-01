@@ -364,9 +364,7 @@ const monitoringActionForUpdate = ({
   return "replacement";
 };
 
-export const listTrapTypes = async (
-  tenantId: number
-): Promise<TrapType[]> =>
+export const listTrapTypes = async (tenantId: number): Promise<TrapType[]> =>
   TrapType.findAll({
     where: { tenantId },
     include: trapTypeInclude,
@@ -486,9 +484,7 @@ export const updateCondition = async (
   return condition;
 };
 
-export const listActions = async (
-  tenantId: number
-): Promise<TrapAction[]> => {
+export const listActions = async (tenantId: number): Promise<TrapAction[]> => {
   const count = await TrapAction.count({ where: { tenantId } });
   if (!count) {
     await TrapAction.bulkCreate(

@@ -174,9 +174,7 @@ export const disconnectTenantSockets = async (
 ): Promise<void> => {
   try {
     const socketServer = getIO();
-    const sockets = await socketServer
-      .in(String(tenantId))
-      .fetchSockets();
+    const sockets = await socketServer.in(String(tenantId)).fetchSockets();
 
     await Promise.all(
       sockets.map(async socket => {

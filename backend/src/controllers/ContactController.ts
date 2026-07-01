@@ -260,7 +260,10 @@ export const exportContacts = async (
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("Contatos");
   if (contacts.length > 0) {
-    worksheet.columns = Object.keys(contacts[0]).map(key => ({ header: key, key }));
+    worksheet.columns = Object.keys(contacts[0]).map(key => ({
+      header: key,
+      key
+    }));
     contacts.forEach(contact => worksheet.addRow(contact));
   }
 
