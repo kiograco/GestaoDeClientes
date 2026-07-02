@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <div class="floor-plan-actions">
       <q-btn-toggle

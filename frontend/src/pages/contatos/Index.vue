@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <q-table
       class="my-sticky-dynamic"
@@ -570,7 +570,7 @@ export default {
           const { data: ticket } = await CriarTicket({
             contactId: contact.id,
             isActiveDemand: true,
-            userId: userId,
+            userId,
             channel,
             channelId,
             status: 'open'

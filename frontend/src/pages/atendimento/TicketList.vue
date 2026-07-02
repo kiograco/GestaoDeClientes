@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <q-scroll-area
       ref="scrollAreaTickets"

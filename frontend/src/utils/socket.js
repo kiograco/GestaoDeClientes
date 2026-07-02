@@ -8,7 +8,6 @@ export const socketIO = () => {
     transports: ['polling', 'websocket'],
     auth: (cb) => {
       const token = getAccessToken()
-      // eslint-disable-next-line standard/no-callback-literal
       cb({ token })
     }
   })

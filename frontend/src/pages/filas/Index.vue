@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <q-table
       flat
@@ -61,7 +61,7 @@
 import { DeletarFila, ListarFilas } from 'src/service/filas'
 import ModalFila from './ModalFila'
 export default {
-  name: 'Filas',
+  name: 'FilasIndex',
   components: {
     ModalFila
   },

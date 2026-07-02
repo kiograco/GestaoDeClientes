@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-page dashboard-page">
     <div class="app-page-header">
       <div>

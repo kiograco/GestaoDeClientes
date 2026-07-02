@@ -1,4 +1,3 @@
-
 export const estadoPorDdd = {
   11: 'SP',
   12: 'SP',

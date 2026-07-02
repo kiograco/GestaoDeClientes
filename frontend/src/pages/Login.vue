@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <q-layout class="vertical-center login-layout">
     <q-page-container>
       <q-page class="flex justify-center items-center">
@@ -449,7 +449,7 @@ const cadastroInicial = () => ({
 })
 
 export default {
-  name: 'Login',
+  name: 'LoginPage',
   setup () {
     return { v$: useVuelidate() }
   },

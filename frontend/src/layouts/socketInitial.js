@@ -1,4 +1,4 @@
-﻿const usuario = JSON.parse(localStorage.getItem('usuario'))
+const usuario = JSON.parse(localStorage.getItem('usuario'))
 import Router from 'src/router/index'
 import { socketIO } from '../utils/socket'
 import { ConsultarTickets } from 'src/service/tickets'
@@ -125,7 +125,7 @@ export default {
         })
       })
       socket.on(`${usuario.tenantId}:ticketList`, async data => {
-        var verify = []
+        let verify = []
         if (data.type === 'notification:new') {
           const params = {
             searchParam: '',
@@ -147,7 +147,7 @@ export default {
             console.error(err)
           }
           // Faz verificação para se certificar que notificação pertence a fila do usuário
-          var pass_noti = false
+          let pass_noti = false
           verify.data.tickets.forEach((element) => { pass_noti = (element.id === data.payload.id ? true : pass_noti) })
           // Exibe Notificação
           if (pass_noti) {

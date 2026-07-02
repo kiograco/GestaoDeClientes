@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <q-page padding class="service-orders-page">
     <div class="row items-center q-col-gutter-md q-mb-md">
       <div class="col-12 col-md">
@@ -2056,23 +2056,23 @@ export default {
     prepararFormularioOrdem (ordem) {
       this.form = ordem
         ? {
-          ...emptyForm(),
-          ...ordem,
-          recurrenceActive: Boolean(ordem.recurrenceActive || (ordem.recurrenceType && ordem.recurrenceType !== 'single')),
-          recurrenceType: ordem.recurrenceType || 'single',
-          recurrenceDayOfMonth: ordem.recurrenceDayOfMonth || null,
-          recurrenceIntervalDays: ordem.recurrenceIntervalDays || 30,
-          scheduledDate: this.toInputDate(ordem.scheduledStart).slice(0, 10),
-          scheduledStartTime: this.toInputTime(ordem.scheduledStart),
-          scheduledEndTime: this.toInputTime(ordem.scheduledEnd),
-          scheduledStart: this.toInputDate(ordem.scheduledStart),
-          scheduledEnd: this.toInputDate(ordem.scheduledEnd),
-          chargedAmount: this.formatarMoedaCampo(ordem.chargedAmount),
-          paidAmount: this.formatarMoedaCampo(ordem.paidAmount),
-          paymentDueDate: ordem.paymentDueDate ? this.toInputDate(ordem.paymentDueDate).slice(0, 10) : '',
-          paidAt: ordem.paidAt ? this.toInputDate(ordem.paidAt).slice(0, 10) : '',
-          items: this.normalizarItensOrdemParaFormulario(ordem.items || [])
-        }
+            ...emptyForm(),
+            ...ordem,
+            recurrenceActive: Boolean(ordem.recurrenceActive || (ordem.recurrenceType && ordem.recurrenceType !== 'single')),
+            recurrenceType: ordem.recurrenceType || 'single',
+            recurrenceDayOfMonth: ordem.recurrenceDayOfMonth || null,
+            recurrenceIntervalDays: ordem.recurrenceIntervalDays || 30,
+            scheduledDate: this.toInputDate(ordem.scheduledStart).slice(0, 10),
+            scheduledStartTime: this.toInputTime(ordem.scheduledStart),
+            scheduledEndTime: this.toInputTime(ordem.scheduledEnd),
+            scheduledStart: this.toInputDate(ordem.scheduledStart),
+            scheduledEnd: this.toInputDate(ordem.scheduledEnd),
+            chargedAmount: this.formatarMoedaCampo(ordem.chargedAmount),
+            paidAmount: this.formatarMoedaCampo(ordem.paidAmount),
+            paymentDueDate: ordem.paymentDueDate ? this.toInputDate(ordem.paymentDueDate).slice(0, 10) : '',
+            paidAt: ordem.paidAt ? this.toInputDate(ordem.paidAt).slice(0, 10) : '',
+            items: this.normalizarItensOrdemParaFormulario(ordem.items || [])
+          }
         : emptyForm()
       this.sincronizarTipoAtendimentoLegado()
       this.servicoOrdemSelecionado = null

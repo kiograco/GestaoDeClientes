@@ -118,21 +118,18 @@
               >
                 Baixar: {{ mensagem.body }}
               </q-tooltip>
-              <template slot>
-                <div
-                  class="row items-center q-my-sm"
-                  style="max-width: 180px"
-                >
-                  <div class="ellipsis col-grow q-pr-sm">
-                    {{ farmatarMensagemWhatsapp(mensagem.body) }}
-                  </div>
-                  <q-icon
-                    class="col"
-                    name="mdi-download"
-                  />
+              <div
+                class="row items-center q-my-sm"
+                style="max-width: 180px"
+              >
+                <div class="ellipsis col-grow q-pr-sm">
+                  {{ farmatarMensagemWhatsapp(mensagem.body) }}
                 </div>
-
-              </template>
+                <q-icon
+                  class="col"
+                  name="mdi-download"
+                />
+              </div>
             </q-btn>
           </div>
           <!-- <q-btn

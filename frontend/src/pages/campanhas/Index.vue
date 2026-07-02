@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-page campanhas-page">
     <div class="app-page-header">
       <div>
@@ -164,7 +164,7 @@ import ModalCampanha from './ModalCampanha'
 import { format, parseISO, startOfDay } from 'date-fns'
 
 export default {
-  name: 'Campanhas',
+  name: 'CampanhasIndex',
   components: {
     ModalCampanha
   },

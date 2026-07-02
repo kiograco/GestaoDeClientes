@@ -1,4 +1,3 @@
-
 const isNotViewAssignedTickets = () => {
   const configuracoes = JSON.parse(localStorage.getItem('configuracoes'))
   const conf = configuracoes?.find(c => c.key === 'NotViewAssignedTickets')

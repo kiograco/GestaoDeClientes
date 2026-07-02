@@ -123,7 +123,7 @@ export default {
           }
         })
         socket.on(`${usuario.tenantId}:ticketList`, async data => {
-          var verify = []
+          let verify = []
           if (data.type === 'notification:new') {
             // console.log(data)
             // Atualiza notificações de mensagem
@@ -149,7 +149,7 @@ export default {
               console.error(err)
             }
             // Faz verificação para se certificar que notificação pertence a fila do usuário
-            var pass_noti = false
+            let pass_noti = false
             verify.data.tickets.forEach((element) => { pass_noti = (element.id === data.payload.id ? true : pass_noti) })
             // Exibe Notificação
             if (pass_noti) {

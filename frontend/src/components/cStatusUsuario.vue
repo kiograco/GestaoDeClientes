@@ -4,11 +4,11 @@
       borderless
       dense
       rounded
-      v-model="usuario.status"
+      :model-value="usuario.status"
       :options="statusOptions"
       map-options
       emit-value
-      @input="updateStatus"
+      @update:model-value="updateStatus"
     >
       <template v-slot:selected>
         <div class="row full-width justify-center">

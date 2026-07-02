@@ -39,7 +39,7 @@
 <script>
 import draggable from 'vuedraggable'
 
-var mousePosition = {
+const mousePosition = {
   left: -1,
   top: -1
 }
@@ -130,14 +130,14 @@ export default {
       }
     },
     move (evt, a, b, c) {
-      var type = evt.item.attributes.type.nodeValue
+      const type = evt.item.attributes.type.nodeValue
       this.nodeMenu = this.getMenuByType(type)
     },
     end (evt, e) {
       this.$emit('addNode', evt, this.nodeMenu, mousePosition)
     },
     isFirefox () {
-      var userAgent = navigator.userAgent
+      const userAgent = navigator.userAgent
       if (userAgent.indexOf('Firefox') > -1) {
         return true
       }

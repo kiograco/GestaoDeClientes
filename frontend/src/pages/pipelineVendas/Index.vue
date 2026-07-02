@@ -437,10 +437,10 @@ export default {
     abrirOportunidade (item) {
       this.oportunidade = item
         ? {
-          ...item,
-          estimatedValue: this.formatarMoedaCampo(item.estimatedValue),
-          expectedCloseDate: item.expectedCloseDate ? item.expectedCloseDate.slice(0, 10) : ''
-        }
+            ...item,
+            estimatedValue: this.formatarMoedaCampo(item.estimatedValue),
+            expectedCloseDate: item.expectedCloseDate ? item.expectedCloseDate.slice(0, 10) : ''
+          }
         : emptyOpportunity()
       if (item?.contact && !this.clientes.some(cliente => cliente.id === item.contact.id)) {
         this.clientes.unshift(item.contact)
@@ -526,19 +526,19 @@ export default {
       const current = data[0]
       this.proposta = current
         ? {
-          ...current,
-          validUntil: current.validUntil ? current.validUntil.slice(0, 10) : '',
-          discount: this.formatarMoedaCampo(current.discount),
-          items: (current.items || []).map(proposalItem => ({
-            ...proposalItem,
-            unitPrice: this.formatarMoedaCampo(proposalItem.unitPrice)
-          }))
-        }
+            ...current,
+            validUntil: current.validUntil ? current.validUntil.slice(0, 10) : '',
+            discount: this.formatarMoedaCampo(current.discount),
+            items: (current.items || []).map(proposalItem => ({
+              ...proposalItem,
+              unitPrice: this.formatarMoedaCampo(proposalItem.unitPrice)
+            }))
+          }
         : {
-          ...emptyProposal(),
-          title: item.title,
-          introduction: item.description || ''
-        }
+            ...emptyProposal(),
+            title: item.title,
+            introduction: item.description || ''
+          }
       this.modalProposta = true
     },
     adicionarItemProposta () {

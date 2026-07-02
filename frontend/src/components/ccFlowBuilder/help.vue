@@ -40,6 +40,7 @@
 
 <script>
 export default {
+  name: 'FlowBuilderHelp',
   data () {
     return {
       dialogVisible: false

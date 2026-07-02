@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <q-dialog
     :value="modalNovoTicket"
     persistent
@@ -148,7 +148,7 @@ export default {
         const { data: ticket } = await CriarTicket({
           contactId: this.contatoSelecionado.id,
           isActiveDemand: true,
-          userId: userId,
+          userId,
           status: 'open'
         })
         await this.$store.commit('SET_HAS_MORE', true)

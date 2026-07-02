@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <template v-if="ticketFocado.status !== 'pending'">
 
@@ -485,9 +485,9 @@ export default {
     },
     onInsertSelectEmoji (emoji) {
       const self = this
-      var tArea = this.$refs.inputEnvioMensagem.$refs.input
+      const tArea = this.$refs.inputEnvioMensagem.$refs.input
       // get cursor's position:
-      var startPos = tArea.selectionStart,
+      const startPos = tArea.selectionStart,
         endPos = tArea.selectionEnd,
         cursorPos = startPos,
         tmpStr = tArea.value

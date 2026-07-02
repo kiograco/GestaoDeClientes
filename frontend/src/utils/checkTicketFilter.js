@@ -1,4 +1,3 @@
-
 const checkTicketFilter = (ticket) => {
   const filtroPadrao = {
     searchParam: '',

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <div class="row col full-width q-pa-sm">
       <q-card
@@ -73,7 +73,7 @@
           flat
           bordered
           class="col-xs-12 col-sm-5 col-md-4 col-lg-3 q-ma-sm"
-          
+
         >
           <q-item>
             <q-item-section avatar>

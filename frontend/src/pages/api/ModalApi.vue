@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <q-dialog
     persistent
     :value="modalApi"

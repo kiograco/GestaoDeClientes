@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <q-dialog
     persistent
     :value="modalFilaUsuario"
@@ -22,7 +22,7 @@
         <template v-for="fila in filas" :key="fila.id">
           <div
             class="row col"
-            
+
           >
             <q-checkbox
               :disable="!fila.isActive"

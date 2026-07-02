@@ -182,7 +182,7 @@ export default {
   },
   methods: {
     replaceEmojis (str) {
-      var ranges = [
+      const ranges = [
         '[\u00A0-\u269f]',
         '[\u26A0-\u329f]',
         // The following characters could not be minified correctly

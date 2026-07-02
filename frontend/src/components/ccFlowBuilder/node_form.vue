@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="q-px-md q-py-sm">
     <div class="row justify-between col q-mb-sm">
       <q-btn
@@ -192,7 +192,7 @@
                     <q-card
                       bordered
                       flat
-                      
+
                       class="full-width q-my-sm"
                       style="min-height: 250px;"
                     >
@@ -887,8 +887,8 @@ export default {
     },
     onInsertSelectEmojiSaudacao (emoji) {
       const self = this
-      var tArea = this.$refs.inputEnvioMensagemSaudacao
-      var startPos = tArea.selectionStart,
+      const tArea = this.$refs.inputEnvioMensagemSaudacao
+      const startPos = tArea.selectionStart,
         endPos = tArea.selectionEnd,
         cursorPos = startPos,
         tmpStr = tArea.value
@@ -904,8 +904,8 @@ export default {
     },
     onInsertSelectEmojiNotOptionsSelectMessage (emoji) {
       const self = this
-      var tArea = this.$refs.inputEnvioMensagemnotOptionsSelectMessage
-      var startPos = tArea.selectionStart,
+      const tArea = this.$refs.inputEnvioMensagemnotOptionsSelectMessage
+      const startPos = tArea.selectionStart,
         endPos = tArea.selectionEnd,
         cursorPos = startPos,
         tmpStr = tArea.value
@@ -955,7 +955,7 @@ export default {
     nodeInit (data, id) {
       this.type = 'node'
       this.data = data
-      data.nodeList.filter((node) => {
+      data.nodeList.forEach((node) => {
         if (node.id === id) {
           this.node = node
         }
@@ -969,7 +969,7 @@ export default {
       this.$emit('setLineLabel', this.line.from, this.line.to, this.line.label)
     },
     save () {
-      this.data.nodeList.filter((node) => {
+      this.data.nodeList.forEach((node) => {
         if (node.id === this.node.id) {
           node.name = this.node.name
           node.left = this.node.left

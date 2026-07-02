@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div
     class="chat-workspace no-scroll hide-scrollbar overflow-hidden"
     :style="style"
@@ -121,10 +121,8 @@
             >
               {{ replyingMessage.contact && replyingMessage.contact.name }}
             </q-item-label>
-            <q-item-label
-              lines="4"
-              v-html="farmatarMensagemWhatsapp(replyingMessage.body)"
-            >
+            <q-item-label lines="4">
+              <div v-html="farmatarMensagemWhatsapp(replyingMessage.body)"></div>
             </q-item-label>
           </q-item-section>
           <q-btn
@@ -328,7 +326,7 @@ import { ListarContatos } from 'src/service/contatos'
 import { EncaminharMensagem } from 'src/service/tickets'
 
 export default {
-  name: 'Chat',
+  name: 'AtendimentoChat',
   mixins: [mixinCommon, mixinAtualizarStatusTicket, mixinSockets],
   props: {
     mensagensRapidas: Array

@@ -411,10 +411,10 @@ export default {
           method: this.pedido.paymentMethod,
           customer: this.pedido.paymentMethod === 'PIX'
             ? {
-              name: this.ticket.contact.name,
-              email: this.pedido.customer.email,
-              cpfCnpj: this.pedido.customer.cpfCnpj
-            }
+                name: this.ticket.contact.name,
+                email: this.pedido.customer.email,
+                cpfCnpj: this.pedido.customer.cpfCnpj
+              }
             : null
         })
         try {

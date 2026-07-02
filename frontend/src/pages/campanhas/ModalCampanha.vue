@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <q-dialog
     persistent
     :value="modalCampanha"
@@ -469,9 +469,9 @@ export default {
   methods: {
     onInsertSelectEmoji (emoji, ref) {
       const self = this
-      var tArea = this.$refs[ref]
+      const tArea = this.$refs[ref]
       // get cursor's position:
-      var startPos = tArea.selectionStart,
+      const startPos = tArea.selectionStart,
         endPos = tArea.selectionEnd,
         cursorPos = startPos,
         tmpStr = tArea.value

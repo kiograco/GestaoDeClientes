@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <q-card class="q-ma-md">
       <q-card-section>

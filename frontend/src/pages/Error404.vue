@@ -27,6 +27,6 @@
 
 <script>
 export default {
-  name: 'Error404'
+  name: 'ErrorNotFound'
 }
 </script>

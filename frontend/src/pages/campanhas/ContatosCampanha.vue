@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <q-card
       flat

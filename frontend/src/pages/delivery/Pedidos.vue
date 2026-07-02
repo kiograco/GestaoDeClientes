@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="q-pa-lg">
     <div class="row items-center q-mb-md">
       <div>

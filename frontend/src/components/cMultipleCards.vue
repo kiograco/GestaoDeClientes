@@ -55,7 +55,7 @@ export default {
     }
   },
   render (h) {
-    return this.$scopedSlots.default({ sets: this.sets, contentClass: this.contentClass })[0]
+    return this.$slots.default({ sets: this.sets, contentClass: this.contentClass })[0]
   }
 }
 </script>

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <q-page class="app-page">
     <div class="app-page-header">
       <div>
@@ -205,15 +205,15 @@ export default {
     columns () {
       const base = this.isUnidades
         ? [
-          { name: 'name', label: 'Unidade', field: 'name', align: 'left', sortable: true },
-          { name: 'client', label: 'Cliente', field: row => row.client?.tradeName || row.client?.legalName || '-', align: 'left' },
-          { name: 'city', label: 'Cidade/UF', field: row => [row.city, row.state].filter(Boolean).join('/') || '-', align: 'left' }
-        ]
+            { name: 'name', label: 'Unidade', field: 'name', align: 'left', sortable: true },
+            { name: 'client', label: 'Cliente', field: row => row.client?.tradeName || row.client?.legalName || '-', align: 'left' },
+            { name: 'city', label: 'Cidade/UF', field: row => [row.city, row.state].filter(Boolean).join('/') || '-', align: 'left' }
+          ]
         : [
-          { name: 'name', label: 'Nome', field: 'name', align: 'left', sortable: true },
-          { name: 'code', label: 'Código', field: row => row.code || '-', align: 'left' },
-          { name: 'description', label: 'Descrição', field: row => row.description || '-', align: 'left' }
-        ]
+            { name: 'name', label: 'Nome', field: 'name', align: 'left', sortable: true },
+            { name: 'code', label: 'Código', field: row => row.code || '-', align: 'left' },
+            { name: 'description', label: 'Descrição', field: row => row.description || '-', align: 'left' }
+          ]
       return [
         ...base,
         { name: 'status', label: 'Status', field: 'status', align: 'center' },

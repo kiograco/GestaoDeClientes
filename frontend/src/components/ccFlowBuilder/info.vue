@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <q-dialog v-model="dialogVisible">
     <q-card style="min-width: 70vw">
       <q-card-section>

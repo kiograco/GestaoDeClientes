@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <q-dialog
     :value="modalWhatsapp"
     @hide="fecharModal"

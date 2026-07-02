@@ -43,6 +43,7 @@
 
 <script>
 export default {
+  name: 'FlowBuilderNode',
   props: {
     node: Object,
     activeElement: Object
@@ -69,7 +70,7 @@ export default {
       }
     },
     nodeIcoClass () {
-      var nodeIcoClass = {}
+      const nodeIcoClass = {}
       nodeIcoClass[this.node.ico] = true
       nodeIcoClass['flow-node-drag'] = !this.node.viewOnly
       return nodeIcoClass

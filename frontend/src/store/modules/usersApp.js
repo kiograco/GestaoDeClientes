@@ -1,4 +1,3 @@
-
 const usersApp = {
   state: {
     usersApp: []

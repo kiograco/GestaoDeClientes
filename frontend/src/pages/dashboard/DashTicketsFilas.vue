@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <div class="row col q-pa-md justify-between items-center">
       <h1> Painel Atendimentos </h1>
@@ -73,7 +73,7 @@
       class="scroll">
       <template v-for="(items, key) in sets" :key="key">
         <div :style="{ height: 800 }"
-          
+
           class="row q-pa-md q-col-gutter-md q-mb-sm">
           <div :class="contentClass"
             v-for="(item, index) in items"
@@ -156,7 +156,7 @@ import { groupBy } from 'lodash'
 const profile = localStorage.getItem('profile')
 import { format, sub } from 'date-fns'
 export default {
-  name: 'Painel De Controle',
+  name: 'PainelDeControle',
   components: { ItemTicket },
   data () {
     return {
@@ -217,11 +217,9 @@ export default {
     },
     cUserQueues () {
       try {
-        const filasUsuario = JSON.parse(UserQueues).map(q => {
-          if (q.isActive) {
-            return q.id
-          }
-        })
+        const filasUsuario = JSON.parse(UserQueues)
+          .filter(q => q.isActive)
+          .map(q => q.id)
         return this.filas.filter(f => filasUsuario.includes(f.id)) || []
       } catch (error) {
         return []

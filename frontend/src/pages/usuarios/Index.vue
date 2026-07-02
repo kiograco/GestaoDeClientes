@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <q-table
       class="my-sticky-dynamic q-ma-lg"

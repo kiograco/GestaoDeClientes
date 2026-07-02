@@ -80,9 +80,9 @@ export default {
   methods: {
     onInsertSelectEmoji (emoji) {
       const self = this
-      var tArea = this.$refs.inputEnvioMensagem
+      const tArea = this.$refs.inputEnvioMensagem
       // get cursor's position:
-      var startPos = tArea.selectionStart,
+      const startPos = tArea.selectionStart,
         endPos = tArea.selectionEnd,
         cursorPos = startPos,
         tmpStr = tArea.value

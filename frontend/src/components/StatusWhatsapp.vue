@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="flex flex-inline q-gutter-sm">
     <div
       :key="wbot.id"
@@ -57,7 +57,7 @@
       >
         <template v-for="(wbot, index) in metaWhatsapps" :key="wbot.id + index">
           <q-carousel-slide
-            
+
             :name="index"
             class="q-pa-none q-ma-none"
           >

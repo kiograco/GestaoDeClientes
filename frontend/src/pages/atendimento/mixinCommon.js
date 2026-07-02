@@ -25,12 +25,12 @@ export default {
       if (!body) return
       let format = escapeHtml(body)
       function is_aplhanumeric (c) {
-        var x = c.charCodeAt()
+        const x = c.charCodeAt()
         return !!(((x >= 65 && x <= 90) || (x >= 97 && x <= 122) || (x >= 48 && x <= 57)))
       }
       function whatsappStyles (format, wildcard, opTag, clTag) {
-        var indices = []
-        for (var i = 0; i < format.length; i++) {
+        const indices = []
+        for (let i = 0; i < format.length; i++) {
           if (format[i] === wildcard) {
             // eslint-disable-next-line no-unused-expressions
             if (indices.length % 2) { (format[i - 1] === ' ') ? null : ((typeof (format[i + 1]) === 'undefined') ? indices.push(i) : (is_aplhanumeric(format[i + 1]) ? null : indices.push(i))) } else { (typeof (format[i + 1]) === 'undefined') ? null : ((format[i + 1] === ' ') ? null : (typeof (format[i - 1]) === 'undefined') ? indices.push(i) : ((is_aplhanumeric(format[i - 1])) ? null : indices.push(i))) }
@@ -41,9 +41,9 @@ export default {
         }
         // eslint-disable-next-line no-unused-expressions
         (indices.length % 2) ? indices.pop() : null
-        var e = 0
+        let e = 0
         indices.forEach(function (v, i) {
-          var t = (i % 2) ? clTag : opTag
+          const t = (i % 2) ? clTag : opTag
           v += e
           format = format.substr(0, v) + t + format.substr(v + 1)
           e += (t.length - 1)

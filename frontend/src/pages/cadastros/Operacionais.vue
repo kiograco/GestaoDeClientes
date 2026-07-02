@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <q-page class="app-page">
     <div class="app-page-header">
       <div>

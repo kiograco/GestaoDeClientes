@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <q-dialog
     @show="fetchContact"
     @hide="$emit('update:modalContato', false)"
@@ -56,7 +56,7 @@
       <q-card-section class="q-pa-sm q-pl-md row q-col-gutter-md justify-center">
         <template v-for="(extraInfo, index) in contato.extraInfo" :key="index">
           <div
-            
+
             class="col-12 row justify-center q-col-gutter-sm"
           >
             <q-input

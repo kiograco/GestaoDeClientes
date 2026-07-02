@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <q-table
       flat
@@ -71,7 +71,7 @@
 import { DeletarEtiqueta, ListarEtiquetas } from 'src/service/etiquetas'
 import ModalEtiqueta from './ModalEtiqueta'
 export default {
-  name: 'Etiquetas',
+  name: 'EtiquetasIndex',
   components: {
     ModalEtiqueta
   },

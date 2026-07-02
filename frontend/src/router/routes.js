@@ -1,4 +1,3 @@
-
 import { defaultRouteByProfile } from './access'
 
 const routes = [

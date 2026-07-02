@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div
     v-if="easyFlowVisible"
     :class="{
@@ -45,7 +45,7 @@
         <template v-for="node in data.nodeList" :key="node.id">
           <flow-node
             :id="node.id"
-            
+
             :node="node"
             :activeElement="activeElement"
             @changeNodeSite="changeNodeSite"
@@ -104,6 +104,7 @@ import { uid } from 'quasar'
 import { UpdateChatFlow } from '../../service/chatFlow'
 
 export default {
+  name: 'FlowBuilderPanel',
   data () {
     return {
       isFullScreen: false,
@@ -286,7 +287,7 @@ export default {
           const from = evt.source.id
           const to = evt.target.id
           if (this.loadEasyFlowFinish) {
-            this.data.lineList.push({ from: from, to: to, label: 'Valor' })
+            this.data.lineList.push({ from, to, label: 'Valor' })
             const label = null
             this.$refs.nodeForm.lineInit({
               from,
@@ -321,7 +322,7 @@ export default {
     },
 
     loadEasyFlow () {
-      for (var i = 0; i < this.data.nodeList.length; i++) {
+      for (let i = 0; i < this.data.nodeList.length; i++) {
         const node = this.data.nodeList[i]
         this.jsPlumb.makeSource(node.id, merge(this.jsplumbSourceOptions, {}))
         this.jsPlumb.makeTarget(node.id, this.jsplumbTargetOptions)
@@ -336,7 +337,7 @@ export default {
       }
       for (let i = 0; i < this.data.lineList.length; i++) {
         const line = this.data.lineList[i]
-        var connParam = {
+        const connParam = {
           source: line.from,
           target: line.to,
           label: line.label ? line.label : '',
@@ -352,7 +353,7 @@ export default {
     },
 
     setLineLabel (from, to, label) {
-      var conn = this.jsPlumb.getConnections({
+      const conn = this.jsPlumb.getConnections({
         source: from,
         target: to
       })[0]
@@ -363,7 +364,7 @@ export default {
         conn.addClass('flowLabel')
       }
       conn.setLabel({
-        label: label
+        label
       })
 
       conn.setPaintStyle({ strokeWidth: 3, stroke: '#8db1dd' })
@@ -394,7 +395,7 @@ export default {
           },
           persistent: true
         }).onOk(async () => {
-          var conn = this.jsPlumb.getConnections({
+          const conn = this.jsPlumb.getConnections({
             source: this.activeElement.sourceId,
             target: this.activeElement.targetId
           })[0]
@@ -417,7 +418,7 @@ export default {
     },
 
     changeNodeSite (data) {
-      for (var i = 0; i < this.data.nodeList.length; i++) {
+      for (let i = 0; i < this.data.nodeList.length; i++) {
         const node = this.data.nodeList[i]
         if (node.id === data.id) {
           node.left = data.left
@@ -427,10 +428,10 @@ export default {
     },
 
     addNode (evt, nodeMenu, mousePosition) {
-      var screenX = evt.originalEvent.clientX, screenY = evt.originalEvent.clientY
+      const screenX = evt.originalEvent.clientX, screenY = evt.originalEvent.clientY
       const efContainer = this.$refs.efContainer
-      var containerRect = efContainer.getBoundingClientRect()
-      var left = screenX, top = screenY
+      const containerRect = efContainer.getBoundingClientRect()
+      let left = screenX, top = screenY
       if (left < containerRect.x || left > containerRect.width + containerRect.x || top < containerRect.y || containerRect.y > containerRect.y + containerRect.height) {
         this.$notificarErro('Arraste o elemento para a tela.')
         return
@@ -439,13 +440,13 @@ export default {
       top = top - containerRect.y + efContainer.scrollTop
       left -= 85
       top -= 16
-      var nodeId = this.getUUID()
-      var origName = nodeMenu.name
-      var nodeName = origName
-      var index = 1
+      const nodeId = this.getUUID()
+      const origName = nodeMenu.name
+      let nodeName = origName
+      let index = 1
       while (index < 10000) {
-        var repeat = false
-        for (var i = 0; i < this.data.nodeList.length; i++) {
+        let repeat = false
+        for (let i = 0; i < this.data.nodeList.length; i++) {
           const node = this.data.nodeList[i]
           if (node.name === nodeName) {
             nodeName = origName + index
@@ -458,7 +459,7 @@ export default {
         }
         break
       }
-      var node = {
+      const node = {
         id: nodeId,
         name: nodeName,
         type: nodeMenu.type,
@@ -515,8 +516,8 @@ export default {
     },
 
     hasLine (from, to) {
-      for (var i = 0; i < this.data.lineList.length; i++) {
-        var line = this.data.lineList[i]
+      for (let i = 0; i < this.data.lineList.length; i++) {
+        const line = this.data.lineList[i]
         if (line.from === from && line.to === to) {
           return true
         }
@@ -590,8 +591,8 @@ export default {
         },
         persistent: true
       }).onOk(async () => {
-        var datastr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(this.data, null, '\t'))
-        var downloadAnchorNode = document.createElement('a')
+        const datastr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(this.data, null, '\t'))
+        const downloadAnchorNode = document.createElement('a')
         downloadAnchorNode.setAttribute('href', datastr)
         downloadAnchorNode.setAttribute('download', 'data.json')
         downloadAnchorNode.click()

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <div class="timerBox">
       <span>{{ addZero(timer.minutes)}}:{{addZero(timer.seconds)}}</span>

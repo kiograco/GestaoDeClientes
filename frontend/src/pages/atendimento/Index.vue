@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div
     class="WAL atendimento-workspace position-relative"
     :style="style"
@@ -297,7 +297,7 @@
                   flat
                   dense
                   size="18px"
-                  
+
                   class="q-mx-xs q-pa-none"
                   :style="`opacity: ${item.status === 'CONNECTED' ? 1 : 0.2}`"
                   :icon="`img:${item.type}-logo.png`"
@@ -735,7 +735,7 @@
               >
                 <template v-for="(log, idx) in logsTicket" :key="log && log.id || idx">
                   <q-timeline-entry
-                    
+
                     :subtitle="$formatarData(log.createdAt, 'dd/MM/yyyy HH:mm')"
                     :color="messagesLog[log.type] && messagesLog[log.type].color || ''"
                     :icon="messagesLog[log.type] && messagesLog[log.type].icon || ''"
