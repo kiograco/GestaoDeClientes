@@ -9,6 +9,7 @@ import User from "../models/User";
 import Tenant from "../models/Tenant";
 import Chat from "./socketChat/Chat";
 import { isTenantAccessActive } from "../helpers/TenantAccess";
+import { getFrontendOrigins } from "../utils/frontendUrl";
 
 let io: SocketIO;
 const MAX_TIMEOUT_DELAY = 2147483647;
@@ -46,7 +47,7 @@ const scheduleTenantAccessCheck = (
 export const initIO = (httpServer: Server): SocketIO => {
   io = new SocketIO(httpServer, {
     cors: {
-      origin: process.env.FRONTEND_URL || "http://localhost:8080",
+      origin: getFrontendOrigins(),
       credentials: true
     },
     pingTimeout: 180000,

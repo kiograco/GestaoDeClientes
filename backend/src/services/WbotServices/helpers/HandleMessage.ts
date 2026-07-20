@@ -32,7 +32,10 @@ const HandleMessage = async (
         return;
       }
 
-      const whatsapp = await ShowWhatsAppService({ id: wbot.id });
+      const whatsapp = await ShowWhatsAppService({
+        id: wbot.id,
+        isInternal: true
+      });
 
       const { tenantId } = whatsapp;
       const chat = await msg.getChat();

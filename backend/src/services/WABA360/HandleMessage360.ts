@@ -15,7 +15,10 @@ const HandleMessage360 = async (
       let contact;
       const unreadMessages = 1;
       try {
-        channel = await ShowWhatsAppService({ id: channelId });
+        channel = await ShowWhatsAppService({
+          id: channelId,
+          isInternal: true
+        });
         contact = await VerifyContactWaba360(
           context.contacts[0],
           channel.tenantId

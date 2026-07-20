@@ -14,6 +14,7 @@ import uploadConfig from "../config/upload";
 import AppError from "../errors/AppError";
 import { logger } from "../utils/logger";
 import { openApiSpec } from "../docs/openapi";
+import { apiDocsAuth } from "../middleware/apiDocsAuth";
 
 export default async function modules(app: Application): Promise<void> {
   const { version } = JSON.parse(readFileSync("./package.json").toString());
@@ -55,7 +56,12 @@ export default async function modules(app: Application): Promise<void> {
   );
 
   app.use("/api/v1", routes);
-  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
+  app.use(
+    "/api-docs",
+    apiDocsAuth,
+    swaggerUi.serve,
+    swaggerUi.setup(openApiSpec)
+  );
   app.use(Sentry.Handlers.errorHandler());
 
   // error handle

@@ -5,12 +5,14 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { logger } from "../utils/logger";
+import { getFrontendOrigins } from "../utils/frontendUrl";
 
 export default async function express(app: Application): Promise<void> {
-  const origin = [process.env.FRONTEND_URL || "http://localhost:8080"];
+  const frontendOrigins = getFrontendOrigins();
+
   app.use(
     cors({
-      origin,
+      origin: frontendOrigins,
       credentials: true
     })
   );
@@ -31,10 +33,7 @@ export default async function express(app: Application): Promise<void> {
         "upgrade-insecure-requests": [],
         // ...helmet.contentSecurityPolicy.getDefaultDirectives(),
         scriptSrc: ["'self'"],
-        frameAncestors: [
-          "'self'",
-          process.env.FRONTEND_URL || "http://localhost:8080"
-        ]
+        frameAncestors: ["'self'", ...frontendOrigins]
       }
     })
   );
@@ -44,7 +43,7 @@ export default async function express(app: Application): Promise<void> {
     } as LegacyAny)
   );
 
-  logger.info(`CORS origin configured: ${process.env.FRONTEND_URL}`);
+  logger.info(`CORS origin configured: ${frontendOrigins.join(", ")}`);
 
   app.use(cookieParser());
   app.use(

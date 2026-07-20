@@ -29,6 +29,10 @@ ENTRYPOINT ["npm", "run", "dev:server"]
 
 FROM build-stage as production-stage
 ENV NODE_ENV=production
+# Remove devDependencies (jest, eslint, ts-node-dev etc.) do node_modules já
+# instalado/compilado — reduz superfície e tamanho da imagem final sem
+# precisar reinstalar dependências nativas.
+RUN npm prune --omit=dev
 COPY docker-entrypoint.sh .
 RUN sed -i 's/\r$//' docker-entrypoint.sh && chmod +x docker-entrypoint.sh
 ENTRYPOINT ["./docker-entrypoint.sh"]

@@ -2,6 +2,7 @@
   assertEmailConfigured,
   sendPasswordRecovery
 } from "../services/EmailServices/EmailService";
+import { getPrimaryFrontendUrl } from "../utils/frontendUrl";
 
 export { assertEmailConfigured };
 
@@ -11,9 +12,7 @@ export const SendPasswordResetEmail = async (
   token: string
 ): Promise<void> => {
   assertEmailConfigured();
-  const frontendUrl = (
-    process.env.FRONTEND_URL || "http://localhost:8080"
-  ).replace(/\/$/, "");
+  const frontendUrl = getPrimaryFrontendUrl();
   const resetUrl = `${frontendUrl}/login?tokenSetup=${encodeURIComponent(
     token
   )}`;

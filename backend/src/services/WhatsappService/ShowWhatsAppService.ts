@@ -12,6 +12,12 @@ const ShowWhatsAppService = async ({
   tenantId,
   isInternal = false
 }: Data): Promise<Whatsapp> => {
+  if (!tenantId && !isInternal) {
+    // Sem tenantId nem isInternal explícito, não há como validar o isolamento
+    // multi-tenant: falha fechado em vez de pular a checagem silenciosamente.
+    throw new AppError("ERR_NO_WAPP_FOUND", 404);
+  }
+
   const attr = [
     "id",
     "qrcode",

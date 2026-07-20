@@ -3,6 +3,10 @@ import { BullAdapter } from "@bull-board/api/dist/queueAdapters/bull.js";
 import { ExpressAdapter } from "@bull-board/express";
 import { Application } from "express";
 import Queue from "../libs/Queue";
+import {
+  bullBoardAuth,
+  isBullBoardConfigured
+} from "../middleware/bullBoardAuth";
 
 export default async function bullMQ(app: Application): Promise<void> {
   await Queue.process();
@@ -10,7 +14,7 @@ export default async function bullMQ(app: Application): Promise<void> {
   await Queue.add("VerifyTicketsChatBotInactives", {});
   await Queue.add("SendMessageSchenduled", {});
 
-  if (process.env.NODE_ENV !== "production") {
+  if (isBullBoardConfigured()) {
     const serverAdapter = new ExpressAdapter();
     serverAdapter.setBasePath("/admin/queues");
 
@@ -19,6 +23,8 @@ export default async function bullMQ(app: Application): Promise<void> {
       serverAdapter
     });
 
-    app.use("/admin/queues", serverAdapter.getRouter());
+    app.use("/admin/queues", bullBoardAuth, serverAdapter.getRouter());
+  } else {
+    app.use("/admin/queues", bullBoardAuth);
   }
 }

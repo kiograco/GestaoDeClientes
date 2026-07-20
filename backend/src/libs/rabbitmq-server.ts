@@ -60,7 +60,10 @@ export default class RabbitmqServer {
         this.channel.ack(message);
         return;
       } catch (error) {
-        this.channel.nack(message);
+        // requeue: false — evita loop infinito de reprocessamento de uma
+        // mensagem "envenenada" que falha sempre (sem fila de dead-letter
+        // configurada, a mensagem é descartada após o log de erro).
+        this.channel.nack(message, false, false);
         logger.error("consumeWhatsapp", error);
         // this.channel.close();
       }
@@ -75,6 +78,9 @@ export default class RabbitmqServer {
         this.channel.ack(message);
         return;
       } catch (error) {
+        // requeue: false — sem isso a mensagem ficava pendente indefinidamente,
+        // travando o prefetch do consumidor em caso de exceção no callback.
+        this.channel.nack(message, false, false);
         logger.error(error);
         // this.channel.close();
       }
