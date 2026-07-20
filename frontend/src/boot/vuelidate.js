@@ -1,4 +1,3 @@
-import Vuelidate from '@vuelidate/core'
 import linkifyHtml from 'linkify-html'
 
 const linkified = {
@@ -11,6 +10,5 @@ const linkified = {
 }
 
 export default ({ app }) => {
-  app.use(Vuelidate)
   app.directive('linkified', linkified)
 }

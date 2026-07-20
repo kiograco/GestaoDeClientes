@@ -14,9 +14,6 @@ module.exports = defineConfig({
   },
   webServer: {
     command: 'npx quasar dev -m spa --port 8080',
-    env: {
-      NODE_OPTIONS: '--openssl-legacy-provider'
-    },
     url: 'http://127.0.0.1:8080',
     reuseExistingServer: !process.env.CI,
     timeout: 120000

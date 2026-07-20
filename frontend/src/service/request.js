@@ -68,7 +68,7 @@ service.interceptors.request.use(
   },
   error => {
     // handlerError(error)
-    Promise.reject(error)
+    return Promise.reject(error)
   }
 )
 

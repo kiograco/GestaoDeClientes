@@ -57,7 +57,6 @@ Crie `frontend/.env` com a URL da API e execute:
 
 ```powershell
 cd frontend
-$env:NODE_OPTIONS = "--openssl-legacy-provider"
 npm install
 npx quasar dev
 ```
@@ -246,13 +245,10 @@ npm run test:integration
 
 cd ..\frontend
 npm run lint
-$env:NODE_OPTIONS = "--openssl-legacy-provider"
 npx quasar build
 ```
 
-O backend bloqueia warnings de lint por meio de `--max-warnings 0`. A variável
-`NODE_OPTIONS` é necessária no frontend ao usar Node.js 20 com a versão atual
-do Webpack presente no projeto.
+O backend bloqueia warnings de lint por meio de `--max-warnings 0`.
 
 Os testes backend usam o banco PostgreSQL de teste `wchats_test` em
 `localhost:5432`. Antes da primeira execucao, prepare o banco:
