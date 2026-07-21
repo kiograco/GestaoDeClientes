@@ -1,6 +1,6 @@
 <template>
   <q-dialog
-    :value="modalAcaoEtapa"
+    :model-value="modalAcaoEtapa"
     @hide="fecharModal"
     @show="abrirModal"
     persistent

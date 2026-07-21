@@ -1,7 +1,7 @@
 <template>
   <q-dialog
     persistent
-    :value="modalMensagemRapida"
+    :model-value="modalMensagemRapida"
     @hide="fecharModal"
     @show="abrirModal"
   >

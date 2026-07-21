@@ -3,7 +3,7 @@
     <q-table
       class="my-sticky-dynamic q-ma-lg"
       title="Usuarios"
-      :data="usuarios"
+      :rows="usuarios"
       :columns="columns"
       :loading="loading"
       row-key="id"

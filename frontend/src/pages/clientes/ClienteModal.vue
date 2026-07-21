@@ -1,5 +1,5 @@
 <template>
-  <q-dialog :value="value" persistent @hide="$emit('input', false)">
+  <q-dialog :model-value="modelValue" persistent @hide="$emit('update:modelValue', false)">
     <q-card class="cliente-modal app-card">
       <q-card-section class="cliente-modal__header">
         <div>
@@ -9,7 +9,7 @@
             Centralize dados fiscais, enderecos e contatos operacionais.
           </div>
         </div>
-        <q-btn flat round dense icon="mdi-close" class="app-icon-btn" @click="$emit('input', false)">
+        <q-btn flat round dense icon="mdi-close" class="app-icon-btn" @click="$emit('update:modelValue', false)">
           <q-tooltip>Fechar</q-tooltip>
         </q-btn>
       </q-card-section>
@@ -277,7 +277,7 @@
       <q-card-actions class="cliente-modal__actions">
         <div class="cliente-modal__hint">Campos marcados com * sao obrigatorios.</div>
         <div class="row q-gutter-sm">
-          <q-btn flat label="Cancelar" @click="$emit('input', false)" />
+          <q-btn flat label="Cancelar" @click="$emit('update:modelValue', false)" />
           <q-btn unelevated color="primary" label="Salvar cliente" :disable="!clienteValido" :loading="saving" @click="salvarCliente" />
         </div>
       </q-card-actions>
@@ -354,7 +354,7 @@ const clienteVazio = () => ({
 export default {
   name: 'ClienteModal',
   props: {
-    value: {
+    modelValue: {
       type: Boolean,
       default: false
     },
@@ -410,7 +410,7 @@ export default {
     }
   },
   watch: {
-    value (opened) {
+    modelValue (opened) {
       if (opened) this.carregarCliente()
     }
   },
@@ -459,7 +459,7 @@ export default {
         }
       } catch (error) {
         this.$notificarErro('Nao foi possivel carregar o cliente.', error)
-        this.$emit('input', false)
+        this.$emit('update:modelValue', false)
       }
     },
     async consultarCnpj () {
@@ -631,7 +631,7 @@ export default {
         const action = payload.id ? AlterarCliente : CriarCliente
         const { data } = await action(payload)
         this.$emit('saved', data)
-        this.$emit('input', false)
+        this.$emit('update:modelValue', false)
         this.$q.notify({ type: 'positive', message: 'Cliente salvo.' })
       } catch (error) {
         this.$notificarErro('Nao foi possivel salvar o cliente.', error)

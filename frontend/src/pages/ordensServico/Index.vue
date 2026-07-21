@@ -143,7 +143,7 @@
         </q-card-section>
         <q-table
           flat
-          :data="ordensFinanceiras"
+          :rows="ordensFinanceiras"
           :columns="colunasFinanceiro"
           row-key="id"
           :pagination="{ rowsPerPage: 15 }"
@@ -218,7 +218,7 @@
         </q-banner>
         <q-table
           flat
-          :data="estoqueFiltrado"
+          :rows="estoqueFiltrado"
           :columns="colunasEstoque"
           row-key="id"
           :pagination="{ rowsPerPage: 15 }"
@@ -263,7 +263,7 @@
         </q-card-section>
         <q-table
           flat
-          :data="movimentacoesEstoque"
+          :rows="movimentacoesEstoque"
           :columns="colunasMovimentacoesEstoque"
           row-key="id"
           :pagination="{ rowsPerPage: 10 }"
@@ -300,7 +300,7 @@
         </q-card-section>
         <q-table
           flat
-          :data="pragas"
+          :rows="pragas"
           :columns="colunasPragas"
           row-key="id"
           :pagination="{ rowsPerPage: 15 }"
@@ -334,7 +334,7 @@
         </q-card-section>
         <q-table
           flat
-          :data="auditoriaEstoque"
+          :rows="auditoriaEstoque"
           :columns="colunasAuditoriaEstoque"
           row-key="id"
           :pagination="{ rowsPerPage: 15 }"
@@ -362,7 +362,7 @@
         </q-card-section>
         <q-table
           flat
-          :data="auditoriaFinanceira"
+          :rows="auditoriaFinanceira"
           :columns="colunasAuditoriaFinanceira"
           row-key="id"
           :pagination="{ rowsPerPage: 15 }"
@@ -390,7 +390,7 @@
         </q-card-section>
         <q-table
           flat
-          :data="auditoriaServicos"
+          :rows="auditoriaServicos"
           :columns="colunasAuditoriaFinanceira"
           row-key="id"
           :pagination="{ rowsPerPage: 15 }"
@@ -429,7 +429,7 @@
         </q-card-section>
         <q-table
           flat
-          :data="tiposServico"
+          :rows="tiposServico"
           :columns="colunasTiposServico"
           row-key="id"
           :pagination="{ rowsPerPage: 15 }"

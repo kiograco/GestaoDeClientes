@@ -9,7 +9,7 @@
       <q-btn rounded color="primary" icon="mdi-plus" label="Nova area" @click="abrirZona()" />
     </div>
     <q-card flat bordered>
-      <q-table flat :data="zonas" :columns="colunas" row-key="id" :loading="loading">
+      <q-table flat :rows="zonas" :columns="colunas" row-key="id" :loading="loading">
         <template v-slot:body-cell-deliveryFee="props">
           <q-td :props="props">{{ formatarMoeda(props.value) }}</q-td>
         </template>

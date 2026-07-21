@@ -1,7 +1,7 @@
 <template>
   <q-dialog
     persistent
-    :value="modalApi"
+    :model-value="modalApi"
     @hide="fecharModal"
     @show="abrirModal"
   >

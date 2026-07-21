@@ -1,6 +1,6 @@
 <template>
   <q-dialog
-    :value="modalWhatsapp"
+    :model-value="modalWhatsapp"
     @hide="fecharModal"
     @show="abrirModal"
     persistent

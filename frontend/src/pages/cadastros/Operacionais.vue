@@ -27,7 +27,7 @@
       </q-card-section>
       <q-table
         flat
-        :data="linhasFiltradas"
+        :rows="linhasFiltradas"
         :columns="colunasAtuais"
         row-key="id"
         :loading="loading"

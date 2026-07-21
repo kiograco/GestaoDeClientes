@@ -1,7 +1,7 @@
 <template>
   <q-dialog
     persistent
-    :value="modalEtapaAutoResposta"
+    :model-value="modalEtapaAutoResposta"
     @hide="fecharModal"
     @show="abrirModal"
   >

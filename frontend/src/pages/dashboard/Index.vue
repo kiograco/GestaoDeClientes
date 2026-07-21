@@ -155,7 +155,7 @@
       <q-card-section class="q-pa-md">
         <q-table
           title="Performance Usuários"
-          :data="ticketsPerUsersDetail"
+          :rows="ticketsPerUsersDetail"
           :columns="TicketsPerUsersDetailColumn"
           row-key="email"
           v-model:pagination="paginationTableUser"
@@ -454,7 +454,8 @@ export default {
               return Number(val).toFixed(0)
             }
           }
-        }
+        },
+        series: []
       },
       ticketsEvolutionByPeriod: [],
       ticketsEvolutionByPeriodOptions: {
@@ -535,7 +536,8 @@ export default {
         },
         legend: {
           show: false
-        }
+        },
+        series: []
       },
       ticketsAndTimes: {
         qtd_total_atendimentos: null,

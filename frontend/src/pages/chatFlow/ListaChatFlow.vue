@@ -9,7 +9,7 @@
           class="my-sticky-dynamic q-ma-lg"
           title="Fluxos"
           hide-bottom
-          :data="listachatFlow"
+          :rows="listachatFlow"
           :columns="columns"
           :loading="loading"
           row-key="id"

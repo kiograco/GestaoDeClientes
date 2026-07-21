@@ -1,6 +1,6 @@
 <template>
   <q-dialog
-    :value="modalNovoTicket"
+    :model-value="modalNovoTicket"
     persistent
     @hide="fecharModal"
   >

@@ -1,7 +1,8 @@
 <template>
   <q-dialog
-    :value="value"
+    :model-value="modelValue"
     persistent
+    @update:model-value="$emit('update:modelValue', $event)"
   >
     <q-card style="width: 680px; max-width: 95vw">
       <q-card-section class="row items-center">
@@ -17,7 +18,7 @@
           round
           dense
           icon="close"
-          @click="$emit('input', false)"
+          @click="$emit('update:modelValue', false)"
         />
       </q-card-section>
 
@@ -97,7 +98,7 @@ import { ListarUsuarios, UpdateConfiguracoesUsuarios } from 'src/service/user'
 export default {
   name: 'OnboardingAdmin',
   props: {
-    value: {
+    modelValue: {
       type: Boolean,
       default: false
     },
@@ -163,13 +164,13 @@ export default {
     }
   },
   watch: {
-    value (isOpen) {
+    modelValue (isOpen) {
       if (isOpen) this.loadStatus()
     }
   },
   mounted () {
     this.loadStoredStatus()
-    if (this.value) this.loadStatus()
+    if (this.modelValue) this.loadStatus()
   },
   methods: {
     loadStoredStatus () {
@@ -217,7 +218,7 @@ export default {
       }
     },
     openRoute (routeName) {
-      this.$emit('input', false)
+      this.$emit('update:modelValue', false)
       if (this.$route.name !== routeName) {
         this.$router.push({ name: routeName })
       }
@@ -228,7 +229,7 @@ export default {
     },
     async finish () {
       await this.saveStoredStatus(true)
-      this.$emit('input', false)
+      this.$emit('update:modelValue', false)
       this.$q.notify({
         type: 'positive',
         message: 'Configuração inicial concluída.',

@@ -36,7 +36,7 @@
           </q-card-section>
           <q-table
             row-key="id"
-            :data="empresas"
+            :rows="empresas"
             :columns="columns"
             :loading="loading"
             flat

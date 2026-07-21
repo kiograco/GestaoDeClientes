@@ -9,7 +9,7 @@
     </q-header>
     <q-page-container>
       <q-page class="q-pa-md">
-        <q-table row-key="id" :data="planos" :columns="columns" :loading="loading" flat bordered>
+        <q-table row-key="id" :rows="planos" :columns="columns" :loading="loading" flat bordered>
           <template v-slot:body-cell-price="props">
             <q-td :props="props">{{ formatarMoeda(props.row.price) }}</q-td>
           </template>

@@ -1,7 +1,7 @@
 <template>
   <q-dialog
     persistent
-    :value="modalFilaUsuario"
+    :model-value="modalFilaUsuario"
     @hide="fecharModal"
     @show="abrirModal"
   >

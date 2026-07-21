@@ -12,7 +12,7 @@
 
     <q-card flat bordered class="q-mb-lg">
       <q-card-section class="text-h6">Categorias</q-card-section>
-      <q-table flat :data="categorias" :columns="colunasCategorias" row-key="id" :loading="loading">
+      <q-table flat :rows="categorias" :columns="colunasCategorias" row-key="id" :loading="loading">
         <template v-slot:body-cell-isActive="props">
           <q-td :props="props">{{ props.value ? 'Ativa' : 'Inativa' }}</q-td>
         </template>
@@ -27,7 +27,7 @@
 
     <q-card flat bordered>
       <q-card-section class="text-h6">Produtos</q-card-section>
-      <q-table flat :data="produtos" :columns="colunasProdutos" row-key="id" :loading="loading">
+      <q-table flat :rows="produtos" :columns="colunasProdutos" row-key="id" :loading="loading">
         <template v-slot:body-cell-basePrice="props">
           <q-td :props="props">{{ formatarMoeda(props.value) }}</q-td>
         </template>

@@ -1,6 +1,6 @@
 <template>
   <q-dialog
-    :value="modalAutoResposta"
+    :model-value="modalAutoResposta"
     @hide="fecharModal"
     @show="abrirModal"
     persistent

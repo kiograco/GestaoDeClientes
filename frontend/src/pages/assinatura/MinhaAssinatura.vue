@@ -68,7 +68,7 @@
 
         <q-card flat bordered>
           <q-card-section><div class="text-h6">Histórico de pagamentos</div></q-card-section>
-          <q-table row-key="id" :data="resumo.payments || []" :columns="columns" :loading="loading" flat>
+          <q-table row-key="id" :rows="resumo.payments || []" :columns="columns" :loading="loading" flat>
             <template v-slot:body-cell-amount="props">
               <q-td :props="props">{{ formatarMoeda(props.row.amount) }}</q-td>
             </template>

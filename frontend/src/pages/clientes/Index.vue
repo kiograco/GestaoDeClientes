@@ -44,7 +44,7 @@
     <q-card flat bordered class="app-card">
       <q-table
         flat
-        :data="clientes"
+        :rows="clientes"
         :columns="colunas"
         row-key="id"
         :loading="loading"

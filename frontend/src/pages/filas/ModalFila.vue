@@ -1,7 +1,7 @@
 <template>
   <q-dialog
     persistent
-    :value="modalFila"
+    :model-value="modalFila"
     @hide="fecharModal"
     @show="abrirModal"
   >

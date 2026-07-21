@@ -38,7 +38,7 @@
 
       <q-table
         flat
-        :data="rows"
+        :rows="rows"
         :columns="columns"
         row-key="id"
         :loading="loading"

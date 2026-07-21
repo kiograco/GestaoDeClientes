@@ -1,6 +1,6 @@
 <template>
   <q-dialog
-    :value="modalChatFlow"
+    :model-value="modalChatFlow"
     @hide="fecharModal"
     @show="abrirModal"
     persistent

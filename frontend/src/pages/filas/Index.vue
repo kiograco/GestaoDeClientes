@@ -7,7 +7,7 @@
       hide-bottom
       class="my-sticky-dynamic q-ma-lg"
       title="Filas"
-      :data="filas"
+      :rows="filas"
       :columns="columns"
       :loading="loading"
       row-key="id"

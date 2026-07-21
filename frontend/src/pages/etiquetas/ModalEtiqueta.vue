@@ -1,7 +1,7 @@
 <template>
   <q-dialog
     persistent
-    :value="modalEtiqueta"
+    :model-value="modalEtiqueta"
     @hide="fecharModal"
     @show="abrirModal"
   >

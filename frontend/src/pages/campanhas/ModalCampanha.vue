@@ -1,7 +1,7 @@
 <template>
   <q-dialog
     persistent
-    :value="modalCampanha"
+    :model-value="modalCampanha"
     @hide="fecharModal"
     @show="abrirModal"
   >

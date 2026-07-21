@@ -51,7 +51,7 @@
       flat
       hide-bottom
       class="app-card my-sticky-dynamic"
-      :data="campanhas"
+      :rows="campanhas"
       :columns="columns"
       :loading="loading"
       row-key="id"

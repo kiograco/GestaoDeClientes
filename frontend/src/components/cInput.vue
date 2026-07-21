@@ -34,7 +34,7 @@
       >
         <slot
           :name="slot"
-          v-bind="scope"
+          v-bind="scope || {}"
         />
       </template>
     </q-input>

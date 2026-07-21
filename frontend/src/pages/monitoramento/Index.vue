@@ -28,7 +28,7 @@
 
       <q-tab-panels v-model="tab" animated>
         <q-tab-panel name="tipos">
-          <q-table flat :data="tipos" :columns="colunasTipos" row-key="id" :loading="loading">
+          <q-table flat :rows="tipos" :columns="colunasTipos" row-key="id" :loading="loading">
             <template v-slot:body-cell-active="props">
               <q-td :props="props">
                 <q-badge :color="props.value ? 'positive' : 'grey'">
@@ -61,7 +61,7 @@
                 <q-space />
                 <q-btn outline color="primary" icon="mdi-plus" label="Situação" @click="abrirCatalogo('condition')" />
               </q-card-section>
-              <q-table flat :data="condicoes" :columns="colunasCatalogo" row-key="id">
+              <q-table flat :rows="condicoes" :columns="colunasCatalogo" row-key="id">
                 <template v-slot:body-cell-active="props">
                   <q-td :props="props">
                     <q-badge :color="props.value ? 'positive' : 'grey'">{{ props.value ? 'Ativo' : 'Inativo' }}</q-badge>
@@ -84,7 +84,7 @@
                 <q-space />
                 <q-btn outline color="primary" icon="mdi-plus" label="Ação" @click="abrirCatalogo('action')" />
               </q-card-section>
-              <q-table flat :data="acoes" :columns="colunasCatalogo" row-key="id">
+              <q-table flat :rows="acoes" :columns="colunasCatalogo" row-key="id">
                 <template v-slot:body-cell-active="props">
                   <q-td :props="props">
                     <q-badge :color="props.value ? 'positive' : 'grey'">{{ props.value ? 'Ativo' : 'Inativo' }}</q-badge>
@@ -114,7 +114,7 @@
               @input="carregarPontos"
             />
           </div>
-          <q-table flat :data="pontos" :columns="colunasPontos" row-key="id" :loading="loading">
+          <q-table flat :rows="pontos" :columns="colunasPontos" row-key="id" :loading="loading">
             <template v-slot:body-cell-label="props">
               <q-td :props="props">
                 <div class="monitoramento-name">{{ props.row.label }}</div>
@@ -160,7 +160,7 @@
             <q-btn unelevated color="primary" icon="mdi-content-save-check-outline" label="Salvar inspeção" :disable="!inspecaoValida" :loading="saving" @click="salvarInspecao" />
           </div>
 
-          <q-table class="q-mt-md" flat :data="inspecoes" :columns="colunasInspecoes" row-key="id">
+          <q-table class="q-mt-md" flat :rows="inspecoes" :columns="colunasInspecoes" row-key="id">
             <template v-slot:body-cell-monitoringPoint="props">
               <q-td :props="props">{{ props.row.monitoringPoint?.label || '-' }}</q-td>
             </template>

@@ -2,7 +2,7 @@
   <q-dialog
     @show="fetchContact"
     @hide="$emit('update:modalContato', false)"
-    :value="modalContato"
+    :model-value="modalContato"
     persistent
   >
     <q-card
