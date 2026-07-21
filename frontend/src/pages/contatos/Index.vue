@@ -4,7 +4,7 @@
       class="my-sticky-dynamic"
       title="Contatos"
       :id="`tabela-contatos-${isChatContact ? 'atendimento' : ''}`"
-      :data="contacts"
+      :rows="contacts"
       :columns="columns"
       :loading="loading"
       row-key="id"
@@ -648,7 +648,7 @@ export default {
     abrirChatContato (ticket) {
       // caso esteja em um tamanho mobile, fechar a drawer dos contatos
       if (this.$q.screen.lt.md && ticket.status !== 'pending') {
-        this.$root.$emit('infor-cabecalo-chat:acao-menu')
+        this.$bus.emit('infor-cabecalo-chat:acao-menu')
       }
       if (!(ticket.status !== 'pending' && (ticket.id !== this.$store.getters.ticketFocado.id || this.$route.name !== 'chat'))) return
       this.$store.commit('SET_HAS_MORE', true)

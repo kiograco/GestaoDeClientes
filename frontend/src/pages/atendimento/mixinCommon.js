@@ -15,7 +15,7 @@ export default {
   methods: {
     scrollToBottom () {
       setTimeout(() => {
-        this.$root.$emit('scrollToBottomMessageChat')
+        this.$bus.emit('scrollToBottomMessageChat')
       }, 200)
     },
     dataInWords (date) {

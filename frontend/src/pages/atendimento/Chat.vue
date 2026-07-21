@@ -457,14 +457,14 @@ export default {
     }
   },
   created () {
-    this.$root.$on('scrollToBottomMessageChat', this.scrollToBottom)
+    this.$bus.on('scrollToBottomMessageChat', this.scrollToBottom)
     this.socketTicket()
   },
   mounted () {
     this.socketMessagesList()
   },
   unmounted () {
-    this.$root.$off('scrollToBottomMessageChat', this.scrollToBottom)
+    this.$bus.off('scrollToBottomMessageChat', this.scrollToBottom)
   }
 }
 </script>

@@ -431,266 +431,6 @@ import { canAccessRoute, routeDisplayNames } from 'src/router/access'
 
 const socket = socketIO()
 
-const objMenu = [
-  {
-    title: 'Minha assinatura',
-    caption: 'Plano e pagamentos',
-    icon: 'mdi-credit-card-outline',
-    routeName: 'minha-assinatura'
-  },
-  {
-    title: 'Dashboard',
-    caption: '',
-    icon: 'mdi-home',
-    routeName: 'home-dashboard'
-  },
-
-  {
-    title: 'Atendimentos',
-    caption: 'Lista de atendimentos',
-    icon: 'mdi-forum-outline',
-    routeName: 'atendimento'
-  },
-  {
-    title: 'Contatos',
-    caption: 'Lista de contatos',
-    icon: 'mdi-card-account-mail',
-    routeName: 'contatos'
-  },
-  {
-    title: 'Clientes',
-    caption: 'Cadastro comercial',
-    icon: 'mdi-account-cash-outline',
-    routeName: 'clientes'
-  },
-  {
-    title: 'Pipeline',
-    caption: 'Funil comercial',
-    icon: 'mdi-chart-timeline-variant',
-    routeName: 'pipeline-vendas'
-  },
-  {
-    title: 'Ordens de Serviço',
-    caption: 'Agenda e técnicos',
-    icon: 'mdi-calendar-check-outline',
-    routeName: 'ordens-servico'
-  },
-  {
-    title: 'Monitoramento',
-    caption: 'Armadilhas e pontos',
-    icon: 'mdi-map-marker-radius-outline',
-    routeName: 'monitoramento'
-  }
-]
-
-const objMenuGroups = [
-  {
-    title: 'Conta',
-    routes: ['minha-assinatura']
-  },
-  {
-    title: 'CRM',
-    routes: ['home-dashboard', 'clientes', 'contatos', 'pipeline-vendas']
-  },
-  {
-    title: 'Atendimento',
-    routes: ['atendimento', 'ordens-servico', 'monitoramento']
-  }
-].map(group => ({
-  title: group.title,
-  items: group.routes.map(routeName => objMenu.find(item => item.routeName === routeName)).filter(Boolean)
-}))
-
-const objMenuAdmin = [
-  {
-    title: 'Conexões',
-    caption: 'WhatsApp e canais',
-    icon: 'mdi-cellphone-wireless',
-    routeName: 'sessoes'
-  },
-  {
-    title: 'Painel Atendimentos',
-    caption: 'Visão geral dos atendimentos',
-    icon: 'mdi-view-dashboard-variant',
-    routeName: 'painel-atendimentos'
-  },
-  {
-    title: 'Relatórios',
-    caption: 'Relatórios gerais',
-    icon: 'mdi-file-chart',
-    routeName: 'relatorios'
-  },
-  {
-    title: 'Usuários',
-    caption: 'Admin de usuários',
-    icon: 'mdi-account-group',
-    routeName: 'usuarios'
-  },
-  {
-    title: 'Filas',
-    caption: 'Cadastro de Filas',
-    icon: 'mdi-arrow-decision-outline',
-    routeName: 'filas'
-  },
-  {
-    title: 'Mensagens Rápidas',
-    caption: 'Mensagens pré-definidas',
-    icon: 'mdi-reply-all-outline',
-    routeName: 'mensagens-rapidas'
-  },
-  {
-    title: 'Chatbot',
-    caption: 'Robô de atendimento',
-    icon: 'mdi-robot',
-    routeName: 'chat-flow'
-  },
-  {
-    title: 'Etiquetas',
-    caption: 'Cadastro de etiquetas',
-    icon: 'mdi-tag-text',
-    routeName: 'etiquetas'
-  },
-  {
-    title: 'Cardápio',
-    caption: 'Produtos e categorias',
-    icon: 'mdi-silverware-fork-knife',
-    routeName: 'delivery-catalogo',
-    requiredModule: 'delivery'
-  },
-  {
-    title: 'Pedidos',
-    caption: 'Painel operacional',
-    icon: 'mdi-clipboard-list-outline',
-    routeName: 'delivery-pedidos',
-    requiredModule: 'delivery'
-  },
-  {
-    title: 'Áreas de entrega',
-    caption: 'Taxas e prazos',
-    icon: 'mdi-map-marker-radius',
-    routeName: 'delivery-zonas',
-    requiredModule: 'delivery'
-  },
-  {
-    title: 'Horário de Atendimento',
-    caption: 'Horário de funcionamento',
-    icon: 'mdi-calendar-clock',
-    routeName: 'horarioAtendimento'
-  },
-  {
-    title: 'Configurações',
-    caption: 'Configurações gerais',
-    icon: 'mdi-cog',
-    routeName: 'configuracoes'
-  },
-  {
-    title: 'Campanha',
-    caption: 'Campanhas de envio',
-    icon: 'mdi-message-bookmark-outline',
-    routeName: 'campanhas'
-  },
-  {
-    title: 'API',
-    caption: 'Integração sistemas externos',
-    icon: 'mdi-call-split',
-    routeName: 'api-service'
-  }
-]
-
-const objMenuAdminGroups = [
-  {
-    title: 'Atendimento',
-    routes: ['sessoes', 'painel-atendimentos', 'filas', 'horarioAtendimento']
-  },
-  {
-    title: 'Marketing',
-    routes: ['mensagens-rapidas', 'chat-flow', 'campanhas']
-  },
-  {
-    title: 'Delivery',
-    routes: ['delivery-catalogo', 'delivery-pedidos', 'delivery-zonas']
-  },
-  {
-    title: 'Relatórios',
-    routes: ['relatorios']
-  },
-  {
-    title: 'Configurações',
-    routes: ['usuarios', 'etiquetas', 'configuracoes', 'api-service']
-  }
-].map(group => ({
-  title: group.title,
-  items: group.routes.map(routeName => objMenuAdmin.find(item => item.routeName === routeName)).filter(Boolean)
-}))
-
-const menuCatalog = [
-  { group: 'Visao Geral', title: 'Dashboard', icon: 'mdi-home', routeName: 'home-dashboard', roles: ['admin'] },
-  { group: 'Visao Geral', title: 'Painel de Atendimentos', icon: 'mdi-view-dashboard-variant', routeName: 'painel-atendimentos', roles: ['admin'] },
-  { group: 'Visao Geral', title: 'Relatórios', icon: 'mdi-file-chart', routeName: 'relatorios', roles: ['admin'] },
-  { group: 'Atendimento', title: 'Atendimentos', icon: 'mdi-forum-outline', routeName: 'atendimento' },
-  { group: 'Atendimento', title: 'Conexões', icon: 'mdi-cellphone-wireless', routeName: 'sessoes', roles: ['admin'] },
-  { group: 'Atendimento', title: 'Filas', icon: 'mdi-arrow-decision-outline', routeName: 'filas', roles: ['admin'] },
-  { group: 'Atendimento', title: 'Horario de Atendimento', icon: 'mdi-calendar-clock', routeName: 'horarioAtendimento', roles: ['admin'] },
-  { group: 'Atendimento', title: 'Mensagens Rapidas', icon: 'mdi-reply-all-outline', routeName: 'mensagens-rapidas', roles: ['admin'] },
-  { group: 'CRM e Vendas', title: 'Clientes', icon: 'mdi-account-cash-outline', routeName: 'clientes' },
-  { group: 'CRM e Vendas', title: 'Contatos', icon: 'mdi-card-account-mail', routeName: 'contatos' },
-  { group: 'CRM e Vendas', title: 'Pipeline', icon: 'mdi-chart-timeline-variant', routeName: 'pipeline-vendas' },
-  { group: 'CRM e Vendas', title: 'Propostas', icon: 'mdi-file-sign', routeName: 'pipeline-vendas', query: { view: 'propostas' }, disabled: true },
-  { group: 'CRM e Vendas', title: 'Contratos', icon: 'mdi-file-document-edit-outline', routeName: 'pipeline-vendas', query: { view: 'contratos' }, disabled: true },
-  { group: 'Serviços Técnicos', title: 'Ordens de Serviço', icon: 'mdi-calendar-check-outline', routeName: 'ordens-servico', query: { aba: 'agenda' } },
-  { group: 'Serviços Técnicos', title: 'Serviços', icon: 'mdi-format-list-bulleted-type', routeName: 'ordens-servico', query: { aba: 'tipos' }, roles: ['admin', 'supervisor'] },
-  { group: 'Serviços Técnicos', title: 'Produtos', icon: 'mdi-package-variant-closed', routeName: 'ordens-servico', query: { aba: 'estoque' }, roles: ['admin', 'supervisor'] },
-  { group: 'Serviços Técnicos', title: 'Estoque', icon: 'mdi-warehouse', routeName: 'ordens-servico', query: { aba: 'estoque' }, roles: ['admin', 'supervisor'] },
-  { group: 'Serviços Técnicos', title: 'Pragas', icon: 'mdi-bug-outline', routeName: 'ordens-servico', query: { aba: 'pragas' } },
-  { group: 'Serviços Técnicos', title: 'Monitoramento', icon: 'mdi-map-marker-radius-outline', routeName: 'monitoramento' },
-  { group: 'Serviços Técnicos', title: 'Armadilhas', icon: 'mdi-crosshairs-gps', routeName: 'monitoramento', query: { aba: 'armadilhas' } },
-  { group: 'Serviços Técnicos', title: 'Auditoria Técnica', icon: 'mdi-shield-search', routeName: 'ordens-servico', query: { aba: 'auditoria' }, roles: ['admin', 'supervisor'] },
-  { group: 'Financeiro', title: 'Visao Financeira', icon: 'mdi-chart-box-outline', routeName: 'ordens-servico', query: { aba: 'financeiro' }, roles: ['admin', 'supervisor'] },
-  { group: 'Financeiro', title: 'Contas a Receber', icon: 'mdi-cash-plus', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'receber' }, disabled: true },
-  { group: 'Financeiro', title: 'Contas a Pagar', icon: 'mdi-cash-minus', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'pagar' }, disabled: true },
-  { group: 'Financeiro', title: 'Cobrancas', icon: 'mdi-bell-ring-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'cobrancas' }, disabled: true },
-  { group: 'Financeiro', title: 'Faturas', icon: 'mdi-file-document-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'faturas' }, disabled: true },
-  { group: 'Financeiro', title: 'Pagamentos', icon: 'mdi-credit-card-check-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'pagamentos' }, disabled: true },
-  { group: 'Financeiro', title: 'Inadimplencia', icon: 'mdi-alert-circle-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'inadimplencia' }, disabled: true },
-  { group: 'Financeiro', title: 'Fluxo de Caixa', icon: 'mdi-swap-horizontal', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'fluxo-caixa' }, disabled: true },
-  { group: 'Financeiro', title: 'Comissoes', icon: 'mdi-account-cash-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'comissoes' }, disabled: true },
-  { group: 'Financeiro', title: 'Centros de Custo', icon: 'mdi-sitemap-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'centros-custo' }, disabled: true },
-  { group: 'Financeiro', title: 'Formas de Pagamento', icon: 'mdi-credit-card-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'formas-pagamento' }, disabled: true },
-  { group: 'Financeiro', title: 'Relatórios Financeiros', icon: 'mdi-file-chart-outline', routeName: 'ordens-servico', query: { aba: 'financeiro', view: 'relatorios' }, disabled: true },
-  { group: 'Marketing e Automacao', title: 'Campanhas', icon: 'mdi-message-bookmark-outline', routeName: 'campanhas', roles: ['admin'] },
-  { group: 'Marketing e Automacao', title: 'Chatbot', icon: 'mdi-robot', routeName: 'chat-flow', roles: ['admin'] },
-  { group: 'Marketing e Automacao', title: 'Etiquetas', icon: 'mdi-tag-text', routeName: 'etiquetas', roles: ['admin'] },
-  { group: 'Marketing e Automacao', title: 'Automacoes', icon: 'mdi-lightning-bolt-outline', routeName: 'auto-resposta', roles: ['admin'], disabled: true },
-  { group: 'Delivery', title: 'Pedidos', icon: 'mdi-clipboard-list-outline', routeName: 'delivery-pedidos', requiredModule: 'delivery', roles: ['admin'] },
-  { group: 'Delivery', title: 'Cardápio', icon: 'mdi-silverware-fork-knife', routeName: 'delivery-catalogo', requiredModule: 'delivery', roles: ['admin'] },
-  { group: 'Delivery', title: 'Áreas de Entrega', icon: 'mdi-map-marker-radius', routeName: 'delivery-zonas', requiredModule: 'delivery', roles: ['admin'] },
-  { group: 'Administracao', title: 'Usuários', icon: 'mdi-account-group', routeName: 'usuarios', roles: ['admin'] },
-  { group: 'Administracao', title: 'Permissões', icon: 'mdi-account-key-outline', routeName: 'usuarios', query: { view: 'permissoes' }, disabled: true },
-  { group: 'Administracao', title: 'Configurações', icon: 'mdi-cog', routeName: 'configuracoes', roles: ['admin'] },
-  { group: 'Administracao', title: 'API', icon: 'mdi-call-split', routeName: 'api-service', roles: ['admin'] },
-  { group: 'Administracao', title: 'Auditoria', icon: 'mdi-shield-account-outline', routeName: 'configuracoes', query: { view: 'auditoria' }, disabled: true },
-  { group: 'Conta', title: 'Minha Assinatura', icon: 'mdi-credit-card-outline', routeName: 'minha-assinatura' }
-]
-
-const menuGroupOrder = [
-  'Visao Geral',
-  'Atendimento',
-  'CRM e Vendas',
-  'Serviços Técnicos',
-  'Financeiro',
-  'Marketing e Automacao',
-  'Delivery',
-  'Administração',
-  'Conta'
-]
-
-const buildMenuGroups = items => menuGroupOrder
-  .map(title => ({
-    title,
-    items: items.filter(item => item.group === title)
-  }))
-  .filter(group => group.items.length)
-
 const devItem = (title, slug, icon = 'mdi-progress-wrench', extra = {}) => ({
   key: `dev:${slug}`,
   title,
@@ -713,97 +453,71 @@ const menuTreeCatalog = [
     ]
   },
   {
-    key: 'clientes',
-    title: 'Clientes',
-    icon: 'mdi-account-group-outline',
-    children: [
-      { key: 'clientes-consultar', title: 'Consultar Clientes', icon: 'mdi-account-search-outline', routeName: 'clientes' },
-      { key: 'clientes-novo', title: 'Novo Cliente', icon: 'mdi-account-plus-outline', routeName: 'clientes', query: { acao: 'novo' } },
-      { key: 'clientes-relatorios', title: 'Relatórios', icon: 'mdi-file-chart-outline', routeName: 'relatorios', roles: ['admin'] }
-    ]
-  },
-  {
-    key: 'orcamentos',
-    title: 'Orçamentos',
-    icon: 'mdi-file-document-edit-outline',
-    children: [
-      { key: 'orcamentos-novo', title: 'Novo Orçamento', icon: 'mdi-file-plus-outline', routeName: 'pipeline-vendas', query: { view: 'propostas' } },
-      { key: 'orcamentos-consultar', title: 'Consultar Orçamentos', icon: 'mdi-file-search-outline', routeName: 'pipeline-vendas', query: { view: 'propostas' } },
-      devItem('Informações para Orçamento', 'informacoes-para-orcamento', 'mdi-information-outline', { roles: ['admin'] }),
-      { key: 'orcamentos-relatorios', title: 'Relatórios', icon: 'mdi-file-chart-outline', routeName: 'relatorios', roles: ['admin'] }
-    ]
-  },
-  {
-    key: 'vendas',
-    title: 'Vendas',
-    icon: 'mdi-cash-register',
-    children: [
-      { key: 'vendas-nova', title: 'Nova Venda', icon: 'mdi-cart-plus', routeName: 'pipeline-vendas' },
-      { key: 'vendas-consultar', title: 'Consultar Vendas', icon: 'mdi-text-search', routeName: 'pipeline-vendas' },
-      { key: 'vendas-relatorios', title: 'Relatórios', icon: 'mdi-file-chart-outline', routeName: 'relatorios', roles: ['admin'] }
-    ]
-  },
-  {
-    key: 'programacao',
-    title: 'Programação',
-    icon: 'mdi-calendar-month-outline',
-    children: [
-      { key: 'programacao-agenda-servicos', title: 'Agenda de Serviços', icon: 'mdi-calendar-check-outline', routeName: 'ordens-servico', query: { aba: 'agenda' } },
-      { key: 'programacao-servico-avulso', title: 'Novo Serviço Avulso', icon: 'mdi-briefcase-plus-outline', routeName: 'ordens-servico', query: { acao: 'novo', tipo: 'avulso' } },
-      { key: 'programacao-servico-ra', title: 'Novo Serviço RA', icon: 'mdi-clipboard-plus-outline', routeName: 'ordens-servico', query: { acao: 'novo', tipo: 'ra' } },
-      devItem('Nova Vistoria para Relatório', 'nova-vistoria-relatorio', 'mdi-clipboard-text-search-outline'),
-      devItem('Nova Vistoria para Orçamento', 'nova-vistoria-orcamento', 'mdi-clipboard-search-outline')
-    ]
-  },
-  {
-    key: 'atendimentos',
-    title: 'Atendimentos',
+    key: 'atendimento',
+    title: 'Atendimento',
     icon: 'mdi-face-agent',
     children: [
-      { key: 'atendimentos-novo', title: 'Novo Atendimento', icon: 'mdi-plus-circle-outline', routeName: 'atendimento' },
-      { key: 'atendimentos-consultar', title: 'Consultar Atendimentos', icon: 'mdi-forum-outline', routeName: 'atendimento' },
-      { key: 'atendimentos-conexoes', title: 'Conexões de Atendimento', icon: 'mdi-cellphone-wireless', routeName: 'sessoes', roles: ['admin'] },
-      {
-        key: 'ordem-servico',
-        title: 'Ordem de Serviço',
-        icon: 'mdi-clipboard-list-outline',
-        children: [
-          { key: 'ordem-servico-agenda', title: 'Agenda e Ordens', icon: 'mdi-calendar-check-outline', routeName: 'ordens-servico', query: { aba: 'agenda' } },
-          devItem('Informações de Segurança e Prevenção', 'informacoes-seguranca-prevencao', 'mdi-shield-check-outline'),
-          devItem('Modelos de Ordem de Serviço', 'modelos-ordem-servico', 'mdi-file-cog-outline', { roles: ['admin', 'supervisor'] })
-        ]
-      },
-      { key: 'atendimentos-relatorios', title: 'Relatórios', icon: 'mdi-file-chart-outline', routeName: 'relatorios', roles: ['admin'] }
+      { key: 'atendimentos-consultar', title: 'Atendimentos', icon: 'mdi-forum-outline', routeName: 'atendimento' },
+      { key: 'atendimento-contatos', title: 'Contatos', icon: 'mdi-card-account-mail-outline', routeName: 'contatos' },
+      { key: 'atendimentos-conexoes', title: 'Conexões', icon: 'mdi-cellphone-wireless', routeName: 'sessoes', roles: ['admin'] },
+      { key: 'atendimento-filas', title: 'Filas', icon: 'mdi-arrow-decision-outline', routeName: 'filas', roles: ['admin'] },
+      { key: 'atendimento-horario', title: 'Horário de Atendimento', icon: 'mdi-calendar-clock', routeName: 'horarioAtendimento', roles: ['admin'] },
+      { key: 'atendimento-mensagens-rapidas', title: 'Mensagens Rápidas', icon: 'mdi-reply-all-outline', routeName: 'mensagens-rapidas', roles: ['admin'] }
     ]
   },
   {
-    key: 'setor-tecnico',
-    title: 'Setor Técnico',
-    icon: 'mdi-tools',
+    key: 'crm-vendas',
+    title: 'CRM e Vendas',
+    icon: 'mdi-account-group-outline',
     children: [
-      { key: 'vistorias-consultar', title: 'Consultar Vistorias', icon: 'mdi-clipboard-search-outline', routeName: 'monitoramento' },
-      { key: 'relatorios-tecnicos', title: 'Relatórios Técnicos', icon: 'mdi-file-chart-outline', routeName: 'relatorios', roles: ['admin', 'supervisor'] }
-    ]
-  },
-  {
-    key: 'crm-comercial',
-    title: 'CRM Comercial',
-    icon: 'mdi-phone-in-talk-outline',
-    children: [
-      { key: 'crm-conversas', title: 'Conversas', icon: 'mdi-message-text-outline', routeName: 'atendimento' },
-      { key: 'crm-pipelines', title: 'Pipelines', icon: 'mdi-chart-timeline-variant', routeName: 'pipeline-vendas' },
-      { key: 'crm-campanhas', title: 'Campanhas', icon: 'mdi-message-bookmark-outline', routeName: 'campanhas', roles: ['admin'] },
+      { key: 'clientes-consultar', title: 'Clientes', icon: 'mdi-account-search-outline', routeName: 'clientes' },
+      { key: 'clientes-novo', title: 'Novo Cliente', icon: 'mdi-account-plus-outline', routeName: 'clientes', query: { acao: 'novo' } },
+      { key: 'crm-pipelines', title: 'Pipeline de Vendas', icon: 'mdi-chart-timeline-variant', routeName: 'pipeline-vendas' },
+      { key: 'orcamentos', title: 'Orçamentos', icon: 'mdi-file-document-edit-outline', routeName: 'pipeline-vendas', query: { view: 'propostas' } },
+      devItem('Informações para Orçamento', 'informacoes-para-orcamento', 'mdi-information-outline', { roles: ['admin'] }),
+      devItem('Ao Vivo', 'crm-ao-vivo', 'mdi-access-point', { roles: ['admin'] }),
       {
-        key: 'gestao-crm',
-        title: 'Gestão CRM',
-        icon: 'mdi-account-tie-outline',
+        key: 'configuracoes-crm',
+        title: 'Configurações do CRM',
+        icon: 'mdi-cog-sync-outline',
         roles: ['admin'],
         children: [
-          { key: 'gestao-crm-dashboard', title: 'Dashboard', icon: 'mdi-view-dashboard-variant', routeName: 'painel-atendimentos' },
-          devItem('Ao Vivo', 'crm-ao-vivo', 'mdi-access-point'),
-          { key: 'gestao-crm-consulta-conversas', title: 'Consulta de Conversas', icon: 'mdi-text-search', routeName: 'relatorios' }
+          devItem('Status de Leads', 'status-leads', 'mdi-list-status'),
+          devItem('Origens dos Leads', 'origens-leads', 'mdi-source-branch'),
+          devItem('Origem de Chegada', 'origem-chegada', 'mdi-map-marker-path'),
+          devItem('Produtos de Venda', 'produtos-venda', 'mdi-package-variant'),
+          devItem('Metas de Venda', 'metas-venda', 'mdi-target'),
+          devItem('Motivos de Perda', 'motivos-perda', 'mdi-close-octagon-outline'),
+          devItem('Campos Customizados', 'campos-customizados', 'mdi-form-textbox')
         ]
       }
+    ]
+  },
+  {
+    key: 'servicos-tecnicos',
+    title: 'Serviços Técnicos',
+    icon: 'mdi-tools',
+    children: [
+      { key: 'agenda-servicos', title: 'Agenda de Serviços', icon: 'mdi-calendar-check-outline', routeName: 'ordens-servico', query: { aba: 'agenda' } },
+      { key: 'servico-avulso', title: 'Novo Serviço Avulso', icon: 'mdi-briefcase-plus-outline', routeName: 'ordens-servico', query: { acao: 'novo', tipo: 'avulso' } },
+      { key: 'servico-ra', title: 'Novo Serviço RA', icon: 'mdi-clipboard-plus-outline', routeName: 'ordens-servico', query: { acao: 'novo', tipo: 'ra' } },
+      { key: 'monitoramento', title: 'Monitoramento', icon: 'mdi-map-marker-radius-outline', routeName: 'monitoramento' },
+      devItem('Nova Vistoria para Relatório', 'nova-vistoria-relatorio', 'mdi-clipboard-text-search-outline'),
+      devItem('Nova Vistoria para Orçamento', 'nova-vistoria-orcamento', 'mdi-clipboard-search-outline'),
+      devItem('Informações de Segurança e Prevenção', 'informacoes-seguranca-prevencao', 'mdi-shield-check-outline'),
+      devItem('Modelos de Ordem de Serviço', 'modelos-ordem-servico', 'mdi-file-cog-outline', { roles: ['admin', 'supervisor'] })
+    ]
+  },
+  {
+    key: 'marketing',
+    title: 'Marketing e Automação',
+    icon: 'mdi-message-bookmark-outline',
+    roles: ['admin'],
+    children: [
+      { key: 'marketing-campanhas', title: 'Campanhas', icon: 'mdi-message-bookmark-outline', routeName: 'campanhas' },
+      { key: 'marketing-chatbot', title: 'Chatbot', icon: 'mdi-robot', routeName: 'chat-flow' },
+      { key: 'marketing-auto-resposta', title: 'Auto Resposta', icon: 'mdi-reply-outline', routeName: 'auto-resposta' },
+      { key: 'marketing-etiquetas', title: 'Etiquetas', icon: 'mdi-tag-text', routeName: 'etiquetas' }
     ]
   },
   {
@@ -845,10 +559,7 @@ const menuTreeCatalog = [
         icon: 'mdi-account-multiple-outline',
         roles: ['admin'],
         children: [
-          { key: 'cad-funcionarios', title: 'Funcionários', icon: 'mdi-account-tie-outline', routeName: 'cadastros-operacionais', query: { aba: 'funcionarios' } },
-          { key: 'cad-usuarios', title: 'Usuários', icon: 'mdi-account-group', routeName: 'usuarios' },
-          { key: 'cad-departamentos', title: 'Departamentos', icon: 'mdi-office-building-outline', routeName: 'filas' },
-          { key: 'cad-perfis-acesso', title: 'Perfis de Acesso', icon: 'mdi-account-key-outline', routeName: 'usuarios', query: { view: 'permissoes' } }
+          { key: 'cad-funcionarios', title: 'Funcionários', icon: 'mdi-account-tie-outline', routeName: 'cadastros-operacionais', query: { aba: 'funcionarios' } }
         ]
       },
       {
@@ -891,38 +602,7 @@ const menuTreeCatalog = [
       devItem('Relatórios Financeiros', 'relatorios-financeiros', 'mdi-file-chart-outline')
     ]
   },
-  {
-    key: 'relatorios',
-    title: 'Relatórios',
-    icon: 'mdi-chart-bar',
-    roles: ['admin'],
-    children: [
-      { key: 'rel-clientes', title: 'Clientes', icon: 'mdi-account-box-outline', routeName: 'relatorios' },
-      { key: 'rel-orcamentos', title: 'Orçamentos', icon: 'mdi-file-document-edit-outline', routeName: 'relatorios' },
-      { key: 'rel-vendas', title: 'Vendas', icon: 'mdi-cash-register', routeName: 'relatorios' },
-      { key: 'rel-atendimentos', title: 'Atendimentos', icon: 'mdi-face-agent', routeName: 'relatorios' },
-      { key: 'rel-programacao', title: 'Programação', icon: 'mdi-calendar-month-outline', routeName: 'relatorios' },
-      { key: 'rel-setor-tecnico', title: 'Setor Técnico', icon: 'mdi-tools', routeName: 'relatorios' },
-      { key: 'rel-crm-comercial', title: 'CRM Comercial', icon: 'mdi-phone-in-talk-outline', routeName: 'relatorios' },
-      { key: 'rel-financeiro', title: 'Financeiro', icon: 'mdi-currency-usd', routeName: 'relatorios' }
-    ]
-  },
-  {
-    key: 'configuracoes-crm',
-    title: 'Configurações CRM',
-    icon: 'mdi-cog-sync-outline',
-    roles: ['admin'],
-    children: [
-      devItem('Status de Leads', 'status-leads', 'mdi-list-status'),
-      devItem('Origens dos Leads', 'origens-leads', 'mdi-source-branch'),
-      devItem('Origem de Chegada', 'origem-chegada', 'mdi-map-marker-path'),
-      { key: 'gerenciar-pipelines', title: 'Gerenciar Pipelines', icon: 'mdi-chart-timeline-variant-shimmer', routeName: 'pipeline-vendas' },
-      devItem('Produtos de Venda', 'produtos-venda', 'mdi-package-variant'),
-      devItem('Metas de Venda', 'metas-venda', 'mdi-target'),
-      devItem('Motivos de Perda', 'motivos-perda', 'mdi-close-octagon-outline'),
-      devItem('Campos Customizados', 'campos-customizados', 'mdi-form-textbox')
-    ]
-  },
+  { key: 'relatorios', title: 'Relatórios', icon: 'mdi-chart-bar', routeName: 'relatorios', roles: ['admin'] },
   {
     key: 'administracao',
     title: 'Administração do Sistema',
@@ -931,9 +611,7 @@ const menuTreeCatalog = [
     children: [
       { key: 'admin-usuarios', title: 'Usuários', icon: 'mdi-account-group', routeName: 'usuarios' },
       { key: 'admin-perfis', title: 'Perfis de Acesso', icon: 'mdi-account-key-outline', routeName: 'usuarios', query: { view: 'permissoes' } },
-      { key: 'admin-departamentos', title: 'Departamentos', icon: 'mdi-office-building-outline', routeName: 'filas' },
       { key: 'admin-api-webhooks', title: 'API / Webhooks', icon: 'mdi-call-split', routeName: 'api-service' },
-      { key: 'admin-prompts', title: 'Prompts', icon: 'mdi-message-cog-outline', routeName: 'chat-flow' },
       devItem('AI Prompts', 'ai-prompts', 'mdi-robot-outline'),
       devItem('Controle de Acesso por IP', 'controle-acesso-ip', 'mdi-ip-network-outline'),
       devItem('Logs do Sistema', 'logs-sistema', 'mdi-text-box-search-outline'),
@@ -941,10 +619,18 @@ const menuTreeCatalog = [
       devItem('Configurações Avançadas', 'configuracoes-avancadas', 'mdi-cog-transfer-outline')
     ]
   },
-  { key: 'minha-assinatura', title: 'Minha Assinatura', icon: 'mdi-credit-card-outline', routeName: 'minha-assinatura' },
-  { key: 'delivery-pedidos', title: 'Delivery', icon: 'mdi-food-fork-drink', routeName: 'delivery-pedidos', requiredModule: 'delivery', roles: ['admin'] },
-  { key: 'delivery-cardapio', title: 'Cardápio', icon: 'mdi-silverware-fork-knife', routeName: 'delivery-catalogo', requiredModule: 'delivery', roles: ['admin'] },
-  { key: 'delivery-zonas', title: 'Áreas de Entrega', icon: 'mdi-map-marker-radius', routeName: 'delivery-zonas', requiredModule: 'delivery', roles: ['admin'] }
+  {
+    key: 'delivery',
+    title: 'Delivery',
+    icon: 'mdi-food-fork-drink',
+    roles: ['admin'],
+    children: [
+      { key: 'delivery-cardapio', title: 'Cardápio', icon: 'mdi-silverware-fork-knife', routeName: 'delivery-catalogo', requiredModule: 'delivery' },
+      { key: 'delivery-pedidos', title: 'Pedidos', icon: 'mdi-clipboard-list-outline', routeName: 'delivery-pedidos', requiredModule: 'delivery' },
+      { key: 'delivery-zonas', title: 'Áreas de Entrega', icon: 'mdi-map-marker-radius', routeName: 'delivery-zonas', requiredModule: 'delivery' }
+    ]
+  },
+  { key: 'minha-assinatura', title: 'Minha Assinatura', icon: 'mdi-credit-card-outline', routeName: 'minha-assinatura' }
 ]
 
 const filterMenuByAccess = (nodes, canShow) => nodes.reduce((acc, node) => {
@@ -955,8 +641,6 @@ const filterMenuByAccess = (nodes, canShow) => nodes.reduce((acc, node) => {
   }
   return acc
 }, [])
-
-const legacyMenuState = { objMenuGroups, menuCatalog, buildMenuGroups }
 
 export default {
   name: 'MainLayout',
@@ -979,8 +663,6 @@ export default {
       alertSound,
       leftDrawerOpen: false,
       menuData: [],
-      menuDataAdmin: objMenuAdminGroups,
-      legacyMenuState,
       countTickets: 0,
       ticketsList: []
     }
@@ -991,7 +673,7 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(['notifications', 'notifications_p', 'whatsapps']),
+    ...mapGetters(['notifications', 'notifications_p']),
     accessDaysRemaining () {
       if (!this.usuario.accessExpiresAt) return null
       const expiration = new Date(this.usuario.accessExpiresAt)
@@ -1000,32 +682,8 @@ export default {
       today.setHours(0, 0, 0, 0)
       return Math.max(0, Math.ceil((expiration - today) / 86400000) + 1)
     },
-    cProblemaConexao () {
-      const idx = this.whatsapps.findIndex(w =>
-        ['PAIRING', 'TIMEOUT', 'DISCONNECTED'].includes(w.status)
-      )
-      return idx !== -1
-    },
-    cOpening () {
-      const idx = this.whatsapps.findIndex(w => w.status === 'OPENING')
-      return idx !== -1
-    },
-    cUsersApp () {
-      return this.$store.state.usersApp
-    },
     currentRouteTitle () {
       return routeDisplayNames[this.$route.name] || 'CRM'
-    },
-    cObjMenu () {
-      if (this.cProblemaConexao) {
-        return objMenu.map(menu => {
-          if (menu.routeName === 'sessoes') {
-            menu.color = 'negative'
-          }
-          return menu
-        })
-      }
-      return objMenu
     }
   },
   methods: {
@@ -1201,7 +859,7 @@ export default {
     abrirChatContato (ticket) {
       // caso esteja em um tamanho mobile, fechar a drawer dos contatos
       if (this.$q.screen.lt.md && ticket.status !== 'pending') {
-        this.$root.$emit('infor-cabecalo-chat:acao-menu')
+        this.$bus.emit('infor-cabecalo-chat:acao-menu')
       }
       if (!(ticket.status !== 'pending' && (ticket.id !== this.$store.getters.ticketFocado.id || this.$route.name !== 'chat'))) return
       this.$store.commit('SET_HAS_MORE', true)

@@ -448,7 +448,7 @@ export default {
     },
     citarMensagem (mensagem) {
       this.$emit('update:replyingMessage', mensagem)
-      this.$root.$emit('mensagem-chat:focar-input-mensagem', mensagem)
+      this.$bus.emit('mensagem-chat:focar-input-mensagem', mensagem)
     },
     encaminharMensagem (mensagem) {
       this.$emit('mensagem-chat:encaminhar-mensagem', mensagem)

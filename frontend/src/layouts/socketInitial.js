@@ -89,7 +89,7 @@ export default {
       socket.on(`${usuario.tenantId}:whatsappSession`, data => {
         if (data.action === 'update') {
           this.$store.commit('UPDATE_SESSION', data.session)
-          this.$root.$emit('UPDATE_SESSION', data.session)
+          this.$bus.emit('UPDATE_SESSION', data.session)
         }
 
         if (data.action === 'readySession') {

@@ -13,14 +13,14 @@
           v-if="$q.screen.lt.md"
           class="q-mx-xs-none q-ml-md"
           :color="$q.dark.isActive ? 'white' : ''"
-          @click="$root.$emit('infor-cabecalo-chat:acao-menu')"
+          @click="$bus.emit('infor-cabecalo-chat:acao-menu')"
         />
         <q-item
           clickable
           v-ripple
           class="chat-header__identity q-ma-none q-pa-none full"
           style="min-height: 60px; height: 60px; width: 300px;"
-          @click="$root.$emit('update-ticket:info-contato')"
+          @click="$bus.emit('update-ticket:info-contato')"
         >
           <q-item-section
             avatar

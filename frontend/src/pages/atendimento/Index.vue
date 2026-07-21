@@ -1146,11 +1146,11 @@ export default {
     }
   },
   async mounted () {
-    this.$root.$on('infor-cabecalo-chat:acao-menu', this.setValueMenu)
-    this.$root.$on('update-ticket:info-contato', this.setValueMenuContact)
+    this.$bus.on('infor-cabecalo-chat:acao-menu', this.setValueMenu)
+    this.$bus.on('update-ticket:info-contato', this.setValueMenuContact)
     this.socketTicketList()
     this.pesquisaTickets = JSON.parse(localStorage.getItem('filtrosAtendimento'))
-    this.$root.$on('handlerNotifications', this.handlerNotifications)
+    this.$bus.on('handlerNotifications', this.handlerNotifications)
     await this.listarWhatsapps()
     await this.consultarTickets()
     await this.listarUsuarios()
@@ -1167,7 +1167,7 @@ export default {
         if (!ticket) return
         // caso esteja em um tamanho mobile, fechar a drawer dos contatos
         if (this.$q.screen.lt.md && ticket.status !== 'pending') {
-          this.$root.$emit('infor-cabecalo-chat:acao-menu')
+          this.$bus.emit('infor-cabecalo-chat:acao-menu')
         }
         console.log('before - AbrirChatMensagens', ticket)
         this.$store.commit('SET_HAS_MORE', true)
@@ -1179,9 +1179,9 @@ export default {
     }
   },
   unmounted () {
-    this.$root.$off('handlerNotifications', this.handlerNotifications)
-    this.$root.$off('infor-cabecalo-chat:acao-menu', this.setValueMenu)
-    this.$root.$on('update-ticket:info-contato', this.setValueMenuContact)
+    this.$bus.off('handlerNotifications', this.handlerNotifications)
+    this.$bus.off('infor-cabecalo-chat:acao-menu', this.setValueMenu)
+    this.$bus.off('update-ticket:info-contato', this.setValueMenuContact)
     // this.socketDisconnect()
     this.$store.commit('TICKET_FOCADO', {})
   }

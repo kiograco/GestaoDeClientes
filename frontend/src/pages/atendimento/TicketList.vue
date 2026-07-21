@@ -177,7 +177,7 @@ export default {
     // },
     scrollToBottom () {
       setTimeout(() => {
-        this.$root.$emit('scrollToBottomMessageChat')
+        this.$bus.emit('scrollToBottomMessageChat')
       }, 200)
     },
     ticketListSocket () {
@@ -223,7 +223,7 @@ export default {
         if (data.action === 'create' && shouldUpdateTicket(data.ticket)) {
           console.log('ticketList > UPDATE_TICKET_UNREAD_MESSAGES', data)
           if (this.ticketFocado.id !== data.ticket.id && this.status !== 'closed' && !data.message.fromMe && !data.ticket.chatFlowId) {
-            this.$root.$emit('handlerNotifications', data.message)
+            this.$bus.emit('handlerNotifications', data.message)
           }
           this.$store.commit('UPDATE_TICKET_UNREAD_MESSAGES', { type: this.status, ticket: data.ticket })
         }

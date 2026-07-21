@@ -727,7 +727,7 @@ export default {
     }
   },
   mounted () {
-    this.$root.$on('mensagem-chat:focar-input-mensagem', () => this.$refs.inputEnvioMensagem.focus())
+    this.$bus.on('mensagem-chat:focar-input-mensagem', () => this.$refs.inputEnvioMensagem.focus())
     const self = this
     window.addEventListener('paste', self.handleInputPaste)
     if (![null, undefined].includes(LocalStorage.getItem('sign'))) {
@@ -739,7 +739,7 @@ export default {
     window.removeEventListener('paste', self.handleInputPaste)
   },
   unmounted () {
-    this.$root.$off('mensagem-chat:focar-input-mensagem')
+    this.$bus.off('mensagem-chat:focar-input-mensagem')
   }
 }
 </script>

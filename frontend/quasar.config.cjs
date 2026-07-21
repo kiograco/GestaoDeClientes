@@ -5,6 +5,8 @@ require('dotenv').config()
 module.exports = configure(function (/* ctx */) {
   return {
     boot: [
+      'store',
+      'eventBus',
       'vuelidate',
       'apex',
       'ccComponents'
@@ -45,7 +47,12 @@ module.exports = configure(function (/* ctx */) {
     },
 
     devServer: {
-      open: true
+      open: true,
+      client: {
+        overlay: {
+          runtimeErrors: error => !/ResizeObserver loop/.test(error.message)
+        }
+      }
     },
 
     framework: {
